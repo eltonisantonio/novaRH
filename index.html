@@ -366,14 +366,17 @@ function startShell(u){
 function buildHomeGrid(u){
   var grid=document.getElementById('modules-grid');
   var mods=u.modulos||[];
-  grid.innerHTML=Object.entries(MODS).map(function([key,m]){
+  grid.innerHTML=Object.entries(MODS).map(function(entry){
+    var key=entry[0],m=entry[1];
     var locked=(u.perfil!=='admin'&&!mods.includes(key));
-    return`<div class="mod-card${locked?' locked-card':''}" onclick="${locked?'':'loadMod(\''+key+'\')'}">
-      <div class="mod-icon"><i class="ti ${m.icon}"></i></div>
-      <div class="mod-nome">${m.nome}</div>
-      <div class="mod-desc">${m.desc}</div>
-      <div class="mod-badge"><i class="ti ti-point-filled" style="font-size:8px"></i> ${m.tag}</div>
-    </div>`;
+    var cls='mod-card'+(locked?' locked-card':'');
+    var click=locked?'':'loadMod(\''+key+'\')';
+    return '<div class="'+cls+'" onclick="'+click+'">'
+      +'<div class="mod-icon"><i class="ti '+m.icon+'"></i></div>'
+      +'<div class="mod-nome">'+m.nome+'</div>'
+      +'<div class="mod-desc">'+m.desc+'</div>'
+      +'<div class="mod-badge"><i class="ti ti-point-filled" style="font-size:8px"></i> '+m.tag+'</div>'
+      +'</div>';
   }).join('');
 }
 
@@ -460,19 +463,21 @@ function openAdmin(){
 function renderUsuarios(){
   var users=getUsuarios();
   var el=document.getElementById('lista-usuarios');
-  if(!users.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:10px 0">Nenhum usuário.</div>';return;}
+  if(!users.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:10px 0">Nenhum usu\u00e1rio.</div>';return;}
   el.innerHTML=users.map(function(u){
     var isAdmin=(u.id==='u_admin');
-    var modsList=(u.modulos||[]).join(', ')||'—';
-    return`<div class="user-row">
-      <div style="flex:1">
-        <div class="user-name">${u.nome} <span class="${u.perfil==='admin'?'badge-admin':'badge-user'}">${u.perfil}</span></div>
-        <div class="user-meta">Login: ${u.login} · Módulos: ${modsList}</div>
-      </div>
-      ${isAdmin?'<span style="font-size:11px;color:var(--text3);font-weight:600">Master</span>':
-        `<button class="btn-sm btn-danger-sm" onclick="removerUsuario('${u.id}')"><i class="ti ti-trash" style="font-size:13px"></i></button>`
-      }
-    </div>`;
+    var modsList=(u.modulos||[]).join(', ')||'\u2014';
+    var badgeClass=u.perfil==='admin'?'badge-admin':'badge-user';
+    var acaoBtn=isAdmin
+      ?'<span style="font-size:11px;color:var(--text3);font-weight:600">Master</span>'
+      :'<button class="btn-sm btn-danger-sm" onclick="removerUsuario(\''+u.id+'\')"><i class="ti ti-trash" style="font-size:13px"></i></button>';
+    return '<div class="user-row">'
+      +'<div style="flex:1">'
+      +'<div class="user-name">'+u.nome+' <span class="'+badgeClass+'">'+u.perfil+'</span></div>'
+      +'<div class="user-meta">Login: '+u.login+' &middot; M\u00f3dulos: '+modsList+'</div>'
+      +'</div>'
+      +acaoBtn
+      +'</div>';
   }).join('');
 }
 

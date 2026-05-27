@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova. RH - Dossie</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;}
+.app{display:flex;min-height:100vh;}
+.sidebar{width:230px;background:var(--black);color:#fff;flex-shrink:0;display:flex;flex-direction:column;}
+.sidebar-logo{padding:28px 24px 22px;border-bottom:1px solid rgba(255,255,255,.08);}
+.logo-mark{display:flex;align-items:baseline;}
+.logo-text{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--cream);}
+.logo-dot{width:9px;height:9px;background:var(--lime);border-radius:50%;display:inline-block;margin-left:2px;margin-bottom:1px;}
+.logo-sub{font-size:10px;font-weight:500;color:rgba(242,238,229,.4);letter-spacing:2px;text-transform:uppercase;margin-top:5px;}
+.sidebar-nav{padding:20px 0;flex:1;}
+.nav-s{padding:8px 24px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.5);transition:all .15s;border-left:2px solid transparent;}
+.nav-item:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05);}
+.nav-item.active{color:var(--lime);border-left-color:var(--lime);background:rgba(215,255,61,.06);}
+.nav-item i{font-size:16px;}
+.nav-item.dis{opacity:.25;cursor:not-allowed;pointer-events:none;}
+.sidebar-footer{padding:18px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.25);font-weight:500;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.topbar-title{font-size:15px;font-weight:700;}
+.topbar-actions{display:flex;gap:8px;}
+.content{flex:1;padding:28px 32px;overflow-y:auto;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.btn:hover{background:var(--s2);}
+.btn-primary{background:var(--black);color:var(--lime);border-color:var(--black);}
+.btn-primary:hover{background:#1e2026;}
+.btn-danger{background:#fdeaea;color:#8b1c1c;border-color:#f5c6c6;}
+.btn-sm{padding:7px 12px;font-size:12px;}
+.btn i{font-size:15px;}
+.btn-icon{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r);border:none;background:transparent;cursor:pointer;color:var(--text2);transition:all .15s;}
+.btn-icon:hover{background:var(--s2);}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.form-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;}
+.req{color:#c0392b;margin-left:2px;}
+.form-input,.form-select,.form-textarea{padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;width:100%;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--black);}
+.form-hint{font-size:11px;color:var(--text3);}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:16px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.card-title i{color:var(--gold);font-size:17px;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-lime{background:#f0ffe0;color:#3a5c00;border:1px solid #c0e840;}
+.badge-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
+.badge-gray{background:#f0ede6;color:var(--text2);border:1px solid var(--border2);}
+.badge-red{background:#fdeaea;color:#8b1c1c;border:1px solid #f5c6c6;}
+.badge-blue{background:#eef3fb;color:#1e3a6e;border:1px solid #b0c8e4;}
+.badge-empresa{background:var(--black);color:var(--lime);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;}
+.search-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:200px;}
+.search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;pointer-events:none;}
+.search-input{width:100%;padding:9px 11px 9px 32px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;}
+.search-input:focus{border-color:var(--black);}
+.func-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:14px 18px;margin-bottom:8px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:space-between;}
+.func-card:hover{background:var(--s2);}
+.func-nome{font-size:14px;font-weight:700;}
+.func-meta{font-size:12px;color:var(--text2);font-weight:500;margin-top:2px;}
+.empty{text-align:center;padding:50px 20px;color:var(--text2);}
+.empty i{font-size:40px;color:var(--text3);display:block;margin-bottom:10px;}
+.empty p{font-size:13px;}
+/* DOSSIE HEADER */
+.dos-header{background:var(--black);color:var(--white);border-radius:var(--rl);padding:22px 28px;margin-bottom:20px;}
+.dos-nome{font-size:20px;font-weight:900;color:var(--cream);letter-spacing:-.3px;}
+.dos-meta{font-size:12px;color:rgba(242,238,229,.6);font-weight:500;margin-top:4px;}
+.dos-stats{display:flex;gap:20px;margin-top:14px;flex-wrap:wrap;}
+.dos-stat{text-align:center;}
+.dos-stat-val{font-size:22px;font-weight:900;color:var(--lime);letter-spacing:-1px;line-height:1;}
+.dos-stat-label{font-size:10px;color:rgba(242,238,229,.5);font-weight:600;text-transform:uppercase;letter-spacing:.8px;margin-top:2px;}
+/* EVENTOS */
+.ev-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--border);}
+.ev-item:last-child{border-bottom:none;}
+.ev-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;}
+.ev-body{flex:1;}
+.ev-tipo{font-size:12px;font-weight:700;margin-bottom:2px;}
+.ev-desc{font-size:13px;font-weight:500;color:var(--text);}
+.ev-footer{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;align-items:center;}
+.ev-date{font-size:11px;color:var(--text3);font-weight:600;}
+.ev-resp{font-size:11px;color:var(--text2);font-weight:500;}
+.ev-fonte{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;}
+.ev-actions{flex-shrink:0;}
+/* TIPO CORES */
+.tipo-dsp{color:#6b3fa0;}
+.tipo-dds{color:#1e6b4a;}
+.tipo-ddq{color:#1e3a6e;}
+.tipo-notif{color:#8b1c1c;}
+.tipo-trein{color:#7d4e00;}
+.tipo-feed{color:#b6904a;}
+.tipo-adv{color:#8b1c1c;}
+.tipo-elogio{color:#1a5c35;}
+.tipo-aval{color:#1e3a6e;}
+.tipo-exp{color:#6b3fa0;}
+.tipo-deslig{color:#5a3a2a;}
+.tipo-outro{color:var(--text2);}
+.dot-dsp{background:#9b72cf;}
+.dot-dds{background:#4caf80;}
+.dot-ddq{background:#b0c8e4;}
+.dot-notif{background:#e05252;}
+.dot-trein{background:#d4a020;}
+.dot-feed{background:#b6904a;}
+.dot-adv{background:#e05252;}
+.dot-elogio{background:#4caf80;}
+.dot-aval{background:#6b72cf;}
+.dot-exp{background:#9b72cf;}
+.dot-deslig{background:#a09890;}
+.dot-outro{background:#d4cec0;}
+.fonte-modulo{background:#f0ffe0;color:#3a5c00;}
+.fonte-manual{background:#f0ede6;color:var(--text2);}
+/* PAGINACAO */
+.pagination{display:flex;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap;}
+.page-btn{padding:6px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;}
+.page-btn:hover{background:var(--s2);}
+.page-btn.active{background:var(--black);color:var(--lime);border-color:var(--black);}
+/* SHEET */
+.sheet{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:2px solid var(--black);padding:22px 32px 28px;z-index:200;box-shadow:0 -4px 24px rgba(0,0,0,.15);}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"><span class="logo-text">NOVA</span><span class="logo-dot"></span></div>
+      <div class="logo-sub">Sistema de RH</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-s">Modulos</div>
+      <div class="nav-item dis"><i class="ti ti-user-search"></i> R&amp;S</div>
+      <div class="nav-item dis"><i class="ti ti-users"></i> Cadastro</div>
+      <div class="nav-item dis"><i class="ti ti-file-check"></i> Admissao</div>
+      <div class="nav-item dis"><i class="ti ti-clock"></i> Experiencia</div>
+      <div class="nav-item active"><i class="ti ti-notebook"></i> Dossie</div>
+      <div class="nav-item dis"><i class="ti ti-file-minus"></i> Rescisao</div>
+    </nav>
+    <div class="sidebar-footer">Modulo 5 - Dossie</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title" id="topbar-title">Dossie de Funcionarios</span>
+      <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
+    <div class="content">
+      <div id="view-lista"></div>
+      <div id="view-dossie" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var DB = {
+  funcs: {
+    key: 'nova_funcionarios_v1',
+    getAll: function() {
+      try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e) { return []; }
+    }
+  },
+  eventos: {
+    key: 'nova_dossie_v1',
+    getAll: function() {
+      try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e) { return []; }
+    },
+    save: function(d) { localStorage.setItem(this.key, JSON.stringify(d)); },
+    add: function(ev) {
+      var all = this.getAll();
+      ev.id = 'ev_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+      ev.criadoEm = new Date().toISOString();
+      ev.fonte = 'manual';
+      all.push(ev);
+      this.save(all);
+      return ev;
+    },
+    remove: function(id) {
+      this.save(this.getAll().filter(function(x){ return x.id !== id; }));
+    }
+  },
+  exp: {
+    key: 'nova_exp_v1',
+    getAll: function() {
+      try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e) { return []; }
+    }
+  },
+  adm: {
+    key: 'nova_adm_processos_v1',
+    getAll: function() {
+      try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e) { return []; }
+    }
+  }
+};
+
+var funcAtivoId = null;
+var pagAtual = 1;
+var POR_PAGINA = 20;
+var eventoEditId = null;
+var tabStatus = 'ativos';
+
+var TIPOS = [
+  { id: 'dsp',   label: 'DSP - Dialogo de Saude Psicologica',   dot: 'dot-dsp',   tipo: 'tipo-dsp' },
+  { id: 'dds',   label: 'DDS - Dialogo de Seguranca',            dot: 'dot-dds',   tipo: 'tipo-dds' },
+  { id: 'ddq',   label: 'DDQ - Dialogo de Qualidade',            dot: 'dot-ddq',   tipo: 'tipo-ddq' },
+  { id: 'notif', label: 'Notificacao de Seguranca',              dot: 'dot-notif', tipo: 'tipo-notif' },
+  { id: 'trein', label: 'Treinamento',                           dot: 'dot-trein', tipo: 'tipo-trein' },
+  { id: 'feed',  label: 'Feedback',                              dot: 'dot-feed',  tipo: 'tipo-feed' },
+  { id: 'adv',   label: 'Advertencia',                           dot: 'dot-adv',   tipo: 'tipo-adv' },
+  { id: 'elogio',label: 'Elogio / Reconhecimento',               dot: 'dot-elogio',tipo: 'tipo-elogio' },
+  { id: 'aval',  label: 'Avaliacao de Desempenho',               dot: 'dot-aval',  tipo: 'tipo-aval' },
+  { id: 'exp',   label: 'Avaliacao Periodo de Experiencia',      dot: 'dot-exp',   tipo: 'tipo-exp' },
+  { id: 'deslig',label: 'Pesquisa de Desligamento',              dot: 'dot-deslig',tipo: 'tipo-deslig' },
+  { id: 'integ', label: 'Integracao',                            dot: 'dot-trein', tipo: 'tipo-trein' },
+  { id: 'outro', label: 'Outro',                                 dot: 'dot-outro', tipo: 'tipo-outro' }
+];
+
+function getTipo(id) {
+  for (var i = 0; i < TIPOS.length; i++) { if (TIPOS[i].id === id) return TIPOS[i]; }
+  return TIPOS[TIPOS.length - 1];
+}
+
+function fmtDate(d) {
+  if (!d) return '-';
+  var s = d.split('T')[0].split('-');
+  return s[2] + '/' + s[1] + '/' + s[0];
+}
+
+function today() { return new Date().toISOString().split('T')[0]; }
+
+function toast(msg, type) {
+  var bg = type === 'err' ? '#8b1c1c' : '#1a3a28';
+  var cl = type === 'err' ? '#fbd8d8' : '#6ee8a0';
+  var t = document.createElement('div');
+  t.style.cssText = 'position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:8px;font-family:Inter,sans-serif;font-size:13px;font-weight:600;z-index:9999;color:' + cl + ';background:' + bg;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function(){ t.remove(); }, 3000);
+}
+
+// pega eventos de todos os modulos para um funcionario
+function getEventosFuncionario(funcId) {
+  var eventos = [];
+  var f = DB.funcs.getAll().find(function(x){ return x.id === funcId; });
+  if (!f) return [];
+
+  // 1. Eventos manuais do dossie
+  DB.eventos.getAll().filter(function(ev){ return ev.funcId === funcId; }).forEach(function(ev){
+    eventos.push({
+      id: ev.id,
+      tipo: ev.tipo,
+      data: ev.data,
+      descricao: ev.descricao,
+      responsavel: ev.responsavel,
+      obs: ev.obs,
+      fonte: 'manual',
+      removivel: true
+    });
+  });
+
+  // 2. Admissao: processo
+  DB.adm.getAll().filter(function(p){
+    return p.funcId === funcId || (p.nome && f.nome && p.nome.toUpperCase() === f.nome.toUpperCase());
+  }).forEach(function(p){
+    eventos.push({
+      id: 'adm_' + p.id,
+      tipo: 'integ',
+      data: p.admissao,
+      descricao: 'Processo de admissao concluido',
+      responsavel: 'RH',
+      obs: p.perfil ? 'Perfil: ' + p.perfil : '',
+      fonte: 'modulo',
+      removivel: false
+    });
+  });
+
+  // 3. Experiencia: feedbacks e acoes registradas
+  var expRec = DB.exp.getAll().find(function(x){ return x.funcId === funcId; });
+  if (expRec && expRec.checks) {
+    var checks = expRec.checks;
+    Object.keys(checks).forEach(function(k) {
+      var ck = checks[k];
+      if (!ck || !ck.done) return;
+      var tipo = 'exp';
+      var desc = k;
+      if (k === 'feedback45') desc = 'Feedback formal - 45 dias';
+      else if (k === 'feedback90') desc = 'Feedback formal - 90 dias';
+      else if (k === 'efetivacao') { desc = 'Cerimonia de efetivacao'; tipo = 'elogio'; }
+      else if (k.indexOf('video_') === 0) { desc = 'Video enviado: ' + k.replace('video_',''); tipo = 'trein'; }
+      else if (k.indexOf('contato_') === 0) { desc = 'Contato RH: ' + k.replace('contato_',''); tipo = 'feed'; }
+      eventos.push({
+        id: 'exp_' + funcId + '_' + k,
+        tipo: tipo,
+        data: ck.date,
+        descricao: desc,
+        responsavel: 'RH',
+        obs: ck.obs || '',
+        fonte: 'modulo',
+        removivel: false
+      });
+    });
+  }
+
+  // ordena por data desc
+  eventos.sort(function(a, b){
+    var da = a.data || '';
+    var db = b.data || '';
+    return da < db ? 1 : da > db ? -1 : 0;
+  });
+
+  return eventos;
+}
+
+// ======== LISTA ========
+function setTabStatus(tab) {
+  tabStatus = tab;
+  pagAtual = 1;
+  renderLista();
+}
+
+function renderLista() {
+  var q = '';
+  var fe = '';
+  var searchEl = document.getElementById('search-func');
+  var empEl = document.getElementById('filter-emp');
+  if (searchEl) q = searchEl.value.toLowerCase();
+  if (empEl) fe = empEl.value;
+
+  var funcs = DB.funcs.getAll();
+  // filtro de status
+  if (tabStatus === 'ativos') funcs = funcs.filter(function(f){ return !f.desligado; });
+  else if (tabStatus === 'desligados') funcs = funcs.filter(function(f){ return !!f.desligado; });
+  if (q) funcs = funcs.filter(function(f){ return (f.nome||'').toLowerCase().indexOf(q) >= 0 || (f.chapa||'').toLowerCase().indexOf(q) >= 0; });
+  if (fe) funcs = funcs.filter(function(f){ return f.empresa === fe; });
+  funcs.sort(function(a,b){ return (a.nome||'') < (b.nome||'') ? -1 : 1; });
+
+  var total = funcs.length;
+  var pages = Math.ceil(total / POR_PAGINA);
+  var start = (pagAtual - 1) * POR_PAGINA;
+  var pagFuncs = funcs.slice(start, start + POR_PAGINA);
+
+  var totalAtivos = DB.funcs.getAll().filter(function(f){ return !f.desligado; }).length;
+  var totalDeslig = DB.funcs.getAll().filter(function(f){ return !!f.desligado; }).length;
+
+  var html = '<div style="display:flex;gap:2px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:3px;margin-bottom:16px;width:fit-content">'
+    + '<button style="padding:7px 18px;border-radius:5px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:Inter,sans-serif;transition:all .15s;'
+    + (tabStatus === 'ativos' ? 'background:var(--white);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)' : 'background:transparent;color:var(--text2)')
+    + '" onclick="setTabStatus(\'ativos\')">Ativos (' + totalAtivos + ')</button>'
+    + '<button style="padding:7px 18px;border-radius:5px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:Inter,sans-serif;transition:all .15s;'
+    + (tabStatus === 'desligados' ? 'background:var(--white);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)' : 'background:transparent;color:var(--text2)')
+    + '" onclick="setTabStatus(\'desligados\')">Desligados (' + totalDeslig + ')</button>'
+    + '<button style="padding:7px 18px;border-radius:5px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:Inter,sans-serif;transition:all .15s;'
+    + (tabStatus === 'todos' ? 'background:var(--white);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.08)' : 'background:transparent;color:var(--text2)')
+    + '" onclick="setTabStatus(\'todos\')">Todos</button>'
+    + '</div>'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+    + '<div style="font-size:13px;color:var(--text2);font-weight:500">' + total + ' funcionario' + (total !== 1 ? 's' : '') + '</div>'
+    + '</div>'
+    + '<div class="search-bar">'
+    + '<div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" type="text" id="search-func" placeholder="Buscar por nome ou chapa..." oninput="pagAtual=1;renderLista()"></div>'
+    + '<select class="form-select" id="filter-emp" onchange="pagAtual=1;renderLista()" style="width:185px">'
+    + '<option value="">Todas as empresas</option>'
+    + '<option>Raguife Matriz</option><option>Raguife Bom Despacho</option><option>Neves Queiroz</option>'
+    + '<option>Distribuidora</option><option>Haras Ambar Amaral</option><option>Holding</option><option>Mb Proni</option>'
+    + '</select>'
+    + '</div>';
+
+  if (!pagFuncs.length) {
+    html += '<div class="empty"><i class="ti ti-notebook"></i><p>Nenhum funcionario encontrado.</p></div>';
+  } else {
+    html += pagFuncs.map(function(f) {
+      var evs = getEventosFuncionario(f.id);
+      return '<div class="func-card" onclick="abrirDossie(\'' + f.id + '\')">'
+        + '<div><div class="func-nome">' + f.nome + '</div>'
+        + '<div class="func-meta">' + (f.cargo||'-') + ' - ' + (f.departamento||'-') + (f.chapa ? ' - Chapa: ' + f.chapa : '') + '</div></div>'
+        + '<div style="display:flex;gap:8px;align-items:center">'
+        + '<span class="badge badge-gray">' + evs.length + ' registro' + (evs.length !== 1 ? 's' : '') + '</span>'
+        + '<span class="badge-empresa">' + f.empresa + '</span>'
+        + '<i class="ti ti-chevron-right" style="font-size:14px;color:var(--text3)"></i></div>'
+        + '</div>';
+    }).join('');
+  }
+
+  // paginacao
+  if (pages > 1) {
+    html += '<div class="pagination">';
+    if (pagAtual > 1) html += '<button class="page-btn" onclick="pagAtual=' + (pagAtual-1) + ';renderLista()">&#8249;</button>';
+    for (var i = 1; i <= pages; i++) {
+      if (i === 1 || i === pages || Math.abs(i - pagAtual) <= 1) {
+        html += '<button class="page-btn' + (i === pagAtual ? ' active' : '') + '" onclick="pagAtual=' + i + ';renderLista()">' + i + '</button>';
+      } else if (Math.abs(i - pagAtual) === 2) {
+        html += '<span style="color:var(--text3)">...</span>';
+      }
+    }
+    if (pagAtual < pages) html += '<button class="page-btn" onclick="pagAtual=' + (pagAtual+1) + ';renderLista()">&#8250;</button>';
+    html += '</div>';
+  }
+
+  document.getElementById('view-lista').innerHTML = html;
+
+  // re-setar valores nos filtros
+  if (q) { var el = document.getElementById('search-func'); if(el) el.value = q; }
+  if (fe) { var el2 = document.getElementById('filter-emp'); if(el2) el2.value = fe; }
+}
+
+// ======== DOSSIE INDIVIDUAL ========
+function abrirDossie(id) {
+  funcAtivoId = id;
+  document.getElementById('view-lista').style.display = 'none';
+  document.getElementById('view-dossie').style.display = 'block';
+  var f = DB.funcs.getAll().find(function(x){ return x.id === id; });
+  document.getElementById('topbar-title').textContent = f ? f.nome : 'Dossie';
+  document.getElementById('topbar-actions').innerHTML =
+    '<button class="btn btn-sm" onclick="voltarLista()"><i class="ti ti-arrow-left"></i> Voltar</button>'
+    + '<button class="btn btn-sm btn-primary" onclick="abrirNovoEvento()"><i class="ti ti-plus"></i> Novo Registro</button>'
+    + '<button class="btn btn-sm" onclick="exportarDossie()"><i class="ti ti-file-type-pdf"></i> Exportar PDF</button>';
+  renderDossie();
+}
+
+function voltarLista() {
+  funcAtivoId = null;
+  document.getElementById('view-lista').style.display = 'block';
+  document.getElementById('view-dossie').style.display = 'none';
+  document.getElementById('topbar-title').textContent = 'Dossie de Funcionarios';
+  document.getElementById('topbar-actions').innerHTML = '';
+  renderLista();
+}
+
+function renderDossie() {
+  var f = DB.funcs.getAll().find(function(x){ return x.id === funcAtivoId; });
+  if (!f) return;
+  var eventos = getEventosFuncionario(funcAtivoId);
+
+  // contagens por tipo
+  var contagens = {};
+  eventos.forEach(function(ev){ contagens[ev.tipo] = (contagens[ev.tipo] || 0) + 1; });
+
+  var html = '<div class="dos-header">'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+    + '<div><div class="dos-nome">' + f.nome + '</div>'
+    + '<div class="dos-meta">' + (f.cargo||'-') + ' - ' + (f.departamento||'-') + ' - ' + f.empresa + '</div>'
+    + '<div class="dos-meta">Admissao: ' + fmtDate(f.admissao) + (f.chapa ? ' - Chapa: ' + f.chapa : '') + '</div></div>'
+    + '<span style="background:rgba(255,255,255,.12);color:var(--lime);font-size:11px;padding:4px 10px;border-radius:4px;font-weight:700">'
+    + (f.desligado ? 'Desligado' : 'Ativo') + '</span>'
+    + '</div>'
+    + '<div class="dos-stats">'
+    + '<div class="dos-stat"><div class="dos-stat-val">' + eventos.length + '</div><div class="dos-stat-label">Total</div></div>'
+    + (contagens.dsp ? '<div class="dos-stat"><div class="dos-stat-val">' + contagens.dsp + '</div><div class="dos-stat-label">DSP</div></div>' : '')
+    + (contagens.dds ? '<div class="dos-stat"><div class="dos-stat-val">' + contagens.dds + '</div><div class="dos-stat-label">DDS</div></div>' : '')
+    + (contagens.trein ? '<div class="dos-stat"><div class="dos-stat-val">' + contagens.trein + '</div><div class="dos-stat-label">Treinamentos</div></div>' : '')
+    + (contagens.adv ? '<div class="dos-stat" style="color:#e05252"><div class="dos-stat-val" style="color:#e05252">' + contagens.adv + '</div><div class="dos-stat-label">Advertencias</div></div>' : '')
+    + (contagens.elogio ? '<div class="dos-stat"><div class="dos-stat-val">' + contagens.elogio + '</div><div class="dos-stat-label">Elogios</div></div>' : '')
+    + '</div></div>';
+
+  // filtro de tipo
+  html += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center">'
+    + '<span style="font-size:12px;font-weight:600;color:var(--text2)">Filtrar:</span>'
+    + '<button class="btn btn-sm" id="filtro-todos" onclick="filtrarTipo(null)" style="background:var(--black);color:var(--lime);border-color:var(--black)">Todos</button>'
+    + TIPOS.map(function(t){
+        return contagens[t.id] ? '<button class="btn btn-sm" id="filtro-' + t.id + '" onclick="filtrarTipo(\'' + t.id + '\')">' + t.label + ' (' + contagens[t.id] + ')</button>' : '';
+      }).join('')
+    + '</div>';
+
+  html += '<div class="card" style="padding:0"><div id="lista-eventos" style="padding:8px 24px">';
+
+  if (!eventos.length) {
+    html += '<div class="empty" style="padding:30px"><i class="ti ti-notebook"></i><p>Nenhum registro ainda.</p></div>';
+  } else {
+    html += eventos.map(function(ev){
+      var t = getTipo(ev.tipo);
+      return '<div class="ev-item" data-tipo="' + ev.tipo + '">'
+        + '<div class="ev-dot ' + t.dot + '" style="margin-top:6px"></div>'
+        + '<div class="ev-body">'
+        + '<div class="ev-tipo ' + t.tipo + '">' + t.label + '</div>'
+        + '<div class="ev-desc">' + (ev.descricao || '-') + '</div>'
+        + (ev.obs ? '<div style="font-size:12px;color:var(--text2);font-weight:500;margin-top:3px">' + ev.obs + '</div>' : '')
+        + '<div class="ev-footer">'
+        + '<span class="ev-date"><i class="ti ti-calendar" style="font-size:11px;vertical-align:-1px"></i> ' + fmtDate(ev.data) + '</span>'
+        + (ev.responsavel ? '<span class="ev-resp"><i class="ti ti-user" style="font-size:11px;vertical-align:-1px"></i> ' + ev.responsavel + '</span>' : '')
+        + '<span class="ev-fonte ' + (ev.fonte === 'modulo' ? 'fonte-modulo' : 'fonte-manual') + '">' + (ev.fonte === 'modulo' ? 'Automatico' : 'Manual') + '</span>'
+        + '</div></div>'
+        + '<div class="ev-actions">'
+        + (ev.removivel ? '<button class="btn-icon" onclick="removerEvento(\'' + ev.id + '\')" title="Remover"><i class="ti ti-trash" style="font-size:14px"></i></button>' : '')
+        + '</div></div>';
+    }).join('');
+  }
+
+  html += '</div></div>';
+  document.getElementById('view-dossie').innerHTML = html;
+}
+
+var filtroTipoAtual = null;
+function filtrarTipo(tipo) {
+  filtroTipoAtual = tipo;
+  var items = document.querySelectorAll('#lista-eventos .ev-item');
+  items.forEach(function(el){
+    el.style.display = (!tipo || el.getAttribute('data-tipo') === tipo) ? 'flex' : 'none';
+  });
+  // highlight botao
+  document.querySelectorAll('[id^="filtro-"]').forEach(function(btn){
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  });
+  var btnId = tipo ? 'filtro-' + tipo : 'filtro-todos';
+  var btn = document.getElementById(btnId);
+  if (btn) { btn.style.background = 'var(--black)'; btn.style.color = 'var(--lime)'; btn.style.borderColor = 'var(--black)'; }
+}
+
+// ======== NOVO EVENTO ========
+function abrirNovoEvento() {
+  document.getElementById('ev-sheet') && document.getElementById('ev-sheet').remove();
+  var tiposOpts = TIPOS.map(function(t){
+    return '<option value="' + t.id + '">' + t.label + '</option>';
+  }).join('');
+
+  var sheet = document.createElement('div');
+  sheet.id = 'ev-sheet';
+  sheet.className = 'sheet';
+  sheet.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    + '<div style="font-size:14px;font-weight:800">Novo Registro</div>'
+    + '<button style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--text2)" onclick="document.getElementById(\'ev-sheet\').remove()">x</button>'
+    + '</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:12px;align-items:end">'
+    + '<div class="form-group" style="margin:0"><label class="form-label">Tipo <span class="req">*</span></label>'
+    + '<select class="form-select" id="ev-tipo">' + tiposOpts + '</select></div>'
+    + '<div class="form-group" style="margin:0"><label class="form-label">Data <span class="req">*</span></label>'
+    + '<input class="form-input" type="date" id="ev-data" value="' + today() + '"></div>'
+    + '<div class="form-group" style="margin:0"><label class="form-label">Responsavel</label>'
+    + '<input class="form-input" type="text" id="ev-resp" placeholder="Nome do responsavel"></div>'
+    + '<div class="form-group" style="margin:0"><label class="form-label">Descricao <span class="req">*</span></label>'
+    + '<input class="form-input" type="text" id="ev-desc" placeholder="Descricao do evento"></div>'
+    + '</div>'
+    + '<div style="margin-top:10px;display:flex;gap:12px;align-items:end">'
+    + '<div class="form-group" style="margin:0;flex:1"><label class="form-label">Observacoes</label>'
+    + '<input class="form-input" type="text" id="ev-obs" placeholder="Observacoes adicionais (opcional)"></div>'
+    + '<button class="btn btn-primary" onclick="salvarEvento()"><i class="ti ti-check"></i> Salvar Registro</button>'
+    + '</div>';
+  document.body.appendChild(sheet);
+}
+
+function salvarEvento() {
+  var tipo = document.getElementById('ev-tipo').value;
+  var data = document.getElementById('ev-data').value;
+  var desc = (document.getElementById('ev-desc').value || '').trim();
+  if (!tipo || !data || !desc) { toast('Preencha os campos obrigatorios.', 'err'); return; }
+  DB.eventos.add({
+    funcId: funcAtivoId,
+    tipo: tipo,
+    data: data,
+    descricao: desc,
+    responsavel: (document.getElementById('ev-resp').value || '').trim(),
+    obs: (document.getElementById('ev-obs').value || '').trim()
+  });
+  document.getElementById('ev-sheet') && document.getElementById('ev-sheet').remove();
+  toast('Registro adicionado!');
+  renderDossie();
+}
+
+function removerEvento(id) {
+  if (!confirm('Remover este registro?')) return;
+  DB.eventos.remove(id);
+  toast('Removido.');
+  renderDossie();
+}
+
+// ======== EXPORTAR ========
+function exportarDossie() {
+  var f = DB.funcs.getAll().find(function(x){ return x.id === funcAtivoId; });
+  if (!f) return;
+  var eventos = getEventosFuncionario(funcAtivoId);
+
+  var linhas = eventos.map(function(ev, i) {
+    var t = getTipo(ev.tipo);
+    var cor = ev.tipo === 'adv' || ev.tipo === 'notif' ? '#8b1c1c' : ev.tipo === 'elogio' ? '#1a5c35' : '#0e0f12';
+    return '<tr style="border-bottom:1px solid #e8e3d8">'
+      + '<td style="padding:8px 6px;font-size:12px;color:var(--text3)">' + (i+1) + '</td>'
+      + '<td style="padding:8px 6px;font-size:12px;font-weight:700;color:' + cor + '">' + t.label + '</td>'
+      + '<td style="padding:8px 6px;font-size:12px">' + fmtDate(ev.data) + '</td>'
+      + '<td style="padding:8px 6px;font-size:12px">' + (ev.descricao || '-') + '</td>'
+      + '<td style="padding:8px 6px;font-size:12px;color:#6b6558">' + (ev.responsavel || '-') + '</td>'
+      + '<td style="padding:8px 6px;font-size:12px;color:#6b6558">' + (ev.obs || '') + '</td>'
+      + '</tr>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+    + '<title>Dossie - ' + f.nome + '</title>'
+    + '<style>body{font-family:Inter,Arial,sans-serif;margin:32px;color:#0e0f12}'
+    + 'h1{font-size:20px;font-weight:900;margin-bottom:4px}'
+    + '.meta{font-size:12px;color:#6b6558;margin-bottom:20px}'
+    + 'table{width:100%;border-collapse:collapse}'
+    + 'th{background:#0e0f12;color:#f2eee5;padding:9px 6px;font-size:11px;text-align:left;font-weight:700;text-transform:uppercase;letter-spacing:.5px}'
+    + '@media print{@page{margin:20mm}}'
+    + '<\/style></head><body>'
+    + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">'
+    + '<div><h1>' + f.nome + '</h1>'
+    + '<div class="meta">' + (f.cargo||'-') + ' &nbsp;|&nbsp; ' + (f.departamento||'-') + ' &nbsp;|&nbsp; ' + f.empresa + '</div>'
+    + '<div class="meta">Admissao: ' + fmtDate(f.admissao) + (f.chapa ? ' &nbsp;|&nbsp; Chapa: ' + f.chapa : '') + '</div></div>'
+    + '<div style="text-align:right"><div style="font-size:11px;color:#a09890;margin-bottom:2px">Total de registros</div>'
+    + '<div style="font-size:28px;font-weight:900">' + eventos.length + '</div>'
+    + '<div style="font-size:11px;background:' + (f.desligado?'#fdeaea':'#f0ffe0') + ';color:' + (f.desligado?'#8b1c1c':'#3a5c00') + ';padding:2px 10px;border-radius:4px;font-weight:700">'
+    + (f.desligado ? 'Desligado' : 'Ativo') + '</div></div></div>'
+    + '<table><thead><tr>'
+    + '<th style="width:36px">#</th><th>Tipo</th><th style="width:90px">Data</th><th>Descricao</th><th style="width:140px">Responsavel</th><th>Observacoes</th>'
+    + '</tr></thead><tbody>' + linhas + '</tbody></table>'
+    + '<div style="margin-top:32px;font-size:10px;color:#a09890">Gerado em ' + fmtDate(today()) + ' - Nova. RH</div>'
+    + '<\/body></html>';
+
+  var win = window.open('', '_blank', 'width=900,height=700');
+  if (!win) { toast('Permita popups para exportar.', 'err'); return; }
+  win.document.write(html);
+  win.document.close();
+  win.focus();
+  setTimeout(function(){ win.print(); }, 400);
+}
+
+// ======== INIT ========
+document.getElementById('topbar-actions').innerHTML = '';
+renderLista();
+</script>
+</body>
+</html>

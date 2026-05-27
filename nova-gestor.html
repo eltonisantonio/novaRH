@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova. RH — Solicitação de Vaga</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;}
+body{font-family:'Inter',sans-serif;background:var(--cream);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:40px 16px 60px;}
+.card{background:var(--white);border:1px solid var(--border);border-radius:14px;width:100%;max-width:620px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.07);}
+.card-header{background:var(--black);padding:28px 32px;display:flex;align-items:center;gap:14px;}
+.logo-mark{display:flex;align-items:baseline;}
+.logo-text{font-size:20px;font-weight:900;letter-spacing:-.5px;color:var(--cream);}
+.logo-dot{width:8px;height:8px;background:var(--lime);border-radius:50%;display:inline-block;margin-left:2px;margin-bottom:1px;}
+.header-info{margin-left:4px;}
+.header-title{font-size:13px;font-weight:700;color:rgba(255,255,255,.9);margin-top:2px;}
+.header-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;}
+.card-body{padding:28px 32px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;}
+.req{color:#c0392b;margin-left:2px;}
+.form-input,.form-select,.form-textarea{padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;transition:border-color .15s;width:100%;}
+.form-input:focus,.form-select:focus,.form-textarea:focus{border-color:var(--black);}
+.form-textarea{resize:vertical;min-height:80px;}
+.form-hint{font-size:11px;color:var(--text3);}
+.section-title{grid-column:1/-1;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);padding-top:8px;border-top:1px solid var(--border);margin-top:4px;}
+.section-title:first-child{border-top:none;margin-top:0;padding-top:0;}
+.btn-primary{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border-radius:var(--r);border:none;background:var(--black);color:var(--lime);font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-top:24px;transition:background .15s;}
+.btn-primary:hover{background:#1e2026;}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+/* SUCCESS */
+.success{display:none;flex-direction:column;align-items:center;justify-content:center;padding:48px 32px;text-align:center;gap:12px;}
+.success-icon{width:56px;height:56px;border-radius:50%;background:var(--lime);display:flex;align-items:center;justify-content:center;}
+.success-icon i{font-size:28px;color:var(--black);}
+.success-title{font-size:20px;font-weight:900;color:var(--black);}
+.success-sub{font-size:13px;color:var(--text2);max-width:340px;line-height:1.6;}
+.success-code{font-size:12px;font-weight:700;background:var(--cream);border:1px solid var(--border);border-radius:var(--r);padding:8px 16px;color:var(--text2);margin-top:4px;}
+.notice{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:var(--r);font-size:12px;font-weight:500;margin-bottom:16px;background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
+.notice i{font-size:14px;flex-shrink:0;margin-top:1px;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <div class="logo-mark"><span class="logo-text">NOVA</span><span class="logo-dot"></span></div>
+    <div class="header-info">
+      <div class="header-title">Solicitação de Abertura de Vaga</div>
+      <div class="header-sub">Grupo Raguife · RH</div>
+    </div>
+  </div>
+
+  <!-- FORMULÁRIO -->
+  <div class="card-body" id="view-form">
+    <div class="notice"><i class="ti ti-info-circle"></i><span>Preencha todos os campos obrigatórios. Sua solicitação será analisada pelo RH.</span></div>
+    <div class="form-grid">
+
+      <div class="section-title">Identificação do Gestor</div>
+
+      <div class="form-group full">
+        <label class="form-label">Nome do Gestor <span class="req">*</span></label>
+        <input class="form-input upper" type="text" id="g-nome" placeholder="SEU NOME COMPLETO">
+      </div>
+      <div class="form-group">
+        <label class="form-label">E-mail <span class="req">*</span></label>
+        <input class="form-input" type="email" id="g-email" placeholder="email@raguife.com.br">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Empresa <span class="req">*</span></label>
+        <select class="form-select" id="g-empresa">
+          <option value="">Selecione</option>
+          <option>Raguife Matriz</option>
+          <option>Raguife Bom Despacho</option>
+          <option>Neves Queiroz</option>
+          <option>Distribuidora</option>
+          <option>Haras Ambar Amaral</option>
+          <option>Holding</option>
+          <option>Mb Proni</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Departamento / Setor <span class="req">*</span></label>
+        <input class="form-input upper" type="text" id="g-setor" placeholder="EX: LOGÍSTICA, ADMINISTRATIVO">
+      </div>
+
+      <div class="section-title">Dados da Vaga</div>
+
+      <div class="form-group">
+        <label class="form-label">Cargo <span class="req">*</span></label>
+        <input class="form-input upper" type="text" id="g-cargo" placeholder="CARGO SOLICITADO">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Nº de Vagas <span class="req">*</span></label>
+        <input class="form-input" type="number" id="g-qtd" value="1" min="1">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Motivo da Abertura <span class="req">*</span></label>
+        <select class="form-select" id="g-motivo" onchange="toggleSubstituto()">
+          <option value="">Selecione</option>
+          <option>SUBSTITUICAO</option>
+          <option>REPOSICAO</option>
+          <option>AUMENTO DE QUADRO</option>
+          <option>OUTRO</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Escala de Trabalho <span class="req">*</span></label>
+        <select class="form-select" id="g-escala">
+          <option value="">Selecione</option>
+          <option>SEG-SEX (08h-18h)</option>
+          <option>SEG-SAB (07h-17h)</option>
+          <option>12x36 DIURNO</option>
+          <option>12x36 NOTURNO</option>
+          <option>5x1 ESCALA</option>
+          <option>OUTRO</option>
+        </select>
+      </div>
+      <div class="form-group full" id="bloco-substituto" style="display:none">
+        <label class="form-label">Colaborador a ser Substituído <span class="req">*</span></label>
+        <input class="form-input upper" type="text" id="g-substituto" placeholder="NOME DO COLABORADOR">
+      </div>
+
+      <div class="section-title">Requisitos e Observações</div>
+
+      <div class="form-group full">
+        <label class="form-label">Requisitos para a Vaga</label>
+        <textarea class="form-textarea" id="g-requisitos" placeholder="Ex: CNH B, experiência em vendas, ensino médio completo..."></textarea>
+        <span class="form-hint">Liste os requisitos mínimos e desejáveis.</span>
+      </div>
+      <div class="form-group full">
+        <label class="form-label">Justificativa / Observações</label>
+        <textarea class="form-textarea" id="g-obs" placeholder="Contexto adicional, urgência, etc."></textarea>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="btn-enviar" onclick="enviarSolicitacao()">
+      <i class="ti ti-send"></i> Enviar Solicitação ao RH
+    </button>
+  </div>
+
+  <!-- SUCESSO -->
+  <div class="success" id="view-sucesso">
+    <div class="success-icon"><i class="ti ti-check"></i></div>
+    <div class="success-title">Solicitação Enviada!</div>
+    <div class="success-sub">Sua solicitação foi registrada e será analisada pelo RH. Você receberá um retorno por e-mail.</div>
+    <div class="success-code" id="sol-codigo"></div>
+  </div>
+</div>
+
+<script>
+const SOL_KEY = 'nova_solicitacoes_v1';
+
+function sanitize(s){
+  var d=document.createElement('div');
+  d.textContent=s||'';
+  return d.innerHTML;
+}
+
+function toggleSubstituto(){
+  var m=document.getElementById('g-motivo').value;
+  document.getElementById('bloco-substituto').style.display=(m==='SUBSTITUICAO')?'block':'none';
+}
+
+function gerarId(){
+  return 'sol_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+}
+
+function gerarCodigo(){
+  var ano=new Date().getFullYear();
+  var sols=[];
+  try{sols=JSON.parse(localStorage.getItem(SOL_KEY)||'[]');}catch{}
+  var n=(sols.length+1).toString().padStart(3,'0');
+  return 'SOL-'+ano+'-'+n;
+}
+
+function enviarSolicitacao(){
+  var nome=(document.getElementById('g-nome').value||'').trim();
+  var email=(document.getElementById('g-email').value||'').trim();
+  var empresa=document.getElementById('g-empresa').value;
+  var setor=(document.getElementById('g-setor').value||'').trim();
+  var cargo=(document.getElementById('g-cargo').value||'').trim();
+  var qtd=parseInt(document.getElementById('g-qtd').value)||1;
+  var motivo=document.getElementById('g-motivo').value;
+  var escala=document.getElementById('g-escala').value;
+  var substituto=(document.getElementById('g-substituto').value||'').trim();
+  var requisitos=(document.getElementById('g-requisitos').value||'').trim();
+  var obs=(document.getElementById('g-obs').value||'').trim();
+
+  if(!nome){alert('Informe seu nome.');return;}
+  if(!email||!email.includes('@')){alert('Informe um e-mail válido.');return;}
+  if(!empresa){alert('Selecione a empresa.');return;}
+  if(!setor){alert('Informe o departamento/setor.');return;}
+  if(!cargo){alert('Informe o cargo.');return;}
+  if(!motivo){alert('Selecione o motivo da abertura.');return;}
+  if(!escala){alert('Selecione a escala de trabalho.');return;}
+  if(motivo==='SUBSTITUICAO'&&!substituto){alert('Informe o colaborador a ser substituído.');return;}
+
+  var sols=[];
+  try{sols=JSON.parse(localStorage.getItem(SOL_KEY)||'[]');}catch{}
+
+  var sol={
+    id:gerarId(),
+    codigo:gerarCodigo(),
+    criadoEm:new Date().toISOString(),
+    status:'pendente', // pendente → aprovado / reprovado
+    gestor:sanitize(nome),
+    email:sanitize(email),
+    empresa:empresa,
+    setor:sanitize(setor),
+    cargo:sanitize(cargo).toUpperCase(),
+    qtd:qtd,
+    motivo:motivo,
+    escala:escala,
+    substituto:sanitize(substituto),
+    requisitos:sanitize(requisitos),
+    obs:sanitize(obs),
+    // histórico de ações do RH
+    historico:[{
+      dt:new Date().toISOString(),
+      acao:'SOLICITACAO_CRIADA',
+      por:sanitize(nome),
+    }],
+  };
+
+  sols.unshift(sol);
+  localStorage.setItem(SOL_KEY,JSON.stringify(sols));
+
+  document.getElementById('sol-codigo').textContent='Protocolo: '+sol.codigo;
+  document.getElementById('view-form').style.display='none';
+  document.getElementById('view-sucesso').style.display='flex';
+}
+</script>
+</body>
+</html>

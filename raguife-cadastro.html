@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova. RH — Cadastro</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root {
+  --black: #0e0f12;
+  --cream: #f2eee5;
+  --lime: #d7ff3d;
+  --gold: #b6904a;
+  --white: #ffffff;
+  --surface: #ffffff;
+  --surface2: #f7f5f0;
+  --border: #e8e3d8;
+  --border2: #d4cec0;
+  --text: #0e0f12;
+  --text2: #6b6558;
+  --text3: #a09890;
+  --radius: 6px;
+  --radius-lg: 10px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Inter', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+
+/* LAYOUT */
+.app { display: flex; min-height: 100vh; }
+.sidebar { width: 230px; background: var(--black); color: var(--white); flex-shrink: 0; display: flex; flex-direction: column; }
+.sidebar-logo { padding: 28px 24px 22px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.logo-mark { display: flex; align-items: baseline; gap: 0; }
+.logo-text { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; color: var(--cream); line-height: 1; }
+.logo-dot { width: 9px; height: 9px; background: var(--lime); border-radius: 50%; display: inline-block; margin-left: 2px; margin-bottom: 1px; flex-shrink: 0; }
+.logo-sub { font-size: 10px; font-weight: 500; color: rgba(242,238,229,0.4); letter-spacing: 2px; text-transform: uppercase; margin-top: 5px; }
+.sidebar-nav { padding: 20px 0; flex: 1; }
+.nav-section { padding: 8px 24px 4px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: rgba(255,255,255,0.25); }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 24px; font-size: 13px; font-weight: 500; cursor: pointer; color: rgba(255,255,255,0.5); transition: all 0.15s; border-left: 2px solid transparent; }
+.nav-item:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.05); }
+.nav-item.active { color: var(--lime); border-left-color: var(--lime); background: rgba(215,255,61,0.06); }
+.nav-item i { font-size: 16px; }
+.nav-item.disabled { opacity: 0.25; cursor: not-allowed; pointer-events: none; }
+.sidebar-footer { padding: 18px 24px; border-top: 1px solid rgba(255,255,255,0.08); font-size: 11px; color: rgba(255,255,255,0.25); font-weight: 500; }
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar { background: var(--white); border-bottom: 1px solid var(--border); padding: 0 32px; height: 58px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+.topbar-title { font-size: 15px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
+.topbar-actions { display: flex; gap: 8px; }
+.content { flex: 1; padding: 28px 32px; overflow-y: auto; }
+
+/* BUTTONS */
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--white); color: var(--text); font-size: 13px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+.btn:hover { background: var(--surface2); }
+.btn-primary { background: var(--black); color: var(--lime); border-color: var(--black); }
+.btn-primary:hover { background: #1e2026; }
+.btn-success { background: #1a3a28; color: #6ee8a0; border-color: #1a3a28; }
+.btn-success:hover { background: #152e20; }
+.btn-danger { background: #fdeaea; color: #8b1c1c; border-color: #f5c6c6; }
+.btn-danger:hover { background: #fbd8d8; }
+.btn-sm { padding: 7px 12px; font-size: 12px; }
+.btn i { font-size: 15px; }
+.btn-icon { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius); border: none; background: transparent; cursor: pointer; color: var(--text2); transition: all 0.15s; }
+.btn-icon:hover { background: var(--surface2); color: var(--text); }
+
+/* CARDS */
+.card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; }
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+.card-title { font-size: 14px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; letter-spacing: -0.1px; }
+.card-title i { color: var(--gold); font-size: 17px; }
+
+/* STATS */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; position: relative; overflow: hidden; }
+.stat-card::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 2px; background: var(--border); }
+.stat-card.s-lime::after { background: var(--lime); }
+.stat-card.s-gold::after { background: var(--gold); }
+.stat-card.s-black::after { background: var(--black); }
+.stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text3); margin-bottom: 8px; }
+.stat-value { font-size: 30px; font-weight: 900; color: var(--black); letter-spacing: -1px; line-height: 1; }
+.stat-sub { font-size: 11px; color: var(--text3); font-weight: 500; margin-top: 4px; }
+
+/* FORM */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-label { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.6px; }
+.form-label .req { color: #c0392b; margin-left: 2px; }
+.form-input, .form-select { padding: 9px 11px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--white); color: var(--text); font-size: 13px; font-family: 'Inter', sans-serif; font-weight: 500; outline: none; transition: border-color 0.15s; }
+.form-input:focus, .form-select:focus { border-color: var(--black); }
+.form-hint { font-size: 11px; color: var(--text3); font-weight: 400; }
+.form-divider { grid-column: 1 / -1; border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+.form-section-title { grid-column: 1 / -1; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text3); padding-top: 4px; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; }
+.checkbox-row input { width: 15px; height: 15px; cursor: pointer; accent-color: var(--black); }
+
+/* NOTICE */
+.notice { display: flex; align-items: flex-start; gap: 10px; padding: 11px 13px; border-radius: var(--radius); font-size: 12px; font-weight: 500; margin-bottom: 14px; }
+.notice i { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+.notice-amber { background: #fef8ec; color: #7d4e00; border: 1px solid #f0d080; }
+.notice-green { background: #edf7f1; color: #1a5c35; border: 1px solid #a3d4b8; }
+.notice-blue { background: #eef3fb; color: #1e3a6e; border: 1px solid #b0c8e4; }
+.notice-lime { background: #f6ffe0; color: #3a5000; border: 1px solid #c8e840; }
+
+/* TABLE */
+.table-wrapper { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { padding: 9px 12px; text-align: left; font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text3); border-bottom: 1px solid var(--border); }
+tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+tbody tr:hover { background: var(--surface2); }
+tbody td { padding: 11px 12px; color: var(--text); vertical-align: middle; }
+tbody td.muted { color: var(--text2); font-size: 12px; }
+
+/* SEARCH */
+.search-bar { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+.search-input-wrap { position: relative; flex: 1; min-width: 200px; }
+.search-input-wrap i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text3); font-size: 15px; pointer-events: none; }
+.search-input { width: 100%; padding: 9px 11px 9px 32px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--white); color: var(--text); font-size: 13px; font-family: 'Inter', sans-serif; font-weight: 500; outline: none; }
+.search-input:focus { border-color: var(--black); }
+
+/* BADGES */
+.badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.badge-lime { background: #f0ffe0; color: #3a5c00; border: 1px solid #c0e840; }
+.badge-amber { background: #fef8ec; color: #7d4e00; border: 1px solid #f0d080; }
+.badge-gray { background: #f0ede6; color: var(--text2); border: 1px solid var(--border2); }
+.badge-empresa { background: var(--black); color: var(--lime); font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 700; letter-spacing: 0.3px; }
+
+/* TABS / PILLS */
+.filters-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+/* MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(14,15,18,0.55); z-index: 100; align-items: center; justify-content: center; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--white); border-radius: var(--radius-lg); width: 700px; max-width: 96vw; max-height: 92vh; display: flex; flex-direction: column; }
+.modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-size: 15px; font-weight: 800; color: var(--text); letter-spacing: -0.2px; }
+.modal-body { padding: 24px; overflow-y: auto; }
+.modal-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 8px; }
+
+/* IMPORT */
+.drop-area { border: 2px dashed var(--border2); border-radius: var(--radius-lg); padding: 36px; text-align: center; cursor: pointer; transition: all 0.15s; background: var(--surface2); }
+.drop-area:hover, .drop-area.drag { border-color: var(--black); background: #f0f0e8; }
+.drop-area i { font-size: 36px; color: var(--text3); display: block; margin-bottom: 10px; }
+.drop-area p { font-size: 13px; font-weight: 600; color: var(--text2); }
+.drop-area small { font-size: 11px; color: var(--text3); }
+.import-row { display: flex; align-items: center; gap: 10px; padding: 7px 11px; border-radius: var(--radius); font-size: 12px; font-weight: 500; margin-bottom: 3px; }
+.import-row.ok { background: #edf7f1; color: #1a5c35; }
+.import-row.err { background: #fdeaea; color: #8b1c1c; }
+.import-row i { font-size: 13px; flex-shrink: 0; }
+
+/* EMPTY */
+.empty { text-align: center; padding: 60px 20px; color: var(--text2); }
+.empty i { font-size: 44px; color: var(--text3); display: block; margin-bottom: 10px; }
+.empty p { font-size: 13px; font-weight: 500; }
+
+/* PAGINATION */
+.pagination { display: flex; align-items: center; gap: 5px; margin-top: 14px; font-size: 12px; font-weight: 500; color: var(--text2); }
+.page-btn { padding: 5px 10px; border: 1px solid var(--border2); border-radius: var(--radius); background: var(--white); cursor: pointer; color: var(--text); font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif; }
+.page-btn:hover { background: var(--surface2); }
+.page-btn.active { background: var(--black); color: var(--lime); border-color: var(--black); }
+
+/* MISC */
+.tag-efetivacao { font-size: 10px; font-weight: 700; color: var(--gold); background: #fef8ec; padding: 2px 6px; border-radius: 4px; border: 1px solid #f0d080; margin-left: 4px; }
+.row-actions { display: flex; gap: 3px; }
+.empresa-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; background: var(--black); color: var(--lime); letter-spacing: 0.2px; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">
+        <span class="logo-text">NOVA</span>
+        <span class="logo-dot"></span>
+      </div>
+      <div class="logo-sub">Sistema de RH</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">Módulos</div>
+      <div class="nav-item disabled"><i class="ti ti-user-search"></i> R&amp;S</div>
+      <div class="nav-item active"><i class="ti ti-users"></i> Cadastro</div>
+      <div class="nav-item disabled"><i class="ti ti-file-check"></i> Admissão</div>
+      <div class="nav-item disabled"><i class="ti ti-clock"></i> Experiência</div>
+      <div class="nav-item disabled"><i class="ti ti-notebook"></i> Dossiê</div>
+      <div class="nav-item disabled"><i class="ti ti-file-minus"></i> Rescisão</div>
+    </nav>
+    <div class="sidebar-footer">Módulo 1 · Cadastro</div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title">Cadastro de Funcionários</span>
+      <div class="topbar-actions">
+        <button class="btn btn-sm" onclick="openImportModal()"><i class="ti ti-upload"></i> Importar Excel</button>
+        <button class="btn btn-sm" onclick="downloadTemplate()"><i class="ti ti-download"></i> Modelo Excel</button>
+        <button class="btn btn-primary btn-sm" onclick="openNewModal()"><i class="ti ti-plus"></i> Novo Funcionário</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- STATS -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total cadastrado</div>
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-sub">funcionários</div>
+        </div>
+        <div class="stat-card s-lime">
+          <div class="stat-label">Efetivos</div>
+          <div class="stat-value" id="stat-ativos">0</div>
+          <div class="stat-sub">em atividade</div>
+        </div>
+        <div class="stat-card s-gold">
+          <div class="stat-label">Em experiência</div>
+          <div class="stat-value" id="stat-exp">0</div>
+          <div class="stat-sub">até 90 dias</div>
+        </div>
+        <div class="stat-card s-black">
+          <div class="stat-label">Com alteração</div>
+          <div class="stat-value" id="stat-alt">0</div>
+          <div class="stat-sub">cargo/salário na efetivação</div>
+        </div>
+      </div>
+
+      <!-- TABLE CARD -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="ti ti-users"></i> Funcionários</div>
+        </div>
+
+        <div class="search-bar">
+          <div class="search-input-wrap">
+            <i class="ti ti-search"></i>
+            <input class="search-input" type="text" id="search" placeholder="Buscar por nome, chapa, cargo ou departamento..." oninput="renderTable()">
+          </div>
+          <select class="form-select" id="filter-empresa" onchange="renderTable()" style="width:190px">
+            <option value="">Todas as empresas</option>
+            <option>Raguife Matriz</option>
+            <option>Raguife Bom Despacho</option>
+            <option>Neves Queiroz</option>
+            <option>Distribuidora</option>
+            <option>Haras Ambar Amaral</option>
+            <option>Holding</option>
+            <option>Mb Proni</option>
+          </select>
+          <select class="form-select" id="filter-status" onchange="renderTable()" style="width:150px">
+            <option value="">Todos os status</option>
+            <option value="ativo">Efetivos</option>
+            <option value="experiencia">Em experiência</option>
+            <option value="desligado">Desligados</option>
+          </select>
+          <select class="form-select" id="filter-depto" onchange="renderTable()" style="width:170px">
+            <option value="">Todos os depto.</option>
+          </select>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Chapa</th>
+                <th>Nome</th>
+                <th>Empresa</th>
+                <th>Cargo</th>
+                <th>Departamento</th>
+                <th>Admissão</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+        <div id="empty-state" class="empty" style="display:none">
+          <i class="ti ti-users"></i>
+          <p>Nenhum funcionário cadastrado ainda.</p>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+
+      <!-- PLANILHAS DE BENEFÍCIOS -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><i class="ti ti-file-spreadsheet"></i> Planilhas de Benefícios</div>
+        </div>
+        <div class="notice notice-blue" style="margin-bottom:16px">
+          <i class="ti ti-info-circle"></i>
+          <span>Selecione a data de admissão para filtrar os funcionários e gerar as planilhas de cadastro de benefícios.</span>
+        </div>
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:20px">
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <label class="form-label">Data de Admissão</label>
+            <input class="form-input" type="date" id="pl-admissao" style="width:180px" oninput="renderPlanilhaPreview()">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:5px">
+            <label class="form-label">Empresa (opcional)</label>
+            <select class="form-select" id="pl-empresa" style="width:200px" onchange="renderPlanilhaPreview()">
+              <option value="">Todas as empresas</option>
+              <option>Raguife Matriz</option><option>Raguife Bom Despacho</option>
+              <option>Neves Queiroz</option><option>Distribuidora</option>
+              <option>Haras Ambar Amaral</option><option>Holding</option><option>Mb Proni</option>
+            </select>
+          </div>
+        </div>
+        <div id="pl-preview" style="margin-bottom:16px"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap" id="pl-botoes" style="display:none">
+          <button class="btn btn-success" onclick="gerarPlanilhaBanco()"><i class="ti ti-building-bank"></i> Banco (Sicredi)</button>
+          <button class="btn btn-success" onclick="gerarPlanilhaEVA()"><i class="ti ti-users"></i> Cadastro EVA</button>
+          <button class="btn btn-success" onclick="gerarPlanilhaFarmacia()"><i class="ti ti-pill"></i> EVA Farmácia</button>
+        </div>
+      </div>
+
+<!-- MODAL: NOVO / EDITAR -->
+<div class="modal-overlay" id="modal-new">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-new-title">Novo Funcionário</span>
+      <button class="btn-icon" onclick="closeModal('modal-new')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+
+        <div class="form-section-title">Empresa e Identificação</div>
+
+        <div class="form-group full">
+          <label class="form-label">Empresa <span class="req">*</span></label>
+          <select class="form-select" id="f-empresa">
+            <option value="">Selecione a empresa</option>
+            <option>Raguife Matriz</option>
+            <option>Raguife Bom Despacho</option>
+            <option>Neves Queiroz</option>
+            <option>Distribuidora</option>
+            <option>Haras Ambar Amaral</option>
+            <option>Holding</option>
+            <option>Mb Proni</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Chapa</label>
+          <input class="form-input upper" type="text" id="f-chapa" placeholder="EX: 200001">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nome Completo <span class="req">*</span></label>
+          <input class="form-input upper" type="text" id="f-nome" placeholder="NOME COMPLETO">
+        </div>
+        <div class="form-group">
+          <label class="form-label">CPF</label>
+          <input class="form-input" type="text" id="f-cpf" placeholder="000.000.000-00" maxlength="14" oninput="maskCPF(this)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data de Nascimento</label>
+          <input class="form-input" type="date" id="f-nascimento">
+        </div>
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input class="form-input" type="email" id="f-email" placeholder="email@exemplo.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefone</label>
+          <input class="form-input" type="text" id="f-telefone" placeholder="(00) 00000-0000">
+        </div>
+
+        <hr class="form-divider">
+        <div class="form-section-title" id="section-cargo-title">Cargo e Departamento</div>
+
+        <div class="form-group">
+          <label class="form-label" id="label-cargo-adm">Cargo <span class="req">*</span></label>
+          <input class="form-input upper" type="text" id="f-cargo-adm" placeholder="CARGO DO FUNCIONÁRIO">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Departamento <span class="req">*</span></label>
+          <input class="form-input upper" type="text" id="f-depto" placeholder="DEPARTAMENTO">
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="label-salario-adm">Salário (R$)</label>
+          <input class="form-input" type="number" id="f-salario-adm" placeholder="0,00" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo de Contratação</label>
+          <select class="form-select" id="f-tipo">
+            <option value="CLT">CLT</option>
+            <option value="PJ">PJ</option>
+            <option value="APRENDIZ">APRENDIZ</option>
+            <option value="ESTAGIO">ESTÁGIO</option>
+          </select>
+        </div>
+
+        <!-- Bloco Dados Atuais — só ao editar -->
+        <div id="bloco-atuais" style="display:none; grid-column:1/-1;">
+          <hr class="form-divider" style="margin-bottom:12px">
+          <div class="form-section-title" style="margin-bottom:12px">Dados Atuais</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Cargo Atual <span class="req">*</span></label>
+              <input class="form-input upper" type="text" id="f-cargo" placeholder="CARGO ATUAL">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Salário Atual (R$)</label>
+              <input class="form-input" type="number" id="f-salario" placeholder="0,00" step="0.01">
+            </div>
+          </div>
+        </div>
+
+        <hr class="form-divider">
+        <div class="form-section-title">Datas</div>
+
+        <div class="form-group">
+          <label class="form-label">Data de Admissão <span class="req">*</span></label>
+          <input class="form-input" type="date" id="f-admissao">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Fim do Período de Experiência</label>
+          <input class="form-input" type="date" id="f-exp-fim" readonly style="background:var(--surface2);color:var(--text2)">
+          <span class="form-hint">Calculado automaticamente (90 dias)</span>
+        </div>
+
+        <hr class="form-divider">
+        <div class="form-section-title">Efetivação — Alteração de Cargo/Salário</div>
+
+        <div class="form-group full">
+          <label class="checkbox-row">
+            <input type="checkbox" id="f-tem-alteracao" onchange="toggleAlteracao()">
+            Este funcionário terá alteração de cargo e/ou salário ao ser efetivado
+          </label>
+        </div>
+
+        <div id="bloco-alteracao" style="display:none; grid-column:1/-1;">
+          <div class="notice notice-amber" style="margin-bottom:12px">
+            <i class="ti ti-alert-triangle"></i>
+            <span>O DP será alertado quando a efetivação se aproximar. Se vencer até o dia 15, a alteração ocorre no mesmo mês; após o dia 15, no mês seguinte.</span>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Cargo na Efetivação</label>
+              <input class="form-input upper" type="text" id="f-cargo-ef" placeholder="NOVO CARGO (SE MUDAR)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Salário na Efetivação (R$)</label>
+              <input class="form-input" type="number" id="f-salario-ef" placeholder="0,00" step="0.01">
+            </div>
+          </div>
+        </div>
+
+        <hr class="form-divider">
+        <div class="form-section-title">Informações Adicionais</div>
+
+        <div class="form-group full">
+          <label class="form-label">Observações</label>
+          <textarea class="form-input" id="f-obs" rows="3" placeholder="Observações gerais..." style="resize:vertical"></textarea>
+        </div>
+
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-new')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarFuncionario()"><i class="ti ti-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: IMPORTAR -->
+<div class="modal-overlay" id="modal-import">
+  <div class="modal" style="width:540px">
+    <div class="modal-header">
+      <span class="modal-title">Importar Funcionários via Excel</span>
+      <button class="btn-icon" onclick="closeModal('modal-import')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="notice notice-blue" style="margin-bottom:16px">
+        <i class="ti ti-info-circle"></i>
+        <span>Use o modelo oficial. Baixe pelo botão "Modelo Excel" no topo da página.</span>
+      </div>
+      <div class="drop-area" id="drop-area" onclick="document.getElementById('file-input').click()" ondragover="dragOver(event)" ondragleave="dragLeave(event)" ondrop="dropFile(event)">
+        <i class="ti ti-file-spreadsheet"></i>
+        <p>Clique ou arraste o arquivo aqui</p>
+        <small>.xlsx ou .xls</small>
+      </div>
+      <input type="file" id="file-input" accept=".xlsx,.xls" style="display:none" onchange="handleFileInput(event)">
+      <div id="import-preview" style="margin-top:14px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-import')">Cancelar</button>
+      <button class="btn btn-success" id="btn-confirmar-import" style="display:none" onclick="confirmarImport()"><i class="ti ti-check"></i> Importar Válidos</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: VER FUNCIONÁRIO -->
+<div class="modal-overlay" id="modal-view">
+  <div class="modal" style="width:640px">
+    <div class="modal-header">
+      <span class="modal-title">Ficha do Funcionário</span>
+      <button class="btn-icon" onclick="closeModal('modal-view')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="modal-view-body"></div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-view')">Fechar</button>
+      <button class="btn btn-primary" onclick="editarDoView()"><i class="ti ti-edit"></i> Editar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const EMPRESAS = ['Raguife Matriz','Raguife Bom Despacho','Neves Queiroz','Distribuidora','Haras Ambar Amaral','Holding','Mb Proni'];
+
+// ===================== DATA LAYER =====================
+const DB = {
+  key: 'nova_funcionarios_v1',
+  getAll() { try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch { return []; } },
+  save(data) { localStorage.setItem(this.key, JSON.stringify(data)); },
+  add(func) { const all = this.getAll(); func.id = 'f_' + Date.now(); func.criadoEm = new Date().toISOString(); all.push(func); this.save(all); return func; },
+  update(id, func) { const all = this.getAll(); const idx = all.findIndex(f => f.id === id); if (idx >= 0) { all[idx] = { ...all[idx], ...func, atualizadoEm: new Date().toISOString() }; this.save(all); } },
+  remove(id) { this.save(this.getAll().filter(f => f.id !== id)); }
+};
+
+// ===================== STATE =====================
+let currentPage = 1;
+const PER_PAGE = 15;
+let editingId = null;
+let viewingId = null;
+let importData = [];
+
+// ===================== UTILS =====================
+function fmtDate(d) { if (!d) return '—'; const [y,m,day] = d.split('-'); return `${day}/${m}/${y}`; }
+function addDays(dateStr, days) { if (!dateStr) return ''; const d = new Date(dateStr); d.setDate(d.getDate() + days); return d.toISOString().split('T')[0]; }
+function getStatus(func) {
+  if (func.desligado) return 'desligado';
+  if (func.admissao && new Date() <= new Date(addDays(func.admissao, 90))) return 'experiencia';
+  return 'ativo';
+}
+function statusBadge(s) {
+  if (s === 'desligado') return '<span class="badge badge-gray"><i class="ti ti-user-minus"></i> Desligado</span>';
+  if (s === 'experiencia') return '<span class="badge badge-amber"><i class="ti ti-clock"></i> Experiência</span>';
+  return '<span class="badge badge-lime"><i class="ti ti-check"></i> Efetivo</span>';
+}
+function maskCPF(el) {
+  let v = el.value.replace(/\D/g,'');
+  if (v.length > 11) v = v.slice(0,11);
+  v = v.replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d)/,'$1.$2').replace(/(\d{3})(\d{1,2})$/,'$1-$2');
+  el.value = v;
+}
+function sanitize(str) {
+  return str.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9\s\-\/]/g,'');
+}
+function toast(msg, type='ok') {
+  const t = document.createElement('div');
+  const bg = type==='ok' ? '#1a3a28' : type==='err' ? '#8b1c1c' : '#0e0f12';
+  const cl = type==='ok' ? '#6ee8a0' : type==='err' ? '#fbd8d8' : '#d7ff3d';
+  t.style.cssText = `position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;z-index:9999;color:${cl};background:${bg};box-shadow:0 4px 20px rgba(0,0,0,0.25)`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+function initUpperInputs() {
+  document.querySelectorAll('input.upper').forEach(el => {
+    el.addEventListener('input', function() {
+      const pos = this.selectionStart;
+      this.value = sanitize(this.value);
+      this.setSelectionRange(pos, pos);
+    });
+  });
+}
+
+// ===================== STATS =====================
+function updateStats() {
+  const all = DB.getAll();
+  document.getElementById('stat-total').textContent = all.length;
+  document.getElementById('stat-ativos').textContent = all.filter(f => getStatus(f) === 'ativo').length;
+  document.getElementById('stat-exp').textContent = all.filter(f => getStatus(f) === 'experiencia').length;
+  document.getElementById('stat-alt').textContent = all.filter(f => f.temAlteracao).length;
+}
+
+// ===================== TABLE =====================
+function renderTable() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const fe = document.getElementById('filter-empresa').value;
+  const fs = document.getElementById('filter-status').value;
+  const fd = document.getElementById('filter-depto').value;
+  let data = DB.getAll();
+
+  const deptos = [...new Set(data.map(f => f.departamento).filter(Boolean))].sort();
+  const dsel = document.getElementById('filter-depto');
+  const curDep = dsel.value;
+  dsel.innerHTML = '<option value="">Todos os depto.</option>' + deptos.map(d => `<option value="${d}" ${curDep===d?'selected':''}>${d}</option>`).join('');
+
+  if (q) data = data.filter(f => (f.nome||'').toLowerCase().includes(q) || (f.chapa||'').toLowerCase().includes(q) || (f.cargo||'').toLowerCase().includes(q) || (f.departamento||'').toLowerCase().includes(q));
+  if (fe) data = data.filter(f => f.empresa === fe);
+  if (fs) data = data.filter(f => getStatus(f) === fs);
+  if (fd) data = data.filter(f => f.departamento === fd);
+
+  const total = data.length;
+  const pages = Math.max(1, Math.ceil(total / PER_PAGE));
+  if (currentPage > pages) currentPage = 1;
+  const slice = data.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+
+  const tbody = document.getElementById('table-body');
+  document.getElementById('empty-state').style.display = slice.length ? 'none' : 'block';
+
+  tbody.innerHTML = slice.map(f => {
+    const st = getStatus(f);
+    return `<tr>
+      <td class="muted">${f.chapa||'—'}</td>
+      <td style="font-weight:600">${f.nome}${f.temAlteracao ? ' <span class="tag-efetivacao">alt.</span>' : ''}</td>
+      <td><span class="badge-empresa">${f.empresa||'—'}</span></td>
+      <td class="muted">${f.cargo||'—'}</td>
+      <td class="muted">${f.departamento||'—'}</td>
+      <td class="muted">${fmtDate(f.admissao)}</td>
+      <td>${statusBadge(st)}</td>
+      <td><div class="row-actions">
+        <button class="btn btn-sm" onclick="verFuncionario('${f.id}')"><i class="ti ti-eye"></i></button>
+        <button class="btn btn-sm" onclick="editarFuncionario('${f.id}')"><i class="ti ti-edit"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="excluirFuncionario('${f.id}')"><i class="ti ti-trash"></i></button>
+      </div></td>
+    </tr>`;
+  }).join('');
+
+  let pag = `<span style="flex:1">${total} funcionário${total!==1?'s':''} encontrado${total!==1?'s':''}</span>`;
+  if (pages > 1) {
+    if (currentPage > 1) pag += `<button class="page-btn" onclick="goPage(${currentPage-1})">‹</button>`;
+    for (let i = 1; i <= pages; i++) {
+      if (i === 1 || i === pages || Math.abs(i - currentPage) <= 1) pag += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+      else if (Math.abs(i - currentPage) === 2) pag += `<span style="color:var(--text3)">…</span>`;
+    }
+    if (currentPage < pages) pag += `<button class="page-btn" onclick="goPage(${currentPage+1})">›</button>`;
+  }
+  document.getElementById('pagination').innerHTML = pag;
+  updateStats();
+}
+
+function goPage(p) { currentPage = p; renderTable(); }
+
+// ===================== MODAL NEW/EDIT =====================
+function openNewModal() {
+  editingId = null;
+  document.getElementById('modal-new-title').textContent = 'Novo Funcionário';
+  ['f-chapa','f-nome','f-cpf','f-cargo','f-cargo-adm','f-depto','f-obs','f-cargo-ef','f-email','f-telefone'].forEach(id => document.getElementById(id).value = '');
+  ['f-admissao','f-exp-fim','f-nascimento'].forEach(id => document.getElementById(id).value = '');
+  ['f-salario','f-salario-ef','f-salario-adm'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-empresa').value = '';
+  document.getElementById('f-tipo').value = 'CLT';
+  document.getElementById('f-tem-alteracao').checked = false;
+  document.getElementById('bloco-alteracao').style.display = 'none';
+  document.getElementById('bloco-atuais').style.display = 'none';
+  document.getElementById('section-cargo-title').textContent = 'Cargo e Departamento';
+  document.getElementById('label-cargo-adm').innerHTML = 'Cargo <span class="req">*</span>';
+  document.getElementById('label-salario-adm').textContent = 'Salário (R$)';
+  openModal('modal-new');
+  setTimeout(initUpperInputs, 50);
+}
+
+document.getElementById('f-admissao').addEventListener('input', function() {
+  document.getElementById('f-exp-fim').value = addDays(this.value, 90);
+});
+
+function toggleAlteracao() {
+  document.getElementById('bloco-alteracao').style.display = document.getElementById('f-tem-alteracao').checked ? 'block' : 'none';
+}
+
+function salvarFuncionario() {
+  const empresa = document.getElementById('f-empresa').value;
+  const chapa = sanitize(document.getElementById('f-chapa').value.trim());
+  const nome = sanitize(document.getElementById('f-nome').value.trim());
+  const cargoAdm = sanitize((document.getElementById('f-cargo-adm').value || '').trim());
+  const depto = sanitize(document.getElementById('f-depto').value.trim());
+  const admissao = document.getElementById('f-admissao').value;
+  const cargo = editingId ? (sanitize((document.getElementById('f-cargo').value || '').trim()) || cargoAdm) : cargoAdm;
+  const salarioAdm = parseFloat(document.getElementById('f-salario-adm').value) || null;
+  const salarioAtual = editingId ? (parseFloat(document.getElementById('f-salario').value) || salarioAdm) : salarioAdm;
+
+  if (!empresa || !nome || !cargoAdm || !depto || !admissao) {
+    toast('Preencha os campos obrigatórios.', 'err'); return;
+  }
+  if (chapa && !editingId && DB.getAll().find(f => f.chapa === chapa)) {
+    toast('Já existe um funcionário com essa chapa.', 'err'); return;
+  }
+
+  const func = {
+    empresa, chapa, nome,
+    cpf: document.getElementById('f-cpf').value.trim(),
+    nascimento: document.getElementById('f-nascimento').value,
+    email: document.getElementById('f-email').value.trim(),
+    telefone: document.getElementById('f-telefone').value.trim(),
+    cargoAdmissional: cargoAdm,
+    salarioAdmissional: salarioAdm,
+    cargo, departamento: depto,
+    salario: salarioAtual,
+    tipo: document.getElementById('f-tipo').value,
+    admissao, expFim: document.getElementById('f-exp-fim').value,
+    temAlteracao: document.getElementById('f-tem-alteracao').checked,
+    cargoEfetivacao: sanitize((document.getElementById('f-cargo-ef').value || '').trim()),
+    salarioEfetivacao: parseFloat(document.getElementById('f-salario-ef').value) || null,
+    obs: document.getElementById('f-obs').value.trim(),
+    desligado: false
+  };
+
+  if (editingId) { DB.update(editingId, func); toast('Funcionário atualizado.'); }
+  else { DB.add(func); toast('Funcionário cadastrado com sucesso!'); }
+  closeModal('modal-new');
+  renderTable();
+}
+
+function editarFuncionario(id) {
+  editingId = id;
+  const f = DB.getAll().find(x => x.id === id);
+  if (!f) return;
+  document.getElementById('modal-new-title').textContent = 'Editar Funcionário';
+  document.getElementById('f-empresa').value = f.empresa || '';
+  document.getElementById('f-chapa').value = f.chapa || '';
+  document.getElementById('f-nome').value = f.nome || '';
+  document.getElementById('f-cpf').value = f.cpf || '';
+  document.getElementById('f-nascimento').value = f.nascimento || '';
+  document.getElementById('f-email').value = f.email || '';
+  document.getElementById('f-telefone').value = f.telefone || '';
+  document.getElementById('f-cargo-adm').value = f.cargoAdmissional || f.cargo || '';
+  document.getElementById('f-salario-adm').value = f.salarioAdmissional || '';
+  document.getElementById('f-depto').value = f.departamento || '';
+  document.getElementById('f-cargo').value = f.cargo || '';
+  document.getElementById('f-salario').value = f.salario || '';
+  document.getElementById('f-tipo').value = f.tipo || 'CLT';
+  document.getElementById('f-admissao').value = f.admissao || '';
+  document.getElementById('f-exp-fim').value = f.expFim || '';
+  document.getElementById('f-tem-alteracao').checked = !!f.temAlteracao;
+  document.getElementById('bloco-alteracao').style.display = f.temAlteracao ? 'block' : 'none';
+  document.getElementById('f-cargo-ef').value = f.cargoEfetivacao || '';
+  document.getElementById('f-salario-ef').value = f.salarioEfetivacao || '';
+  document.getElementById('f-obs').value = f.obs || '';
+  document.getElementById('bloco-atuais').style.display = 'block';
+  document.getElementById('section-cargo-title').textContent = 'Cargo e Departamento Admissional';
+  document.getElementById('label-cargo-adm').innerHTML = 'Cargo Admissional <span class="req">*</span>';
+  document.getElementById('label-salario-adm').textContent = 'Salário Admissional (R$)';
+  openModal('modal-new');
+  setTimeout(initUpperInputs, 50);
+}
+
+function excluirFuncionario(id) {
+  const f = DB.getAll().find(x => x.id === id);
+  if (!f) return;
+  if (!confirm(`Excluir "${f.nome}"? Esta ação não pode ser desfeita.`)) return;
+  DB.remove(id); toast('Funcionário removido.'); renderTable();
+}
+
+// ===================== VIEW MODAL =====================
+function verFuncionario(id) {
+  viewingId = id;
+  const f = DB.getAll().find(x => x.id === id);
+  if (!f) return;
+  const st = getStatus(f);
+  const fmtMoney = v => v ? `R$ ${Number(v).toLocaleString('pt-BR', {minimumFractionDigits:2})}` : '—';
+  document.getElementById('modal-view-body').innerHTML = `
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+      <div style="width:50px;height:50px;border-radius:50%;background:var(--black);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;color:var(--lime)">${f.nome.split(' ').map(w=>w[0]).slice(0,2).join('')}</div>
+      <div>
+        <div style="font-size:16px;font-weight:800;letter-spacing:-0.2px">${f.nome}</div>
+        <div style="font-size:12px;color:var(--text2);font-weight:500;margin-top:2px">${f.cargo} · ${f.departamento}</div>
+        <div style="margin-top:7px;display:flex;gap:6px;align-items:center">${statusBadge(st)} <span class="badge-empresa">${f.empresa||'—'}</span></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px">
+      ${row('Chapa', f.chapa||'—')}
+      ${row('CPF', f.cpf||'—')}
+      ${row('Nascimento', fmtDate(f.nascimento))}
+      ${row('Tipo', f.tipo||'—')}
+      ${row('Admissão', fmtDate(f.admissao))}
+      ${row('Fim Experiência', fmtDate(f.expFim))}
+      ${row('Cargo Admissional', f.cargoAdmissional||f.cargo||'—')}
+      ${row('Cargo Atual', f.cargo||'—')}
+      ${row('Departamento', f.departamento||'—')}
+      ${row('Salário Admissional', fmtMoney(f.salarioAdmissional))}
+      ${row('Salário Atual', fmtMoney(f.salario))}
+      ${f.temAlteracao ? row('Cargo na Efetivação', f.cargoEfetivacao||'—') : ''}
+      ${f.temAlteracao ? row('Salário na Efetivação', fmtMoney(f.salarioEfetivacao)) : ''}
+    </div>
+    ${f.temAlteracao ? `<div class="notice notice-amber" style="margin-top:14px"><i class="ti ti-alert-triangle"></i><span>Terá alteração de cargo/salário na efetivação — DP será notificado.</span></div>` : ''}
+    ${f.obs ? `<div style="margin-top:14px;padding:11px;background:var(--surface2);border-radius:var(--radius);font-size:12px;font-weight:500;color:var(--text2)"><strong>Obs:</strong> ${f.obs}</div>` : ''}
+  `;
+  openModal('modal-view');
+}
+
+function row(label, value) {
+  return `<div style="background:var(--surface2);padding:9px 11px;border-radius:var(--radius)">
+    <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:0.8px;color:var(--text3);margin-bottom:3px">${label}</div>
+    <div style="font-weight:600;color:var(--text)">${value}</div>
+  </div>`;
+}
+
+function editarDoView() { closeModal('modal-view'); editarFuncionario(viewingId); }
+
+// ===================== IMPORT =====================
+function openImportModal() {
+  importData = [];
+  document.getElementById('import-preview').innerHTML = '';
+  document.getElementById('btn-confirmar-import').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  openModal('modal-import');
+}
+function dragOver(e) { e.preventDefault(); document.getElementById('drop-area').classList.add('drag'); }
+function dragLeave() { document.getElementById('drop-area').classList.remove('drag'); }
+function dropFile(e) { e.preventDefault(); dragLeave(); processFile(e.dataTransfer.files[0]); }
+function handleFileInput(e) { processFile(e.target.files[0]); }
+
+function processFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const wb = XLSX.read(e.target.result, {type:'binary'});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+    importData = [];
+    const preview = document.getElementById('import-preview');
+    preview.innerHTML = `<div style="font-size:11px;font-weight:600;color:var(--text2);margin:10px 0 6px">${rows.length} linha(s) encontrada(s):</div>`;
+    const existing = DB.getAll();
+    let valid = 0;
+    rows.forEach((r, i) => {
+      const nome = (r['Nome']||r['nome']||'').toString().trim();
+      const cargo = (r['Cargo']||r['cargo']||'').toString().trim();
+      const depto = (r['Departamento']||r['departamento']||'').toString().trim();
+      const admissao = (r['Admissão']||r['Admissao']||r['admissao']||'').toString().trim();
+      const chapa = (r['Chapa']||r['chapa']||'').toString().trim();
+      const empresa = (r['Empresa']||r['empresa']||'').toString().trim();
+      let err = '';
+      if (!empresa) err = 'Empresa obrigatória';
+      else if (!nome) err = 'Nome obrigatório';
+      else if (!cargo) err = 'Cargo obrigatório';
+      else if (!depto) err = 'Departamento obrigatório';
+      else if (!admissao) err = 'Admissão obrigatória';
+      else if (chapa && existing.find(f => f.chapa === chapa)) err = `Chapa ${chapa} já existe`;
+      let admissaoFmt = admissao;
+      if (!err && admissao) {
+        if (admissao.includes('/')) { const p = admissao.split('/'); admissaoFmt = `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`; }
+        else if (!isNaN(Number(admissao))) { const d = new Date((Number(admissao)-25569)*86400000); admissaoFmt = d.toISOString().split('T')[0]; }
+      }
+      const ok = !err;
+      if (ok) valid++;
+      importData.push({ ok, data: { empresa, chapa, nome, cargo, cargoAdmissional: cargo, departamento: depto, admissao: admissaoFmt, expFim: addDays(admissaoFmt,90), tipo:'CLT', desligado:false, temAlteracao:false }, err });
+      const div = document.createElement('div');
+      div.className = 'import-row ' + (ok ? 'ok' : 'err');
+      div.innerHTML = `<i class="ti ti-${ok?'check':'x'}"></i><span><strong>${nome||`Linha ${i+1}`}</strong>${ok ? ` · ${empresa} · ${cargo}` : ` — ${err}`}</span>`;
+      preview.appendChild(div);
+    });
+    if (valid > 0) {
+      document.getElementById('btn-confirmar-import').style.display = 'inline-flex';
+      document.getElementById('btn-confirmar-import').innerHTML = `<i class="ti ti-check"></i> Importar ${valid} válido${valid!==1?'s':''}`;
+    }
+  };
+  reader.readAsBinaryString(file);
+}
+
+function confirmarImport() {
+  importData.filter(r => r.ok).forEach(r => DB.add(r.data));
+  const n = importData.filter(r => r.ok).length;
+  toast(`${n} funcionário${n!==1?'s':''} importado${n!==1?'s':''} com sucesso!`);
+  closeModal('modal-import'); renderTable();
+}
+
+// ===================== TEMPLATE =====================
+function downloadTemplate() {
+  const ws = XLSX.utils.aoa_to_sheet([
+    ['Empresa','Chapa','Nome','Cargo','Departamento','Admissão','Salário','Tipo','CPF','Nascimento','Cargo Efetivação','Salário Efetivação','Observações'],
+    ['Raguife Matriz','200001','FULANO DA SILVA','OPERADOR','PRODUCAO','01/01/2025','2500.00','CLT','000.000.000-00','01/01/1990','','',''],
+  ]);
+  ws['!cols'] = [22,10,30,25,20,12,12,10,16,12,25,16,30].map(w=>({wch:w}));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Funcionários');
+  XLSX.writeFile(wb, 'modelo_importacao_nova.xlsx');
+  toast('Modelo baixado!');
+}
+
+// ===================== MODAL HELPERS =====================
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+});
+
+// ===================== PLANILHAS DE BENEFÍCIOS =====================
+function getFuncsByAdmissao() {
+  const admissao = document.getElementById('pl-admissao').value;
+  const empresa = document.getElementById('pl-empresa').value;
+  if (!admissao) return [];
+  let funcs = DB.getAll().filter(f => f.admissao === admissao);
+  if (empresa) funcs = funcs.filter(f => f.empresa === empresa);
+  return funcs;
+}
+
+function renderPlanilhaPreview() {
+  const funcs = getFuncsByAdmissao();
+  const admissao = document.getElementById('pl-admissao').value;
+  const preview = document.getElementById('pl-preview');
+  const botoes = document.getElementById('pl-botoes');
+  if (!admissao) { preview.innerHTML = ''; botoes.style.display = 'none'; return; }
+  if (!funcs.length) {
+    preview.innerHTML = `<div class="notice notice-amber"><i class="ti ti-alert-triangle"></i><span>Nenhum funcionário com admissão em ${fmtDate(admissao)}.</span></div>`;
+    botoes.style.display = 'none'; return;
+  }
+  preview.innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;font-size:13px;font-family:sans-serif">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:8px">${funcs.length} funcionário${funcs.length!==1?'s':''} encontrado${funcs.length!==1?'s':''}</div>
+      ${funcs.map(f=>`<div style="display:flex;align-items:center;gap:10px;padding:5px 0;border-bottom:1px solid var(--border)">
+        <span style="font-weight:600">${f.nome}</span>
+        <span style="color:var(--text2);font-size:12px">${f.cargoAdmissional||f.cargo||'—'} · ${f.departamento||'—'}</span>
+        <span style="margin-left:auto"><span class="badge-empresa" style="background:var(--black);color:var(--lime);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700">${f.empresa}</span></span>
+      </div>`).join('')}
+    </div>`;
+  botoes.style.display = 'flex';
+}
+
+function cpfSoNumeros(cpf) {
+  return (cpf || '').replace(/\D/g, '');
+}
+
+// BANCO (Sicredi) — formato CSV com separador ;
+function gerarPlanilhaBanco() {
+  const funcs = getFuncsByAdmissao();
+  if (!funcs.length) { toast('Nenhum funcionário selecionado.', 'err'); return; }
+  const admissao = document.getElementById('pl-admissao').value;
+
+  let csv = 'COD_CONVENIO;COOPERATIVA;QUANTIDADE;;;;;;;;;;;;;;;;;;;;\r\n';
+  csv += `AAA;123;${funcs.length};;;;;;;;;;;;;;;;;;;;\r\n`;
+  csv += 'NOME TITULAR;DAT_NASCIMENTO;SEXO;NUM_CEP;NOME_BAIRRO;TP_LOGRADOURO;LOGRADOURO;NUMERO;COMPLEMENTO;MUNICIPIO;UF ENDERECO;NUM_CPF;IDENTIDADE;DAT_EMISSAO;ORG. EXPEDIDOR;UF IDENTIDADE;UA;NOM_REPRESENTANTE;CPF_REPRESENTANTE;COD_BANCO_DEST;NUM_AGENCIA_DEST;NUM_CONTA_DEST;Tipo de Conta\r\n';
+  funcs.forEach(f => {
+    const nasc = fmtDate(f.nascimento);
+    const cpf = cpfSoNumeros(f.cpf);
+    csv += `${f.nome};${nasc};;;;;;;;;;${cpf};;;;;;;${f.nome};${cpf};;;\r\n`;
+  });
+
+  downloadCSV(csv, `banco_sicredi_${admissao}.csv`);
+  toast('Planilha Banco gerada!');
+}
+
+// CADASTRO EVA — CSV simples
+function gerarPlanilhaEVA() {
+  const funcs = getFuncsByAdmissao();
+  if (!funcs.length) { toast('Nenhum funcionário selecionado.', 'err'); return; }
+  const admissao = document.getElementById('pl-admissao').value;
+
+  let csv = 'Nome;E-mail;Telefone;Cargo;Documento (CPF);Data de nascimento\n';
+  funcs.forEach(f => {
+    const cpf = f.cpf || '';
+    const nasc = fmtDate(f.nascimento);
+    csv += `${f.nome};${f.email||''};${f.telefone||''};${f.cargoAdmissional||f.cargo||''};${cpf};${nasc}\n`;
+  });
+
+  downloadCSV(csv, `cadastro_eva_${admissao}.csv`);
+  toast('Planilha EVA Cadastro gerada!');
+}
+
+// EVA FARMÁCIA — XLSX com coluna de limite
+function gerarPlanilhaFarmacia() {
+  const funcs = getFuncsByAdmissao();
+  if (!funcs.length) { toast('Nenhum funcionário selecionado.', 'err'); return; }
+  const admissao = document.getElementById('pl-admissao').value;
+
+  const rows = [
+    ['PÓS PAGO - FARMÁCIA'],
+    ['Nome', 'Documento', 'Tipo', 'Valor', 'Observação (se houver)'],
+  ];
+  funcs.forEach(f => {
+    rows.push([f.nome, cpfSoNumeros(f.cpf), 'INCLUSÃO', 200, '']);
+  });
+  rows.push([]);
+  rows.push(['', '', '', 'Tipo', 'Inclusão ou Atualização de Valor']);
+
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [35, 16, 12, 8, 25].map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Solicitações');
+  XLSX.writeFile(wb, `eva_farmacia_${admissao}.xlsx`);
+  toast('Planilha EVA Farmácia gerada!');
+}
+
+function downloadCSV(content, filename) {
+  const BOM = '\uFEFF';
+  const blob = new Blob([BOM + content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ===================== INIT =====================
+renderTable();
+initUpperInputs();
+</script>
+</body>
+</html>

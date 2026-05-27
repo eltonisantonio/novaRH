@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova. RH — Admissão</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;}
+.app{display:flex;min-height:100vh;}
+.sidebar{width:230px;background:var(--black);color:#fff;flex-shrink:0;display:flex;flex-direction:column;}
+.sidebar-logo{padding:28px 24px 22px;border-bottom:1px solid rgba(255,255,255,.08);}
+.logo-mark{display:flex;align-items:baseline;}
+.logo-text{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--cream);}
+.logo-dot{width:9px;height:9px;background:var(--lime);border-radius:50%;display:inline-block;margin-left:2px;margin-bottom:1px;}
+.logo-sub{font-size:10px;font-weight:500;color:rgba(242,238,229,.4);letter-spacing:2px;text-transform:uppercase;margin-top:5px;}
+.sidebar-nav{padding:20px 0;flex:1;}
+.nav-s{padding:8px 24px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.5);transition:all .15s;border-left:2px solid transparent;}
+.nav-item:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05);}
+.nav-item.active{color:var(--lime);border-left-color:var(--lime);background:rgba(215,255,61,.06);}
+.nav-item i{font-size:16px;}
+.nav-item.dis{opacity:.25;cursor:not-allowed;pointer-events:none;}
+.sidebar-footer{padding:18px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.25);font-weight:500;}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.topbar-title{font-size:15px;font-weight:700;letter-spacing:-.2px;}
+.topbar-actions{display:flex;gap:8px;}
+.content{flex:1;padding:28px 32px;overflow-y:auto;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.btn:hover{background:var(--s2);}
+.btn-primary{background:var(--black);color:var(--lime);border-color:var(--black);}
+.btn-primary:hover{background:#1e2026;}
+.btn-danger{background:#fdeaea;color:#8b1c1c;border-color:#f5c6c6;}
+.btn-sm{padding:7px 12px;font-size:12px;}
+.btn i{font-size:15px;}
+.btn-icon{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r);border:none;background:transparent;cursor:pointer;color:var(--text2);transition:all .15s;}
+.btn-icon:hover{background:var(--s2);color:var(--text);}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:16px;}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.card-title i{color:var(--gold);font-size:17px;}
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;position:relative;overflow:hidden;}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--border);}
+.stat-card.s-lime::after{background:var(--lime);}
+.stat-card.s-gold::after{background:var(--gold);}
+.stat-card.s-red::after{background:#e05252;}
+.stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px;}
+.stat-value{font-size:30px;font-weight:900;color:var(--black);letter-spacing:-1px;line-height:1;}
+.stat-sub{font-size:11px;color:var(--text3);font-weight:500;margin-top:4px;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+.form-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;}
+.form-label .req{color:#c0392b;margin-left:2px;}
+.form-input,.form-select{padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;transition:border-color .15s;}
+.form-input:focus,.form-select:focus{border-color:var(--black);}
+.form-hint{font-size:11px;color:var(--text3);}
+.form-divider{grid-column:1/-1;border:none;border-top:1px solid var(--border);margin:6px 0;}
+.form-section-title{grid-column:1/-1;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);padding-top:4px;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(14,15,18,.55);z-index:100;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--rl);width:700px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;}
+.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:15px;font-weight:800;letter-spacing:-.2px;}
+.modal-body{padding:24px;overflow-y:auto;}
+.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-lime{background:#f0ffe0;color:#3a5c00;border:1px solid #c0e840;}
+.badge-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
+.badge-gray{background:#f0ede6;color:var(--text2);border:1px solid var(--border2);}
+.badge-red{background:#fdeaea;color:#8b1c1c;border:1px solid #f5c6c6;}
+.badge-empresa{background:var(--black);color:var(--lime);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;}
+.notice{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:var(--r);font-size:12px;font-weight:500;margin-bottom:14px;}
+.notice i{font-size:15px;flex-shrink:0;margin-top:1px;}
+.notice-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
+.notice-blue{background:#eef3fb;color:#1e3a6e;border:1px solid #b0c8e4;}
+.notice-lime{background:#f6ffe0;color:#3a5000;border:1px solid #c8e840;}
+/* LISTA DE PROCESSOS */
+.proc-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:16px 20px;margin-bottom:10px;cursor:pointer;transition:all .15s;}
+.proc-card:hover{background:var(--s2);}
+.proc-card.concluido{opacity:.6;}
+.proc-top{display:flex;align-items:flex-start;justify-content:space-between;}
+.proc-nome{font-size:15px;font-weight:800;letter-spacing:-.2px;}
+.proc-meta{font-size:12px;color:var(--text2);font-weight:500;margin-top:2px;}
+.proc-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;}
+/* PROGRESS BAR */
+.progress-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;flex:1;min-width:80px;}
+.progress-fill{height:100%;border-radius:3px;background:var(--lime);transition:width .3s;}
+/* CHECKLIST */
+.section-block{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);margin-bottom:12px;overflow:hidden;}
+.section-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
+.section-header:hover{background:var(--s2);}
+.section-title{font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px;}
+.section-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.section-prog{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text2);}
+.section-body{padding:0 18px 14px;}
+.ck-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.ck-item:last-child{border-bottom:none;}
+.ck-item.done .ck-text{text-decoration:line-through;color:var(--text3);}
+.ck-check{width:18px;height:18px;accent-color:var(--black);cursor:pointer;flex-shrink:0;margin-top:1px;}
+.ck-text{flex:1;font-size:13px;font-weight:500;line-height:1.4;}
+.ck-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
+.ck-date{font-size:11px;color:var(--text3);font-weight:500;}
+.ck-expand{margin-top:6px;display:none;gap:8px;flex-wrap:wrap;align-items:center;}
+.ck-expand.open{display:flex;}
+.ck-obs-input{flex:1;min-width:160px;padding:6px 9px;border:1px solid var(--border2);border-radius:var(--r);font-size:12px;font-family:'Inter',sans-serif;outline:none;}
+.ck-obs-input:focus{border-color:var(--black);}
+/* SEARCH */
+.search-bar{display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:200px;}
+.search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;pointer-events:none;}
+.search-input{width:100%;padding:9px 11px 9px 32px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;}
+.search-input:focus{border-color:var(--black);}
+.empty{text-align:center;padding:50px 20px;color:var(--text2);}
+.empty i{font-size:40px;color:var(--text3);display:block;margin-bottom:10px;}
+.empty p{font-size:13px;font-weight:500;}
+/* HEADER DO CHECKLIST ABERTO */
+.proc-header-bar{background:var(--black);color:var(--white);border-radius:var(--rl);padding:20px 24px;margin-bottom:20px;}
+.proc-header-nome{font-size:18px;font-weight:900;letter-spacing:-.3px;color:var(--cream);}
+.proc-header-meta{font-size:12px;color:rgba(242,238,229,.6);margin-top:4px;font-weight:500;}
+.proc-header-bottom{display:flex;align-items:center;gap:12px;margin-top:14px;}
+.proc-header-pct{font-size:28px;font-weight:900;color:var(--lime);letter-spacing:-1px;}
+/* ITEM MANAGEMENT */
+.item-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s2);border-radius:var(--r);margin-bottom:6px;border:1px solid var(--border);}
+.item-row-text{flex:1;font-size:13px;font-weight:500;}
+.item-row-sec{font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:4px;}
+.checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;}
+.checkbox-row input{width:15px;height:15px;cursor:pointer;accent-color:var(--black);}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"><span class="logo-text">NOVA</span><span class="logo-dot"></span></div>
+      <div class="logo-sub">Sistema de RH</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-s">Módulos</div>
+      <div class="nav-item dis"><i class="ti ti-user-search"></i> R&amp;S</div>
+      <div class="nav-item dis"><i class="ti ti-users"></i> Cadastro</div>
+      <div class="nav-item active"><i class="ti ti-file-check"></i> Admissão</div>
+      <div class="nav-item dis"><i class="ti ti-clock"></i> Experiência</div>
+      <div class="nav-item dis"><i class="ti ti-notebook"></i> Dossiê</div>
+      <div class="nav-item dis"><i class="ti ti-file-minus"></i> Rescisão</div>
+    </nav>
+    <div class="sidebar-footer">Módulo 3 · Admissão</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title" id="topbar-title">Processos de Admissão</span>
+      <div class="topbar-actions" id="topbar-actions">
+        <button class="btn btn-sm" onclick="openGerenciarItens()"><i class="ti ti-settings"></i> Gerenciar Itens</button>
+        <button class="btn btn-primary btn-sm" onclick="openNovoProcesso()"><i class="ti ti-plus"></i> Novo Processo</button>
+      </div>
+    </div>
+    <div class="content" id="content">
+
+      <!-- VIEW: LISTA -->
+      <div id="view-lista">
+        <div class="stats-grid">
+          <div class="stat-card s-lime"><div class="stat-label">Em andamento</div><div class="stat-value" id="stat-andamento">0</div><div class="stat-sub">processos</div></div>
+          <div class="stat-card s-gold"><div class="stat-label">Concluídos</div><div class="stat-value" id="stat-concluidos">0</div><div class="stat-sub">este mês</div></div>
+          <div class="stat-card s-black"><div class="stat-label">Total</div><div class="stat-value" id="stat-total">0</div><div class="stat-sub">processos abertos</div></div>
+          <div class="stat-card s-red" style="cursor:pointer" onclick="filtrarPendentes()" title="Clique para ver os pendentes">
+            <div class="stat-label">Aguardando admissão</div>
+            <div class="stat-value" id="stat-pendentes">0</div>
+            <div class="stat-sub">integração sem processo</div>
+          </div>
+        </div>
+        <div class="search-bar">
+          <div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" type="text" id="search" placeholder="Buscar por nome ou empresa..." oninput="renderLista()"></div>
+          <select class="form-select" id="filter-status" onchange="renderLista()" style="width:160px">
+            <option value="">Todos</option>
+            <option value="andamento">Em andamento</option>
+            <option value="concluido">Concluídos</option>
+          </select>
+          <select class="form-select" id="filter-empresa" onchange="renderLista()" style="width:190px">
+            <option value="">Todas as empresas</option>
+            <option>Raguife Matriz</option><option>Raguife Bom Despacho</option>
+            <option>Neves Queiroz</option><option>Distribuidora</option>
+            <option>Haras Ambar Amaral</option><option>Holding</option><option>Mb Proni</option>
+          </select>
+        </div>
+        <div id="lista-processos"></div>
+      </div>
+
+      <!-- VIEW: CHECKLIST -->
+      <div id="view-checklist" style="display:none"></div>
+
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NOVO PROCESSO -->
+<div class="modal-overlay" id="modal-novo">
+  <div class="modal">
+    <div class="modal-header"><span class="modal-title">Novo Processo de Admissão</span><button class="btn-icon" onclick="closeModal('modal-novo')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body">
+      <div class="notice notice-blue"><i class="ti ti-info-circle"></i><span>Selecione o funcionário cadastrado ou preencha manualmente se ainda não estiver no sistema.</span></div>
+      <div class="form-grid">
+        <div class="form-section-title">Funcionário</div>
+        <div class="form-group full">
+          <label class="form-label">Buscar no Cadastro</label>
+          <select class="form-select" id="np-func" onchange="preencherFunc()">
+            <option value="">— Selecionar funcionário cadastrado —</option>
+          </select>
+        </div>
+        <div class="form-group full"><label class="form-label">Nome Completo <span class="req">*</span></label><input class="form-input" type="text" id="np-nome" placeholder="NOME DO FUNCIONÁRIO" style="text-transform:uppercase"></div>
+        <div class="form-group"><label class="form-label">Empresa <span class="req">*</span></label>
+          <select class="form-select" id="np-empresa">
+            <option value="">Selecione</option>
+            <option>Raguife Matriz</option><option>Raguife Bom Despacho</option>
+            <option>Neves Queiroz</option><option>Distribuidora</option>
+            <option>Haras Ambar Amaral</option><option>Holding</option><option>Mb Proni</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Data de Admissão <span class="req">*</span></label><input class="form-input" type="date" id="np-admissao"></div>
+        <div class="form-group"><label class="form-label">Cargo</label><input class="form-input" type="text" id="np-cargo" placeholder="CARGO" style="text-transform:uppercase"></div>
+        <div class="form-group"><label class="form-label">Departamento</label><input class="form-input" type="text" id="np-depto" placeholder="DEPARTAMENTO" style="text-transform:uppercase"></div>
+        <hr class="form-divider">
+        <div class="form-section-title">Perfil do Checklist</div>
+        <div class="form-group full">
+          <label class="form-label">Perfil <span class="req">*</span></label>
+          <select class="form-select" id="np-perfil">
+            <option value="">Selecione o perfil</option>
+          </select>
+          <span class="form-hint">Define quais itens aparecerão no checklist</span>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-novo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="criarProcesso()"><i class="ti ti-check"></i> Abrir Processo</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: GERENCIAR ITENS -->
+<div class="modal-overlay" id="modal-itens">
+  <div class="modal" style="width:780px;max-width:97vw">
+    <div class="modal-header"><span class="modal-title">Gerenciar Itens e Perfis</span><button class="btn-icon" onclick="closeModal('modal-itens')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-body">
+      <!-- PERFIS -->
+      <div style="margin-bottom:20px">
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:10px">Perfis</div>
+        <div id="lista-perfis-adm" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input class="form-input" type="text" id="novo-perfil-nome" placeholder="Nome do novo perfil" style="width:200px;text-transform:uppercase">
+          <button class="btn btn-sm btn-primary" onclick="addPerfil()"><i class="ti ti-plus"></i> Adicionar</button>
+        </div>
+      </div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+      <!-- ITENS -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3)">Itens do Checklist</div>
+        <select class="form-select" id="filtro-secao-itens" onchange="renderItensGerenciar()" style="width:200px">
+          <option value="">Todas as seções</option>
+          <option value="documentos">Documentação Admissional</option>
+          <option value="cadastro">Cadastro do Colaborador</option>
+          <option value="integracao">Integração</option>
+          <option value="pos">Pós-Admissão</option>
+        </select>
+      </div>
+      <div id="lista-itens-gerenciar"></div>
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+      <div class="form-grid">
+        <div class="form-section-title">Novo Item</div>
+        <div class="form-group full"><label class="form-label">Descrição <span class="req">*</span></label><input class="form-input" type="text" id="ni-texto" placeholder="Descrição do item"></div>
+        <div class="form-group"><label class="form-label">Seção <span class="req">*</span></label>
+          <select class="form-select" id="ni-secao">
+            <option value="documentos">Documentação Admissional</option>
+            <option value="cadastro">Cadastro do Colaborador</option>
+            <option value="integracao">Integração</option>
+            <option value="pos">Pós-Admissão</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Condicional (perfil)</label>
+          <select class="form-select" id="ni-condicional" multiple style="height:80px">
+          </select>
+          <span class="form-hint">Deixe em branco para aparecer em todos os perfis</span>
+        </div>
+        <div class="form-group full">
+          <label class="checkbox-row"><input type="checkbox" id="ni-opcional"> Item opcional (não bloqueia conclusão)</label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modal-itens')">Fechar</button>
+      <button class="btn btn-primary" onclick="addItem()"><i class="ti ti-plus"></i> Adicionar Item</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ======== DATA LAYER ========
+const DB = {
+  processos:{key:'nova_adm_processos_v1',getAll(){try{return JSON.parse(localStorage.getItem(this.key))||[];}catch{return[];}},save(d){localStorage.setItem(this.key,JSON.stringify(d));},add(p){const a=this.getAll();p.id='adm_'+Date.now();p.criadoEm=new Date().toISOString();a.push(p);this.save(a);return p;},update(id,p){const a=this.getAll();const i=a.findIndex(x=>x.id===id);if(i>=0){a[i]={...a[i],...p};this.save(a);}},remove(id){this.save(this.getAll().filter(x=>x.id!==id));}},
+  itens:{key:'nova_adm_itens_v1',getAll(){try{const d=localStorage.getItem(this.key);return d?JSON.parse(d):ITENS_DEFAULT;}catch{return ITENS_DEFAULT;}},save(d){localStorage.setItem(this.key,JSON.stringify(d));}},
+  perfis:{key:'nova_adm_perfis_v1',getAll(){try{const d=localStorage.getItem(this.key);return d?JSON.parse(d):PERFIS_DEFAULT;}catch{return PERFIS_DEFAULT;}},save(d){localStorage.setItem(this.key,JSON.stringify(d));}},
+  funcs:{key:'nova_funcionarios_v1',getAll(){try{return JSON.parse(localStorage.getItem(this.key))||[];}catch{return[];}}}
+};
+
+// ======== PERFIS DEFAULT ========
+const PERFIS_DEFAULT = [
+  {id:'geral',nome:'GERAL'},
+  {id:'motorista',nome:'MOTORISTA'},
+  {id:'adm',nome:'ADMINISTRATIVO'},
+  {id:'lider',nome:'LIDERANÇA'},
+  {id:'pcd',nome:'PCD'},
+];
+
+// ======== ITENS DEFAULT ========
+const ITENS_DEFAULT = [
+  // DOCUMENTAÇÃO ADMISSIONAL
+  {id:'d01',secao:'documentos',texto:'Certidão civil (nascimento / casamento / divórcio / viuvez)',condicional:[],opcional:false},
+  {id:'d02',secao:'documentos',texto:'CPF',condicional:[],opcional:false},
+  {id:'d03',secao:'documentos',texto:'RG',condicional:[],opcional:false},
+  {id:'d04',secao:'documentos',texto:'CNH (obrigatório para motoristas e operadores de empilhadeira)',condicional:['motorista'],opcional:false},
+  {id:'d05',secao:'documentos',texto:'Título Eleitoral',condicional:[],opcional:false},
+  {id:'d06',secao:'documentos',texto:'Comprovante de residência com CEP',condicional:[],opcional:false},
+  {id:'d07',secao:'documentos',texto:'Comprovante de matrícula escolar ou certificado de conclusão',condicional:[],opcional:false},
+  {id:'d08',secao:'documentos',texto:'Cartão do SUS',condicional:[],opcional:false},
+  {id:'d09',secao:'documentos',texto:'Certificado de Reservista (somente sexo masculino)',condicional:[],opcional:true},
+  {id:'d10',secao:'documentos',texto:'Registro profissional do órgão de classe (CREA, CRM, etc.)',condicional:[],opcional:true},
+  {id:'d11',secao:'documentos',texto:'Laudo médico com CID (somente PCD)',condicional:['pcd'],opcional:false},
+  {id:'d12',secao:'documentos',texto:'ASO recebido com status APTO',condicional:[],opcional:false},
+  {id:'d13',secao:'documentos',texto:'Avaliação Psicossocial realizada',condicional:[],opcional:false},
+  // CADASTRO DO COLABORADOR
+  {id:'c01',secao:'cadastro',texto:'E-mail de integração enviado até 12h do dia anterior (CC lideranças, SESMT, Almoxarifado, CQ)',condicional:[],opcional:false},
+  {id:'c02',secao:'cadastro',texto:'Chapa FU conferida e registrada corretamente (MIX)',condicional:[],opcional:false},
+  {id:'c03',secao:'cadastro',texto:'DAF preenchido e salvo (MIX)',condicional:[],opcional:false},
+  {id:'c04',secao:'cadastro',texto:'Colaborador incluído no COLAB (MIX)',condicional:[],opcional:false},
+  {id:'c05',secao:'cadastro',texto:'USU criado e validado (grupo, senha, ponto)',condicional:[],opcional:false},
+  {id:'c06',secao:'cadastro',texto:'FU cargo de confiança / gratificação lançada (se houver)',condicional:['lider','adm'],opcional:true},
+  {id:'c07',secao:'cadastro',texto:'FU dependentes cadastrados (se houver)',condicional:[],opcional:true},
+  {id:'c08',secao:'cadastro',texto:'FU e PE PCD: cota e tipo de deficiência registrados (se aplicável)',condicional:['pcd'],opcional:false},
+  {id:'c09',secao:'cadastro',texto:'Envio de evento admissional para o e-Social conferido (MESO)',condicional:[],opcional:false},
+  {id:'c10',secao:'cadastro',texto:'Ficha de Registro impressa',condicional:[],opcional:false},
+  {id:'c11',secao:'cadastro',texto:'Contrato de Trabalho impresso',condicional:[],opcional:false},
+  {id:'c12',secao:'cadastro',texto:'Termo de Consentimento LGPD impresso',condicional:[],opcional:false},
+  {id:'c13',secao:'cadastro',texto:'Contrato de Experiência impresso',condicional:[],opcional:false},
+  {id:'c14',secao:'cadastro',texto:'Acordo para Banco de Horas impresso',condicional:[],opcional:false},
+  {id:'c15',secao:'cadastro',texto:'Termo de Confidencialidade impresso',condicional:[],opcional:false},
+  {id:'c16',secao:'cadastro',texto:'Termo Proibido Fumar impresso',condicional:[],opcional:false},
+  {id:'c17',secao:'cadastro',texto:'Autorização de Desconto impressa',condicional:[],opcional:false},
+  {id:'c18',secao:'cadastro',texto:'Termo de Uso de Internet impresso',condicional:[],opcional:false},
+  {id:'c19',secao:'cadastro',texto:'Opção Vale Transporte impressa',condicional:[],opcional:false},
+  {id:'c20',secao:'cadastro',texto:'Termo de Uso de Celular impresso',condicional:['adm','lider'],opcional:true},
+  {id:'c21',secao:'cadastro',texto:'Termo Proibido Carona impresso',condicional:[],opcional:true},
+  {id:'c22',secao:'cadastro',texto:'Declaração de Trabalho Externo impressa',condicional:['motorista','adm'],opcional:true},
+  {id:'c23',secao:'cadastro',texto:'Declaração de IRRF impressa',condicional:[],opcional:true},
+  {id:'c24',secao:'cadastro',texto:'Autorização de Uso de Imagem impressa',condicional:[],opcional:false},
+  {id:'c25',secao:'cadastro',texto:'Termo ciência Política de Deslocamento e Prevenção de Acidentes de Trajeto impresso',condicional:[],opcional:false},
+  {id:'c26',secao:'cadastro',texto:'Termo BemSaúde impresso',condicional:[],opcional:false},
+  {id:'c27',secao:'cadastro',texto:'Autodeclaração Étnico-Racial impressa',condicional:[],opcional:false},
+  {id:'c28',secao:'cadastro',texto:'Termo do Plano Odontológico impresso',condicional:[],opcional:false},
+  {id:'c29',secao:'cadastro',texto:'Manual de Integração impresso',condicional:[],opcional:false},
+  {id:'c30',secao:'cadastro',texto:'Colaborador incluído no Exata (relógio / barreira)',condicional:[],opcional:false},
+  {id:'c31',secao:'cadastro',texto:'Cadastro realizado no Secullum',condicional:[],opcional:false},
+  {id:'c32',secao:'cadastro',texto:'Código de catraca impresso',condicional:[],opcional:false},
+  {id:'c33',secao:'cadastro',texto:'Eva Benefícios cadastrado corretamente',condicional:[],opcional:false},
+  {id:'c34',secao:'cadastro',texto:'Mediquo vinculado',condicional:[],opcional:false},
+  // INTEGRAÇÃO
+  {id:'i01',secao:'integracao',texto:'Integração realizada pelo RH',condicional:[],opcional:false},
+  {id:'i02',secao:'integracao',texto:'Integração realizada pela psicóloga organizacional / Ambulatório',condicional:[],opcional:false},
+  {id:'i03',secao:'integracao',texto:'Integração realizada pelo Controle de Qualidade',condicional:[],opcional:false},
+  {id:'i04',secao:'integracao',texto:'Integração realizada pela Segurança',condicional:[],opcional:false},
+  {id:'i05',secao:'integracao',texto:'Manual de Integração entregue',condicional:[],opcional:false},
+  {id:'i06',secao:'integracao',texto:'Kit de boas-vindas entregue',condicional:[],opcional:false},
+  {id:'i07',secao:'integracao',texto:'Pesquisa de satisfação preenchida',condicional:[],opcional:false},
+  {id:'i08',secao:'integracao',texto:'Cadastro facial: Catraca de Entrada, Catraca do Restaurante e Ponto Facial',condicional:[],opcional:false},
+  {id:'i09',secao:'integracao',texto:'Uniformes e EPIs entregues',condicional:[],opcional:false},
+  {id:'i10',secao:'integracao',texto:'Colaborador recepcionado pelo Multiplicador do setor',condicional:[],opcional:false},
+  // PÓS-ADMISSÃO
+  {id:'p01',secao:'pos',texto:'Limite EVA Farmácia solicitado',condicional:[],opcional:false},
+  {id:'p02',secao:'pos',texto:'E-mail enviado ao Sicredi para conta salário',condicional:[],opcional:false},
+  {id:'p03',secao:'pos',texto:'Pasta do colaborador criada conforme padrão',condicional:[],opcional:false},
+  {id:'p04',secao:'pos',texto:'Colaborador incluído no Dossiê de Funcionários',condicional:[],opcional:false},
+  {id:'p05',secao:'pos',texto:'Lista de Presença salva no Dossiê',condicional:[],opcional:false},
+  {id:'p06',secao:'pos',texto:'Colaborador incluído nos grupos de WhatsApp',condicional:[],opcional:false},
+];
+
+const SECOES = {
+  documentos:{label:'Documentação Admissional',icon:'ti-file-text',color:'#b0c8e4'},
+  cadastro:{label:'Cadastro do Colaborador',icon:'ti-user-check',color:'#9b72cf'},
+  integracao:{label:'Integração',icon:'ti-users',color:'#4caf80'},
+  pos:{label:'Pós-Admissão',icon:'ti-circle-check',color:'#d4a020'},
+};
+
+// ======== STATE ========
+let processoAtivoId = null;
+let secoesAbertas = {documentos:true, cadastro:true, integracao:true, pos:true};
+
+// ======== UTILS ========
+function fmtDate(d){if(!d)return'—';const[y,m,day]=d.split('T')[0].split('-');return`${day}/${m}/${y}`;}
+function today(){return new Date().toISOString().split('T')[0];}
+function sanitize(s){if(!s)return'';return s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9\s\-\/\.]/g,'');}
+function initUpper(){
+  document.querySelectorAll('input[style*="text-transform:uppercase"], input[style*="text-transform: uppercase"]').forEach(el=>{
+    if(el._upperBound) return;
+    el._upperBound=true;
+    el.addEventListener('input',function(){
+      const p=this.selectionStart;
+      this.value=sanitize(this.value);
+      try{this.setSelectionRange(p,p);}catch{}
+    });
+  });
+}
+function toast(msg,type='ok'){const t=document.createElement('div');const bg=type==='ok'?'#1a3a28':type==='err'?'#8b1c1c':'#0e0f12';const cl=type==='ok'?'#6ee8a0':type==='err'?'#fbd8d8':'#d7ff3d';t.style.cssText=`position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;z-index:9999;color:${cl};background:${bg};box-shadow:0 4px 20px rgba(0,0,0,.25)`;t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
+
+function getItensParaPerfil(perfilId) {
+  const todos = DB.itens.getAll();
+  return todos.filter(it => !it.condicional || it.condicional.length === 0 || it.condicional.includes(perfilId));
+}
+
+function calcProgresso(proc) {
+  const itens = getItensParaPerfil(proc.perfil);
+  const obrigatorios = itens.filter(it => !it.opcional);
+  const feitos = obrigatorios.filter(it => proc.checks && proc.checks[it.id]?.done);
+  return {total: obrigatorios.length, done: feitos.length, pct: obrigatorios.length ? Math.round(feitos.length / obrigatorios.length * 100) : 0};
+}
+
+// ======== STATS ========
+function getCandidatosPendentes(){
+  // Busca candidatos na etapa 6 (integração agendada) no módulo R&S
+  const vagas = JSON.parse(localStorage.getItem('nova_vagas_v3') || '[]');
+  const procs = DB.processos.getAll();
+  const pendentes = [];
+  vagas.forEach(v => {
+    if(v.isBancoTalentos) return;
+    (v.candidatos||[]).filter(c => c.etapa === 6).forEach(c => {
+      // verifica se já tem processo de admissão aberto para este candidato (por nome)
+      const jaTemProcesso = procs.find(p =>
+        p.nome && c.nome && p.nome.toUpperCase() === c.nome.toUpperCase()
+      );
+      if(!jaTemProcesso){
+        pendentes.push({
+          nome: c.nome,
+          empresa: v.empresa,
+          cargo: v.cargo,
+          dtIntegracao: c.dtIntegracao,
+          vagaId: v.id,
+          candId: c.id,
+        });
+      }
+    });
+  });
+  return pendentes;
+}
+
+function updateStats(){
+  const procs = DB.processos.getAll();
+  const andamento = procs.filter(p => !p.concluido).length;
+  const mes = new Date().getMonth();
+  const concluidos = procs.filter(p => p.concluido && new Date(p.concluidoEm||p.criadoEm).getMonth()===mes).length;
+  const pendentes = getCandidatosPendentes().length;
+  document.getElementById('stat-andamento').textContent=andamento;
+  document.getElementById('stat-concluidos').textContent=concluidos;
+  document.getElementById('stat-total').textContent=procs.length;
+  document.getElementById('stat-pendentes').textContent=pendentes;
+  // destaque visual se houver pendentes
+  const card=document.querySelector('.stat-card.s-red');
+  if(card) card.style.outline=pendentes>0?'2px solid #e05252':'none';
+}
+
+function filtrarPendentes(){
+  const pendentes = getCandidatosPendentes();
+  if(!pendentes.length){toast('Nenhum candidato aguardando admissão.');return;}
+
+  // monta modal de listagem
+  const lista = pendentes.map(p=>`
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-size:13px;font-weight:700">${p.nome}</div>
+        <div style="font-size:11px;color:var(--text2);font-weight:500;margin-top:2px">${p.cargo} · ${p.empresa}${p.dtIntegracao?' · Integração: '+fmtDT(p.dtIntegracao):''}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="abrirNovoParaCandidato('${encodeURIComponent(JSON.stringify(p))}')">
+        <i class="ti ti-plus"></i> Abrir processo
+      </button>
+    </div>`).join('');
+
+  // reutiliza um modal temporário
+  let m = document.getElementById('modal-pendentes');
+  if(!m){
+    m = document.createElement('div');
+    m.id='modal-pendentes';
+    m.className='modal-overlay';
+    m.innerHTML=`<div class="modal" style="width:640px">
+      <div class="modal-header">
+        <span class="modal-title">Candidatos aguardando admissão</span>
+        <button class="btn-icon" onclick="this.closest('.modal-overlay').classList.remove('open')"><i class="ti ti-x"></i></button>
+      </div>
+      <div class="modal-body" id="modal-pendentes-body"></div>
+      <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').classList.remove('open')">Fechar</button></div>
+    </div>`;
+    document.body.appendChild(m);
+    m.addEventListener('click', function(e){if(e.target===this)this.classList.remove('open');});
+  }
+  document.getElementById('modal-pendentes-body').innerHTML=lista;
+  m.classList.add('open');
+}
+
+function fmtDT(d){if(!d)return'';const[date,time]=d.split('T');const[y,m,day]=date.split('-');return`${day}/${m}/${y} ${(time||'').slice(0,5)}`;}
+
+function abrirNovoParaCandidato(encoded){
+  const p = JSON.parse(decodeURIComponent(encoded));
+  document.getElementById('modal-pendentes')?.classList.remove('open');
+  // pré-preenche o modal de novo processo
+  openNovoProcesso();
+  setTimeout(()=>{
+    document.getElementById('np-nome').value=p.nome||'';
+    document.getElementById('np-empresa').value=p.empresa||'';
+    document.getElementById('np-cargo').value=p.cargo||'';
+    // tenta encontrar data de integração como admissão
+    if(p.dtIntegracao) document.getElementById('np-admissao').value=p.dtIntegracao.split('T')[0];
+  },100);
+}
+
+// ======== LISTA ========
+function renderLista(){
+  const q=(document.getElementById('search').value||'').toLowerCase();
+  const fs=document.getElementById('filter-status').value;
+  const fe=document.getElementById('filter-empresa').value;
+  let procs=DB.processos.getAll().sort((a,b)=>new Date(b.criadoEm)-new Date(a.criadoEm));
+  if(q)procs=procs.filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.empresa||'').toLowerCase().includes(q));
+  if(fs==='andamento')procs=procs.filter(p=>!p.concluido);
+  if(fs==='concluido')procs=procs.filter(p=>p.concluido);
+  if(fe)procs=procs.filter(p=>p.empresa===fe);
+  const el=document.getElementById('lista-processos');
+  if(!procs.length){el.innerHTML=`<div class="empty"><i class="ti ti-file-check"></i><p>Nenhum processo encontrado.</p></div>`;updateStats();return;}
+  el.innerHTML=procs.map(p=>{
+    const pg=calcProgresso(p);
+    return`<div class="proc-card ${p.concluido?'concluido':''}" onclick="abrirProcesso('${p.id}')">
+      <div class="proc-top">
+        <div>
+          <div class="proc-nome">${p.nome}</div>
+          <div class="proc-meta">${p.cargo||'—'} · ${p.departamento||'—'} · Admissão: ${fmtDate(p.admissao)}</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          ${p.concluido?'<span class="badge badge-lime"><i class="ti ti-check"></i> Concluído</span>':'<span class="badge badge-amber"><i class="ti ti-clock"></i> Em andamento</span>'}
+          <span class="badge-empresa">${p.empresa}</span>
+        </div>
+      </div>
+      <div class="proc-footer">
+        <span style="font-size:12px;font-weight:700;color:var(--text2)">${pg.done}/${pg.total} itens obrigatórios</span>
+        <div class="progress-wrap"><div class="progress-fill" style="width:${pg.pct}%"></div></div>
+        <span style="font-size:12px;font-weight:800;color:var(--black)">${pg.pct}%</span>
+        <span class="badge badge-gray" style="font-size:10px">${p.perfil||'—'}</span>
+      </div>
+    </div>`;
+  }).join('');
+  updateStats();
+}
+
+// ======== NOVO PROCESSO ========
+function openNovoProcesso(){
+  // popular select de funcionários
+  const funcs=DB.funcs.getAll();
+  const sel=document.getElementById('np-func');
+  sel.innerHTML='<option value="">— Selecionar funcionário cadastrado —</option>'+
+    funcs.map(f=>`<option value="${f.id}">${f.nome} — ${f.empresa} (${fmtDate(f.admissao)})</option>`).join('');
+  // popular perfis
+  const psel=document.getElementById('np-perfil');
+  psel.innerHTML='<option value="">Selecione o perfil</option>'+
+    DB.perfis.getAll().map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+  ['np-nome','np-cargo','np-depto'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('np-empresa').value='';
+  document.getElementById('np-admissao').value='';
+  document.getElementById('np-perfil').value='';
+  openModal('modal-novo');
+  setTimeout(initUpper, 50);
+}
+
+function preencherFunc(){
+  const id=document.getElementById('np-func').value;
+  if(!id)return;
+  const f=DB.funcs.getAll().find(x=>x.id===id);
+  if(!f)return;
+  document.getElementById('np-nome').value=f.nome||'';
+  document.getElementById('np-empresa').value=f.empresa||'';
+  document.getElementById('np-admissao').value=f.admissao||'';
+  document.getElementById('np-cargo').value=f.cargo||f.cargoAdmissional||'';
+  document.getElementById('np-depto').value=f.departamento||'';
+}
+
+function criarProcesso(){
+  const nome=sanitize((document.getElementById('np-nome').value||'').trim());
+  const empresa=document.getElementById('np-empresa').value;
+  const admissao=document.getElementById('np-admissao').value;
+  const perfil=document.getElementById('np-perfil').value;
+  if(!nome||!empresa||!admissao||!perfil){toast('Preencha os campos obrigatórios.','err');return;}
+  const proc={
+    nome,empresa,admissao,perfil,
+    cargo:sanitize((document.getElementById('np-cargo').value||'').trim()),
+    departamento:sanitize((document.getElementById('np-depto').value||'').trim()),
+    checks:{},concluido:false,
+    funcId:document.getElementById('np-func').value||null,
+  };
+  DB.processos.add(proc);
+  toast('Processo aberto!');
+  closeModal('modal-novo');
+  renderLista();
+}
+
+// ======== ABRIR CHECKLIST ========
+function abrirProcesso(id){
+  processoAtivoId=id;
+  document.getElementById('view-lista').style.display='none';
+  document.getElementById('view-checklist').style.display='block';
+  document.getElementById('topbar-title').textContent='Checklist de Admissão';
+  document.getElementById('topbar-actions').innerHTML=`
+    <button class="btn btn-sm" onclick="voltarLista()"><i class="ti ti-arrow-left"></i> Voltar</button>
+    <button class="btn btn-sm" onclick="exportarPDF('${id}')"><i class="ti ti-file-export"></i> Exportar</button>
+    <button class="btn btn-primary btn-sm" id="btn-concluir" onclick="concluirProcesso()"><i class="ti ti-check"></i> Concluir</button>
+  `;
+  renderChecklist();
+}
+
+function voltarLista(){
+  processoAtivoId=null;
+  document.getElementById('view-lista').style.display='block';
+  document.getElementById('view-checklist').style.display='none';
+  document.getElementById('topbar-title').textContent='Processos de Admissão';
+  document.getElementById('topbar-actions').innerHTML=`
+    <button class="btn btn-sm" onclick="openGerenciarItens()"><i class="ti ti-settings"></i> Gerenciar Itens</button>
+    <button class="btn btn-primary btn-sm" onclick="openNovoProcesso()"><i class="ti ti-plus"></i> Novo Processo</button>
+  `;
+  renderLista();
+}
+
+function renderChecklist(){
+  const proc=DB.processos.getAll().find(x=>x.id===processoAtivoId);
+  if(!proc)return;
+  const pg=calcProgresso(proc);
+  const itens=getItensParaPerfil(proc.perfil);
+
+  let html=`<div class="proc-header-bar">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between">
+      <div>
+        <div class="proc-header-nome">${proc.nome}</div>
+        <div class="proc-header-meta">${proc.cargo||'—'} · ${proc.departamento||'—'} · ${proc.empresa} · Admissão: ${fmtDate(proc.admissao)}</div>
+        <div style="margin-top:6px"><span style="background:rgba(255,255,255,.15);color:var(--lime);font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700">${proc.perfil}</span></div>
+      </div>
+      <div style="text-align:right">
+        <div class="proc-header-pct">${pg.pct}%</div>
+        <div style="font-size:11px;color:rgba(242,238,229,.6);font-weight:500">${pg.done} / ${pg.total} obrigatórios</div>
+      </div>
+    </div>
+    <div class="proc-header-bottom">
+      <div class="progress-wrap" style="height:8px"><div class="progress-fill" style="width:${pg.pct}%"></div></div>
+    </div>
+  </div>`;
+
+  Object.keys(SECOES).forEach(sec=>{
+    const secInfo=SECOES[sec];
+    const secItens=itens.filter(it=>it.secao===sec);
+    if(!secItens.length)return;
+    const done=secItens.filter(it=>(it.opcional||proc.checks?.[it.id]?.done)&&proc.checks?.[it.id]?.done).length;
+    const total=secItens.length;
+    const open=secoesAbertas[sec]!==false;
+    html+=`<div class="section-block">
+      <div class="section-header" onclick="toggleSecao('${sec}')">
+        <div class="section-title">
+          <div class="section-icon" style="background:${secInfo.color}22"><i class="ti ${secInfo.icon}" style="color:${secInfo.color}"></i></div>
+          ${secInfo.label}
+        </div>
+        <div class="section-prog">
+          <span>${done}/${total}</span>
+          <div class="progress-wrap" style="width:80px"><div class="progress-fill" style="width:${Math.round(done/total*100)}%;background:${secInfo.color}"></div></div>
+          <i class="ti ti-chevron-${open?'up':'down'}" style="font-size:14px"></i>
+        </div>
+      </div>`;
+    if(open){
+      html+=`<div class="section-body">`;
+      secItens.forEach(it=>{
+        const ck=proc.checks?.[it.id]||{done:false,date:'',obs:''};
+        html+=`<div class="ck-item ${ck.done?'done':''}" id="ck-${it.id}">
+          <input type="checkbox" class="ck-check" ${ck.done?'checked':''} onchange="toggleItem('${it.id}',this.checked)" ${proc.concluido?'disabled':''}>
+          <div style="flex:1">
+            <div class="ck-text">${it.texto} ${it.opcional?'<span style="font-size:10px;color:var(--text3);font-weight:600">(opcional)</span>':''}</div>
+            ${ck.done?`<div class="ck-meta"><span class="ck-date"><i class="ti ti-calendar" style="font-size:11px;vertical-align:-1px"></i> ${fmtDate(ck.date)}</span>${ck.obs?`<span class="ck-date"><i class="ti ti-message" style="font-size:11px;vertical-align:-1px"></i> ${ck.obs}</span>`:''}</div>`:''}
+            ${!proc.concluido?`<div class="ck-expand ${ck.done?'open':''}" id="exp-${it.id}">
+              <input type="date" class="form-input ck-obs-input" style="width:160px" value="${ck.date||''}" onchange="salvarData('${it.id}',this.value)" placeholder="Data">
+              <input type="text" class="form-input ck-obs-input" value="${ck.obs||''}" onchange="salvarObs('${it.id}',this.value)" placeholder="Observação (opcional)">
+            </div>`:''}
+          </div>
+        </div>`;
+      });
+      html+=`</div>`;
+    }
+    html+=`</div>`;
+  });
+
+  document.getElementById('view-checklist').innerHTML=html;
+}
+
+function toggleSecao(sec){
+  secoesAbertas[sec]=secoesAbertas[sec]===false?true:false;
+  renderChecklist();
+}
+
+function toggleItem(itemId, checked){
+  const procs=DB.processos.getAll();
+  const proc=procs.find(x=>x.id===processoAtivoId);if(!proc)return;
+  if(!proc.checks)proc.checks={};
+  if(!proc.checks[itemId])proc.checks[itemId]={done:false,date:'',obs:''};
+  proc.checks[itemId].done=checked;
+  if(checked&&!proc.checks[itemId].date)proc.checks[itemId].date=today();
+  DB.processos.save(procs);
+  renderChecklist();
+}
+
+function salvarData(itemId, val){
+  const procs=DB.processos.getAll();
+  const proc=procs.find(x=>x.id===processoAtivoId);if(!proc)return;
+  if(!proc.checks)proc.checks={};
+  if(!proc.checks[itemId])proc.checks[itemId]={done:false,date:'',obs:''};
+  proc.checks[itemId].date=val;
+  DB.processos.save(procs);
+}
+
+function salvarObs(itemId, val){
+  const procs=DB.processos.getAll();
+  const proc=procs.find(x=>x.id===processoAtivoId);if(!proc)return;
+  if(!proc.checks)proc.checks={};
+  if(!proc.checks[itemId])proc.checks[itemId]={done:false,date:'',obs:''};
+  proc.checks[itemId].obs=val;
+  DB.processos.save(procs);
+}
+
+function concluirProcesso(){
+  const proc=DB.processos.getAll().find(x=>x.id===processoAtivoId);if(!proc)return;
+  const pg=calcProgresso(proc);
+  if(pg.pct<100){
+    if(!confirm(`Ainda há ${pg.total-pg.done} item(ns) obrigatório(s) pendente(s). Deseja concluir mesmo assim?`))return;
+  }
+  DB.processos.update(processoAtivoId,{concluido:true,concluidoEm:new Date().toISOString()});
+  toast('Processo concluído!');
+  voltarLista();
+}
+
+// ======== EXPORTAR ========
+function exportarPDF(id){
+  const proc=DB.processos.getAll().find(x=>x.id===id||x.id===processoAtivoId);if(!proc)return;
+  const itens=getItensParaPerfil(proc.perfil);
+  const rows=[
+    ['CHECKLIST DE ADMISSÃO — NOVA. RH'],
+    [],
+    ['Funcionário',proc.nome],['Empresa',proc.empresa],['Cargo',proc.cargo||'—'],
+    ['Departamento',proc.departamento||'—'],['Admissão',fmtDate(proc.admissao)],['Perfil',proc.perfil],
+    [],
+  ];
+  Object.keys(SECOES).forEach(sec=>{
+    const si=SECOES[sec];
+    const si_itens=itens.filter(it=>it.secao===sec);
+    if(!si_itens.length)return;
+    rows.push([si.label.toUpperCase()]);
+    rows.push(['Item','Opcional','Concluído','Data','Observação']);
+    si_itens.forEach(it=>{
+      const ck=proc.checks?.[it.id]||{done:false,date:'',obs:''};
+      rows.push([it.texto,it.opcional?'Sim':'Não',ck.done?'✓':'—',fmtDate(ck.date),ck.obs||'']);
+    });
+    rows.push([]);
+  });
+  const ws=XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols']=[50,8,10,12,30].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'Admissão');
+  XLSX.writeFile(wb,`admissao_${proc.nome.replace(/\s/g,'_')}_${proc.admissao}.xlsx`);
+  toast('Exportado!');
+}
+
+// ======== GERENCIAR ITENS ========
+function openGerenciarItens(){
+  renderPerfisAdm();
+  renderItensGerenciar();
+  // popular condicional select
+  const csel=document.getElementById('ni-condicional');
+  csel.innerHTML=DB.perfis.getAll().map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+  openModal('modal-itens');
+  setTimeout(initUpper, 50);
+}
+
+function renderPerfisAdm(){
+  document.getElementById('lista-perfis-adm').innerHTML=DB.perfis.getAll().map(p=>`
+    <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r);font-size:12px;font-weight:700">
+      ${p.nome}
+      <button class="btn-icon" style="width:20px;height:20px" onclick="removerPerfil('${p.id}')"><i class="ti ti-x" style="font-size:11px"></i></button>
+    </div>`).join('');
+}
+
+function addPerfil(){
+  const nome=(document.getElementById('novo-perfil-nome').value||'').trim().toUpperCase();
+  if(!nome){toast('Nome obrigatório.','err');return;}
+  const perfis=DB.perfis.getAll();
+  if(perfis.find(p=>p.nome===nome)){toast('Perfil já existe.','err');return;}
+  perfis.push({id:'p_'+Date.now(),nome});
+  DB.perfis.save(perfis);
+  document.getElementById('novo-perfil-nome').value='';
+  renderPerfisAdm();
+  toast('Perfil adicionado!');
+}
+
+function removerPerfil(id){
+  if(!confirm('Remover perfil?'))return;
+  DB.perfis.save(DB.perfis.getAll().filter(p=>p.id!==id));
+  renderPerfisAdm();
+}
+
+function renderItensGerenciar(){
+  const filtroSec=document.getElementById('filtro-secao-itens').value;
+  let itens=DB.itens.getAll();
+  if(filtroSec)itens=itens.filter(it=>it.secao===filtroSec);
+  document.getElementById('lista-itens-gerenciar').innerHTML=itens.map(it=>`
+    <div class="item-row">
+      <span class="item-row-sec" style="background:${SECOES[it.secao]?.color||'#ccc'}22;color:${SECOES[it.secao]?.color||'#666'}">${SECOES[it.secao]?.label||it.secao}</span>
+      <span class="item-row-text">${it.texto} ${it.opcional?'<span style="font-size:10px;color:var(--text3)">(opcional)</span>':''}</span>
+      ${it.condicional?.length?`<span style="font-size:10px;color:var(--text2);font-weight:600">${it.condicional.join(', ')}</span>`:''}
+      <button class="btn-icon" onclick="removerItem('${it.id}')"><i class="ti ti-trash" style="font-size:14px"></i></button>
+    </div>`).join('') || '<div style="color:var(--text3);font-size:13px;padding:10px">Nenhum item.</div>';
+}
+
+function addItem(){
+  const texto=(document.getElementById('ni-texto').value||'').trim();
+  const secao=document.getElementById('ni-secao').value;
+  if(!texto){toast('Descrição obrigatória.','err');return;}
+  const csel=document.getElementById('ni-condicional');
+  const condicional=Array.from(csel.selectedOptions).map(o=>o.value);
+  const opcional=document.getElementById('ni-opcional').checked;
+  const itens=DB.itens.getAll();
+  itens.push({id:'i_'+Date.now(),secao,texto,condicional,opcional});
+  DB.itens.save(itens);
+  document.getElementById('ni-texto').value='';
+  renderItensGerenciar();
+  toast('Item adicionado!');
+}
+
+function removerItem(id){
+  if(!confirm('Remover este item?'))return;
+  DB.itens.save(DB.itens.getAll().filter(it=>it.id!==id));
+  renderItensGerenciar();
+  toast('Item removido.');
+}
+
+// ======== MODAL HELPERS ========
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
+
+// ======== INIT ========
+renderLista();
+initUpper();
+</script>
+</body>
+</html>

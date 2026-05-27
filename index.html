@@ -648,14 +648,19 @@ function n2Decidir(decisao){
   var solId=params.get('sol');
 
   if(modo==='gestor'){
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('pg-gestor').style.display='block';
+    document.addEventListener('DOMContentLoaded', function(){
+      document.getElementById('login-screen').style.display='none';
+      var pg=document.getElementById('pg-gestor');
+      if(pg) pg.style.display='block';
+    });
     return;
   }
   if(modo==='n2'&&solId){
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('pg-n2').style.display='block';
-    n2CarregarSolicitacao(solId);
+    document.addEventListener('DOMContentLoaded', function(){
+      document.getElementById('login-screen').style.display='none';
+      var pg=document.getElementById('pg-n2');
+      if(pg){ pg.style.display='block'; n2CarregarSolicitacao(solId); }
+    });
     return;
   }
 

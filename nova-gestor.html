@@ -56,7 +56,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);min-height:100vh;dis
 
   <!-- FORMULÁRIO -->
   <div class="card-body" id="view-form">
-    <div class="notice"><i class="ti ti-info-circle"></i><span>Preencha todos os campos obrigatórios. Sua solicitação será analisada pelo RH.</span></div>
+    <div class="notice"><i class="ti ti-info-circle"></i><span>Preencha todos os campos obrigatórios. Sua solicitação será avaliada pelo N2.</span></div>
     <div class="form-grid">
 
       <div class="section-title">Identificação do Gestor</div>
@@ -93,10 +93,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);min-height:100vh;dis
         <label class="form-label">Cargo <span class="req">*</span></label>
         <input class="form-input upper" type="text" id="g-cargo" placeholder="CARGO SOLICITADO">
       </div>
-      <div class="form-group">
-        <label class="form-label">Nº de Vagas <span class="req">*</span></label>
-        <input class="form-input" type="number" id="g-qtd" value="1" min="1">
-      </div>
+
       <div class="form-group">
         <label class="form-label">Motivo da Abertura <span class="req">*</span></label>
         <select class="form-select" id="g-motivo" onchange="toggleSubstituto()">
@@ -183,7 +180,6 @@ function enviarSolicitacao(){
   var empresa=document.getElementById('g-empresa').value;
   var setor=(document.getElementById('g-setor').value||'').trim();
   var cargo=(document.getElementById('g-cargo').value||'').trim();
-  var qtd=parseInt(document.getElementById('g-qtd').value)||1;
   var motivo=document.getElementById('g-motivo').value;
   var escala=document.getElementById('g-escala').value;
   var substituto=(document.getElementById('g-substituto').value||'').trim();
@@ -212,7 +208,7 @@ function enviarSolicitacao(){
     empresa:empresa,
     setor:sanitize(setor),
     cargo:sanitize(cargo).toUpperCase(),
-    qtd:qtd,
+    qtd:1,
     motivo:motivo,
     escala:escala,
     substituto:sanitize(substituto),

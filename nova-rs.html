@@ -694,8 +694,8 @@ function renderKanban(v){
 
 // ======== DRAG & DROP ========
 function dragStart(e,id){dragId=id;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
-function dragOver(e,col){e.preventDefault();col.classList.add('drag-over');}
-function dragLeave(col){col.classList.remove('drag-over');}
+async function dragOver(e,col){e.preventDefault();col.classList.add('drag-over');}
+async function dragLeave(col){col.classList.remove('drag-over');}
 async function dropCard(e,col,etapa){
   e.preventDefault();col.classList.remove('drag-over');
   if(!dragId)return;
@@ -809,7 +809,7 @@ function mostrarPopupTransicao(cand,toEtapa){
   document.getElementById('popup-transicao').classList.add('open');
 }
 
-function cancelarTransicao(){
+async function cancelarTransicao(){
   pendingTransition={candId:null,toEtapa:null,vagaId:null};
   document.getElementById('popup-transicao').classList.remove('open');
   const v = await DB.vagas.getAll().find(x=>x.id===vagaAtivaId);if(v)renderKanban(v);
@@ -1048,7 +1048,7 @@ async function removerCandidato(cid){
 }
 
 // ======== PERFIS ========
-function openPerfisModal(){renderPerfis();openModal('modal-perfis');}
+async function openPerfisModal(){renderPerfis();openModal('modal-perfis');}
 async function renderPerfis(){
   document.getElementById('lista-perfis').innerHTML=(await DB.perfis.getAll()).map(p=>`
     <div class="perfil-row">
@@ -1058,7 +1058,7 @@ async function renderPerfis(){
       <button class="btn btn-sm btn-danger" onclick="removerPerfil('${p.id}')"><i class="ti ti-trash"></i></button>
     </div>`).join('');
 }
-function addPerfil(){
+async function addPerfil(){
   const nome=sanitize(document.getElementById('np-nome').value.trim());
   const sla=parseInt(document.getElementById('np-sla').value);
   if(!nome||!sla){toast('Preencha nome e SLA.','err');return;}
@@ -1108,7 +1108,7 @@ function evCard(e,past=false){
     </div>
   </div>`;
 }
-function salvarEvento(){
+async function salvarEvento(){
   const tipo=document.getElementById('ev-tipo').value;
   const desc=sanitize(document.getElementById('ev-desc').value.trim());
   const dt=document.getElementById('ev-dt').value;
@@ -1116,7 +1116,7 @@ function salvarEvento(){
   await DB.eventos.add({tipo,desc,dt,empresa:document.getElementById('ev-empresa').value,obs:sanitize(document.getElementById('ev-obs').value)});
   toast('Evento adicionado!');closeModal('modal-evento');renderAgenda();
 }
-function removerEvento(id){if(!confirm('Remover evento?'))return;DB.eventos.remove(id);renderAgenda();}
+async function removerEvento(id){if(!confirm('Remover evento?'))return;DB.eventos.remove(id);renderAgenda();}
 
 // ======== CANCELAR VAGA ========
 async function cancelarVaga(id){

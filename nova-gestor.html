@@ -189,7 +189,7 @@ function toggleSubstituto(){
   document.getElementById('bloco-substituto').style.display=(m==='SUBSTITUICAO')?'block':'none';
 }
 
-function gerarId(){
+async function gerarId(){
   return 'sol_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
 }
 

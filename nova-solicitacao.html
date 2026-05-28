@@ -410,14 +410,14 @@ var repModo     = null; // 'rh' ou 'n2' — quem está reprovando
 
 // ── Utilitários ──
 async function getSols(){return await FDB.solicitacoes.getAll();}
-async function await saveSols(d){await FDB.solicitacoes.saveAll(d);}
+async function saveSols(d){await FDB.solicitacoes.saveAll(d);}
 async function getPerfis(){return await FDB.perfis.getAll();}
 async function getVagas(){return await FDB.vagas.getAll();}
-async function await saveVagas(d){await FDB.vagas.saveAll(d);}
+async function saveVagas(d){await FDB.vagas.saveAll(d);}
 async function getSetores(){return await FDB.sol_setores.getAll();}
-async function await saveSetores(d){await FDB.sol_setores.saveAll(d);}
+async function saveSetores(d){await FDB.sol_setores.saveAll(d);}
 async function getN2s(){return await FDB.sol_n2s.getAll();}
-async function await saveN2s(d){await FDB.sol_n2s.saveAll(d);}
+async function saveN2s(d){await FDB.sol_n2s.saveAll(d);}
 
 function fmtDT(s){
   if(!s)return'—';
@@ -484,7 +484,7 @@ async function showTab(t){
 }
 
 // ── Stats ──
-async function await updateStats(){
+async function updateStats(){
   var sols=(await getSols());
   document.getElementById('stat-pend').textContent=sols.filter(function(s){return s.status==='pendente';}).length;
   document.getElementById('stat-n2').textContent=sols.filter(function(s){return s.status==='com_n2';}).length;
@@ -493,7 +493,7 @@ async function await updateStats(){
 }
 
 // ── Render Lista ──
-async function await renderLista(){
+async function renderLista(){
   var q=(document.getElementById('search').value||'').toLowerCase();
   var fs=document.getElementById('f-status').value;
   var fe=document.getElementById('f-empresa').value;
@@ -749,7 +749,7 @@ async function confirmarAprovacao(){
 }
 
 // ── Config: Setores ──
-async function await addSetor(){
+async function addSetor(){
   var nome=(document.getElementById('ns-nome').value||'').trim().toUpperCase();
   if(!nome){toast('Informe o nome do setor.','err');return;}
   var setores=(await getSetores());
@@ -779,7 +779,7 @@ async function removerSetor(id){
 }
 
 // ── Config: N2s ──
-async function await addN2(){
+async function addN2(){
   var nome=(document.getElementById('nn-nome').value||'').trim();
   var email=(document.getElementById('nn-email').value||'').trim();
   var setor=document.getElementById('nn-setor').value;
@@ -795,14 +795,14 @@ async function await addN2(){
   toast('N2 adicionado!','ok');
 }
 
-async function await removerN2(id){
+async function removerN2(id){
   if(!confirm('Remover este N2?'))return;
   await saveN2s((await getN2s()).filter(function(n){return n.id!==id;}));
   await renderConfig();
   toast('N2 removido.');
 }
 
-async function await renderConfig(){
+async function renderConfig(){
   var setores=(await getSetores());
   var n2s=(await getN2s());
 

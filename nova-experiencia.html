@@ -577,7 +577,7 @@ function addVideo() {
   renderConfig('videos');
 }
 
-function remVideo(id) {
+async function remVideo(id) {
   if (!confirm('Remover video?')) return;
   var cfg = DB.cfg.get();
   cfg.videos = cfg.videos.filter(function(v){ return v.id !== id; });
@@ -596,7 +596,7 @@ function addContato() {
   renderConfig('contatos');
 }
 
-function remContato(id) {
+async function remContato(id) {
   if (!confirm('Remover contato?')) return;
   var cfg = DB.cfg.get();
   cfg.contatos = cfg.contatos.filter(function(c){ return c.id !== id; });

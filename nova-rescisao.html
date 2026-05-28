@@ -764,7 +764,7 @@ function initNovoModal() {
   document.getElementById('n-perfil-desc').textContent = '';
 }
 
-function aplicarPerfil(id) {
+async function aplicarPerfil(id) {
   ['p-adm','p-lider','p-pcd','p-mot'].forEach(function(cid){ document.getElementById(cid).checked = false; });
   var el = document.getElementById('n-perfil-desc');
   if (!id) { el.textContent = ''; return; }
@@ -810,7 +810,7 @@ function criarProcesso() {
 }
 
 // =================== CHECKLIST ===================
-function abrirChecklist(id) {
+async function abrirChecklist(id) {
   S.proc = id;
   document.getElementById('view-lista').style.display = 'none';
   document.getElementById('view-checklist').style.display = 'block';
@@ -927,7 +927,7 @@ function row2(label, val) {
     + '<div style="font-weight:600;color:var(--text)">' + val + '</div></div>';
 }
 
-function toggleSec(sec) {
+async function toggleSec(sec) {
   S.secOpen[sec] = S.secOpen[sec] === false ? true : false;
   renderChecklist();
 }
@@ -969,7 +969,7 @@ async function renderChecklistHeader() {
   if (valEl) valEl.textContent = pg.pct + '%';
 }
 
-function voltarLista() {
+async function voltarLista() {
   S.proc = null;
   renderLista();
 }
@@ -1045,7 +1045,7 @@ function switchItensTab(tab) {
   }
 }
 
-function renderItensModal() {
+async function renderItensModal() {
   itensTabAtiva = 'itens';
   renderItensTab();
   renderPerfisTab();
@@ -1230,8 +1230,8 @@ function salvarPerfil() {
   toast(editandoPerfilId ? 'Perfil atualizado!' : 'Perfil criado!');
 }
 
-function addPerfil() { abrirModalPerfil(null); }
-function editPerfil(id) { abrirModalPerfil(id); }
+async function addPerfil() { abrirModalPerfil(null); }
+async function editPerfil(id) { abrirModalPerfil(id); }
 
 async function removePerfil(id) {
   if (!confirm('Remover este perfil?')) return;

@@ -508,7 +508,7 @@ function abrirNovoEvento() {
   document.body.appendChild(sheet);
 }
 
-function salvarEvento() {
+async function salvarEvento() {
   var tipo = document.getElementById('ev-tipo').value;
   var data = document.getElementById('ev-data').value;
   var desc = (document.getElementById('ev-desc').value || '').trim();

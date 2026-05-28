@@ -700,7 +700,7 @@ async function renderChecklist(){
   document.getElementById('view-checklist').innerHTML=html;
 }
 
-function toggleSecao(sec){
+async function toggleSecao(sec){
   secoesAbertas[sec]=secoesAbertas[sec]===false?true:false;
   renderChecklist();
 }
@@ -795,7 +795,7 @@ async function renderPerfisAdm(){
     </div>`).join('');
 }
 
-function addPerfil(){
+async function addPerfil(){
   const nome=(document.getElementById('novo-perfil-nome').value||'').trim().toUpperCase();
   if(!nome){toast('Nome obrigatório.','err');return;}
   const perfis = await DB.perfis.getAll();

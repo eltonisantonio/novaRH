@@ -569,7 +569,7 @@ function toast(msg, type) {
   document.body.appendChild(t);
   setTimeout(function(){ t.remove(); }, 3000);
 }
-function prazoInfo(deslig) {
+async function prazoInfo(deslig) {
   if (!deslig) return {cls:'',lbl:'',limDate:null};
   var lim = new Date(addDays(deslig, 10));
   var hoje = new Date();
@@ -743,7 +743,7 @@ function tabBtn(id, label) {
 }
 
 // =================== NOVO PROCESSO ===================
-function initNovoModal() {
+async function initNovoModal() {
   ['n-nome','n-chapa','n-cargo','n-depto','n-homol-dt'].forEach(function(id){ document.getElementById(id).value = ''; });
   document.getElementById('n-empresa').value = '';
   document.getElementById('n-tipo').value = '';
@@ -921,7 +921,7 @@ async function renderChecklist() {
   document.getElementById('view-checklist').innerHTML = html;
 }
 
-function row2(label, val) {
+async function row2(label, val) {
   return '<div style="background:var(--s2);padding:9px 11px;border-radius:var(--r)">'
     + '<div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:3px">' + label + '</div>'
     + '<div style="font-weight:600;color:var(--text)">' + val + '</div></div>';
@@ -1113,7 +1113,7 @@ async function renderPerfisTab() {
   document.getElementById('itens-tab-perfis').innerHTML = html;
 }
 
-function addItem(sec) {
+async function addItem(sec) {
   var text = prompt('Texto do novo item para ' + SETORES[sec].name + ':');
   if (!text || !text.trim()) return;
   var cond = prompt('Condicional (deixe vazio para todos, ou: adm, lider, pcd, mot separados por virgula):');
@@ -1207,7 +1207,7 @@ function toggleSecPerfil(sec, check) {
   });
 }
 
-function salvarPerfil() {
+async function salvarPerfil() {
   var nome = document.getElementById('pf-nome').value.trim();
   if (!nome) { alert('Informe o nome do perfil.'); return; }
   var desc = document.getElementById('pf-desc').value.trim();

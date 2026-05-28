@@ -36,8 +36,15 @@ function _col(name, defaults) {
     // Buscar todos os documentos
     async getAll() {
       try {
-        const snap = await ref.orderBy('_ordem', 'asc').get().catch(() => ref.get());
-        return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const snap = await ref.get();
+        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // ordenar por _ordem se existir, senão por criadoEm
+        docs.sort(function(a, b) {
+          if (a._ordem !== undefined && b._ordem !== undefined) return a._ordem - b._ordem;
+          if (a.criadoEm && b.criadoEm) return a.criadoEm.localeCompare(b.criadoEm);
+          return 0;
+        });
+        return docs;
       } catch(e) {
         console.warn('[DB] getAll falhou para', name, e);
         return defaults || [];

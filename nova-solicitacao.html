@@ -203,9 +203,9 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="search-bar">
         <div class="search-wrap">
           <i class="ti ti-search"></i>
-          <input class="search-input" type="text" id="search" placeholder="Buscar por cargo, gestor ou empresa..." oninput="await renderLista()">
+          <input class="search-input" type="text" id="search" placeholder="Buscar por cargo, gestor ou empresa..." oninput="renderLista()">
         </div>
-        <select class="form-select" id="f-status" onchange="await renderLista()" style="width:175px">
+        <select class="form-select" id="f-status" onchange="renderLista()" style="width:175px">
           <option value="">Todos os status</option>
           <option value="pendente">Pendentes</option>
           <option value="com_n2">Com N2</option>
@@ -214,7 +214,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           <option value="aprovado">Aprovadas (RH)</option>
           <option value="reprovado">Reprovadas (RH)</option>
         </select>
-        <select class="form-select" id="f-empresa" onchange="await renderLista()" style="width:185px">
+        <select class="form-select" id="f-empresa" onchange="renderLista()" style="width:185px">
           <option value="">Todas as empresas</option>
           <option>Raguife Matriz</option><option>Raguife Bom Despacho</option><option>Neves Queiroz</option>
           <option>Distribuidora</option><option>Haras Ambar Amaral</option><option>Holding</option><option>Mb Proni</option>
@@ -235,7 +235,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
             <label class="form-label-sm">Nome do Setor</label>
             <input class="form-input-sm" type="text" id="ns-nome" placeholder="Ex: LOGÍSTICA, FINANCEIRO...">
           </div>
-          <button class="btn btn-primary" onclick="await addSetor()" style="height:38px"><i class="ti ti-plus"></i> Adicionar</button>
+          <button class="btn btn-primary" onclick="addSetor()" style="height:38px"><i class="ti ti-plus"></i> Adicionar</button>
         </div>
         <table class="config-table">
           <thead><tr><th>Setor</th><th>N2 Vinculado</th><th style="width:60px"></th></tr></thead>
@@ -260,7 +260,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
             <label class="form-label-sm">Setor</label>
             <select class="form-input-sm" id="nn-setor"><option value="">Selecione</option></select>
           </div>
-          <button class="btn btn-primary" onclick="await addN2()" style="height:38px"><i class="ti ti-plus"></i> Adicionar</button>
+          <button class="btn btn-primary" onclick="addN2()" style="height:38px"><i class="ti ti-plus"></i> Adicionar</button>
         </div>
         <table class="config-table">
           <thead><tr><th>Nome</th><th>E-mail</th><th>Setor</th><th style="width:60px"></th></tr></thead>
@@ -842,7 +842,7 @@ async function renderConfig(){
         +'<td style="font-weight:700">'+n.nome+'</td>'
         +'<td style="font-size:12px">'+n.email+'</td>'
         +'<td><span class="tag-empresa" style="background:var(--s2);color:var(--text2)">'+n.setor+'</span></td>'
-        +'<td><button class="btn-icon" onclick="await removerN2(\''+n.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td>'
+        +'<td><button class="btn-icon" onclick="removerN2(\''+n.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td>'
         +'</tr>';
     }).join('');
   }

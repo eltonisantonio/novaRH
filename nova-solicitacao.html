@@ -144,6 +144,11 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .toast.err{background:#8b1c1c;}
 .toast.ok{background:#1a5c35;}
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-db.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
 </head>
 <body>
 <div class="app">
@@ -361,6 +366,38 @@ var PERFIS_KEY = 'nova_perfis_v1';
 var SETORES_KEY= 'nova_sol_setores_v1';
 var N2S_KEY    = 'nova_sol_n2s_v1';
 
+// ── EmailJS ──
+const EMAILJS_SERVICE   = 'service_v1stn8m';
+const EMAILJS_TEMPLATE_N2 = 'template_1vafvh8';
+const EMAILJS_PUBLIC    = 'AtHQdnGVUyUK30fSt';
+emailjs.init(EMAILJS_PUBLIC);
+
+async function enviarEmailN2(sol, n2){
+  try {
+    var baseUrl = window.location.href.replace(/\/[^\/]*(\?.*)?$/, '/');
+    var linkN2 = baseUrl + 'nova-n2.html?sol=' + sol.id;
+    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_N2, {
+      to_email:    n2.email,
+      n2_nome:     n2.nome,
+      gestor:      sol.gestor,
+      cargo:       sol.cargo,
+      departamento:sol.setor,
+      empresa:     sol.empresa,
+      motivo:      sol.motivo,
+      escala:      sol.escala,
+      referencia:  sol.codigo,
+      requisitos:  sol.requisitos || '—',
+      link_n2:     linkN2,
+    });
+    console.log('[EmailJS] E-mail enviado para', n2.email);
+    return true;
+  } catch(e){
+    console.warn('[EmailJS] Falha:', e);
+    return false;
+  }
+}
+
+
 var PERFIS_DEFAULT = [
   {id:'p1',nome:'OPERACIONAL',sla:10},{id:'p2',nome:'MOTORISTA',sla:25},
   {id:'p3',nome:'MANUTENCAO',sla:45},{id:'p4',nome:'GESTAO',sla:30},
@@ -372,15 +409,15 @@ var solAtualId  = null;
 var repModo     = null; // 'rh' ou 'n2' — quem está reprovando
 
 // ── Utilitários ──
-function getSols(){try{return JSON.parse(localStorage.getItem(SOL_KEY)||'[]');}catch{return[];}}
-function saveSols(d){localStorage.setItem(SOL_KEY,JSON.stringify(d));}
-function getPerfis(){try{var d=localStorage.getItem(PERFIS_KEY);return d?JSON.parse(d):PERFIS_DEFAULT;}catch{return PERFIS_DEFAULT;}}
-function getVagas(){try{return JSON.parse(localStorage.getItem(VAGAS_KEY)||'[]');}catch{return[];}}
-function saveVagas(d){localStorage.setItem(VAGAS_KEY,JSON.stringify(d));}
-function getSetores(){try{return JSON.parse(localStorage.getItem(SETORES_KEY)||'[]');}catch{return[];}}
-function saveSetores(d){localStorage.setItem(SETORES_KEY,JSON.stringify(d));}
-function getN2s(){try{return JSON.parse(localStorage.getItem(N2S_KEY)||'[]');}catch{return[];}}
-function saveN2s(d){localStorage.setItem(N2S_KEY,JSON.stringify(d));}
+async function (await getSols()){return await FDB.solicitacoes.getAll();}
+async function saveSols(d){await FDB.solicitacoes.saveAll(d);}
+async function (await getPerfis()){return await FDB.perfis.getAll();}
+async function (await getVagas()){return await FDB.vagas.getAll();}
+async function saveVagas(d){await FDB.vagas.saveAll(d);}
+async function (await getSetores()){return await FDB.sol_setores.getAll();}
+async function saveSetores(d){await FDB.sol_setores.saveAll(d);}
+async function (await getN2s()){return await FDB.sol_n2s.getAll();}
+async function saveN2s(d){await FDB.sol_n2s.saveAll(d);}
 
 function fmtDT(s){
   if(!s)return'—';
@@ -440,8 +477,8 @@ function showTab(t){
 }
 
 // ── Stats ──
-function updateStats(){
-  var sols=getSols();
+async function updateStats(){
+  var sols=(await getSols());
   document.getElementById('stat-pend').textContent=sols.filter(function(s){return s.status==='pendente';}).length;
   document.getElementById('stat-n2').textContent=sols.filter(function(s){return s.status==='com_n2';}).length;
   document.getElementById('stat-aprov').textContent=sols.filter(function(s){return s.status==='aprovado';}).length;
@@ -449,11 +486,11 @@ function updateStats(){
 }
 
 // ── Render Lista ──
-function renderLista(){
+async function renderLista(){
   var q=(document.getElementById('search').value||'').toLowerCase();
   var fs=document.getElementById('f-status').value;
   var fe=document.getElementById('f-empresa').value;
-  var sols=getSols();
+  var sols=(await getSols());
   if(q)sols=sols.filter(function(s){return (s.cargo||'').toLowerCase().includes(q)||(s.gestor||'').toLowerCase().includes(q)||(s.empresa||'').toLowerCase().includes(q)||(s.codigo||'').toLowerCase().includes(q);});
   if(fs)sols=sols.filter(function(s){return s.status===fs;});
   if(fe)sols=sols.filter(function(s){return s.empresa===fe;});
@@ -511,8 +548,8 @@ function renderLista(){
 }
 
 // ── Ver detalhe ──
-function verDetalhe(id){
-  var s=getSols().find(function(x){return x.id===id;});if(!s)return;
+async function verDetalhe(id){
+  var s=(await getSols()).find(function(x){return x.id===id;});if(!s)return;
   solAtualId=id;
   document.getElementById('md-title').textContent='Solicitação '+s.codigo;
 
@@ -566,12 +603,12 @@ function verDetalhe(id){
 }
 
 // ── Encaminhar para N2 ──
-function openEnviarN2(id){
-  var s=getSols().find(function(x){return x.id===id;});if(!s)return;
+async function openEnviarN2(id){
+  var s=(await getSols()).find(function(x){return x.id===id;});if(!s)return;
   solAtualId=id;
 
   // Buscar N2 do setor
-  var n2s=getN2s();
+  var n2s=(await getN2s());
   var n2=n2s.find(function(n){return n.setor===s.setor;});
 
   var info='';
@@ -592,12 +629,12 @@ function openEnviarN2(id){
   document.getElementById('modal-n2').classList.add('open');
 }
 
-function confirmarEnvioN2(){
-  var sols=getSols();
+async function confirmarEnvioN2(){
+  var sols=(await getSols());
   var idx=sols.findIndex(function(x){return x.id===solAtualId;});if(idx<0)return;
   var s=sols[idx];
 
-  var n2s=getN2s();
+  var n2s=(await getN2s());
   var n2=n2s.find(function(n){return n.setor===s.setor;});
   if(!n2){toast('Cadastre um N2 para o setor "'+s.setor+'" antes de encaminhar.','err');return;}
 
@@ -609,13 +646,15 @@ function confirmarEnvioN2(){
   sols[idx].historico.push({dt:new Date().toISOString(),acao:'ENCAMINHADO_N2',por:'RH',obs:'N2: '+n2.nome+(obs?' | '+obs:'')});
   saveSols(sols);
 
+  // Enviar e-mail ao N2
+  var emailOk = await enviarEmailN2(s, n2);
   closeModal('modal-n2');
-  toast('Encaminhado para '+n2.nome+'!','ok');
+  toast(emailOk ? 'E-mail enviado para '+n2.nome+'!' : 'Encaminhado (e-mail pode ter falhado).', emailOk?'ok':'');
   renderLista();
 }
 
 // ── Reprovar ──
-function openReprovar(id,modo){
+async function openReprovar(id,modo){
   solAtualId=id;
   repModo=modo||'rh';
   document.getElementById('rep-title').textContent=repModo==='n2'?'Reprovar (N2)':'Reprovar Solicitação';
@@ -623,10 +662,10 @@ function openReprovar(id,modo){
   document.getElementById('modal-reprovar').classList.add('open');
 }
 
-function confirmarReprovacao(){
+async function confirmarReprovacao(){
   var just=(document.getElementById('rep-justificativa').value||'').trim();
   if(!just){toast('Informe a justificativa.','err');return;}
-  var sols=getSols();
+  var sols=(await getSols());
   var idx=sols.findIndex(function(x){return x.id===solAtualId;});if(idx<0)return;
   var novoStatus=repModo==='n2'?'reprovado_n2':'reprovado';
   sols[idx].status=novoStatus;
@@ -640,11 +679,11 @@ function confirmarReprovacao(){
 }
 
 // ── Aprovar (criar vaga) ──
-function openAprovar(id){
+async function openAprovar(id){
   solAtualId=id;
   var sel=document.getElementById('ap-perfil');
   sel.innerHTML='<option value="">Selecione o perfil</option>';
-  getPerfis().forEach(function(p){
+  (await getPerfis()).forEach(function(p){
     var opt=document.createElement('option');
     opt.value=p.id;opt.dataset.sla=p.sla;opt.textContent=p.nome+' ('+p.sla+'d)';
     sel.appendChild(opt);
@@ -655,27 +694,27 @@ function openAprovar(id){
 }
 
 function gerarCodigoVaga(){
-  var vagas=getVagas().filter(function(v){return !v.isBancoTalentos;});
+  var vagas=(await getVagas()).filter(function(v){return !v.isBancoTalentos;});
   var ano=new Date().getFullYear();
   return 'RH-'+ano+'-'+(vagas.length+1).toString().padStart(3,'0');
 }
 
-function confirmarAprovacao(){
+async function confirmarAprovacao(){
   var perfilId=document.getElementById('ap-perfil').value;
   var abertura=document.getElementById('ap-abertura').value;
   if(!perfilId){toast('Selecione o perfil de vaga.','err');return;}
   if(!abertura){toast('Informe a data de abertura.','err');return;}
 
-  var sols=getSols();
+  var sols=(await getSols());
   var idx=sols.findIndex(function(x){return x.id===solAtualId;});if(idx<0)return;
   var s=sols[idx];
 
-  var perfil=getPerfis().find(function(p){return p.id===perfilId;});
+  var perfil=(await getPerfis()).find(function(p){return p.id===perfilId;});
   var sla=perfil?perfil.sla:0;
   var dtAb=new Date(abertura);
   var prazo=new Date(dtAb.getTime()+sla*86400000).toISOString().split('T')[0];
 
-  var vagas=getVagas();
+  var vagas=(await getVagas());
   var vagaId='vg_'+Date.now();
   var vagaCodigo=gerarCodigoVaga();
   var obsRH=(document.getElementById('ap-obs').value||'').trim();
@@ -703,10 +742,10 @@ function confirmarAprovacao(){
 }
 
 // ── Config: Setores ──
-function addSetor(){
+async function addSetor(){
   var nome=(document.getElementById('ns-nome').value||'').trim().toUpperCase();
   if(!nome){toast('Informe o nome do setor.','err');return;}
-  var setores=getSetores();
+  var setores=(await getSetores());
   if(setores.find(function(s){return s.nome===nome;})){toast('Setor já existe.','err');return;}
   setores.push({id:'s_'+Date.now(),nome:nome});
   saveSetores(setores);
@@ -716,11 +755,11 @@ function addSetor(){
   toast('Setor adicionado!','ok');
 }
 
-function removerSetor(id){
+async function removerSetor(id){
   if(!confirm('Remover este setor? Os N2s vinculados a ele também serão removidos.'))return;
-  var setores=getSetores().filter(function(s){return s.id!==id;});
-  var n2s=getN2s().filter(function(n){
-    var s=getSetores().find(function(x){return x.id===id;});
+  var setores=(await getSetores()).filter(function(s){return s.id!==id;});
+  var n2s=(await getN2s()).filter(function(n){
+    var s=(await getSetores()).find(function(x){return x.id===id;});
     return !s||n.setor!==s.nome;
   });
   saveSetores(setores);
@@ -731,13 +770,13 @@ function removerSetor(id){
 }
 
 // ── Config: N2s ──
-function addN2(){
+async function addN2(){
   var nome=(document.getElementById('nn-nome').value||'').trim();
   var email=(document.getElementById('nn-email').value||'').trim();
   var setor=document.getElementById('nn-setor').value;
   if(!nome||!email||!setor){toast('Preencha nome, e-mail e setor.','err');return;}
   if(!email.includes('@')){toast('E-mail inválido.','err');return;}
-  var n2s=getN2s();
+  var n2s=(await getN2s());
   n2s.push({id:'n2_'+Date.now(),nome:nome,email:email,setor:setor});
   saveN2s(n2s);
   document.getElementById('nn-nome').value='';
@@ -747,16 +786,16 @@ function addN2(){
   toast('N2 adicionado!','ok');
 }
 
-function removerN2(id){
+async function removerN2(id){
   if(!confirm('Remover este N2?'))return;
-  saveN2s(getN2s().filter(function(n){return n.id!==id;}));
+  saveN2s((await getN2s()).filter(function(n){return n.id!==id;}));
   renderConfig();
   toast('N2 removido.');
 }
 
-function renderConfig(){
-  var setores=getSetores();
-  var n2s=getN2s();
+async function renderConfig(){
+  var setores=(await getSetores());
+  var n2s=(await getN2s());
 
   // Tabela setores
   var tbody=document.getElementById('tabela-setores');
@@ -807,7 +846,7 @@ function sincSetoresNaGestora(){
 }
 
 // ── Init ──
-function init(){
+async function init(){
   // URL do gestor — detectar base corretamente mesmo dentro de iframe
   var url=buildGestorUrl();
   document.getElementById('link-url').textContent=url;
@@ -815,7 +854,7 @@ function init(){
   renderLista();
 }
 
-init();
+(async()=>{await init();})();
 </script>
 </body>
 </html>

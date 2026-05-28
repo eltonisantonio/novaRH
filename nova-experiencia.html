@@ -105,6 +105,9 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .sheet{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:2px solid var(--black);padding:20px 32px 28px;z-index:200;}
 .divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-db.js"></script>
 </head>
 <body>
 <div class="app">
@@ -141,39 +144,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 </div>
 
 <script>
-var DB = {
-  funcs: {
-    key: 'nova_funcionarios_v1',
-    getAll: function() {
-      try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e) { return []; }
-    }
-  },
-  exp: {
-    key: 'nova_exp_v1',
-    getAll: function() {
-      try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e) { return []; }
-    },
-    save: function(d) { localStorage.setItem(this.key, JSON.stringify(d)); },
-    get: function(id) { return this.getAll().find(function(x){ return x.funcId === id; }); },
-    upsert: function(funcId, data) {
-      var all = this.getAll();
-      var idx = all.findIndex(function(x){ return x.funcId === funcId; });
-      if (idx >= 0) { all[idx] = Object.assign({}, all[idx], data); }
-      else { all.push(Object.assign({ funcId: funcId }, data)); }
-      this.save(all);
-    }
-  },
-  cfg: {
-    key: 'nova_exp_cfg_v1',
-    get: function() {
-      try {
-        var d = localStorage.getItem(this.key);
-        return d ? JSON.parse(d) : { videos: [], contatos: [] };
-      } catch(e) { return { videos: [], contatos: [] }; }
-    },
-    save: function(d) { localStorage.setItem(this.key, JSON.stringify(d)); }
-  }
-};
+var DB={funcs:FDB.funcionarios,exp:FDB.experiencias,cfg:FDB.exp_cfg};
 
 var tabAtiva = 'ativos';
 var funcAtivoId = null;
@@ -209,16 +180,16 @@ function toast(msg, type) {
   setTimeout(function(){ t.remove(); }, 3000);
 }
 
-function getFuncsEmExp() {
-  return DB.funcs.getAll().filter(function(f) {
+async function getFuncsEmExp() {
+  return (await DB.funcs.getAll()).filter(function(f) {
     if (!f.admissao || f.desligado) return false;
     var fim = addDays(f.admissao, 90);
     return new Date(fim) >= new Date();
   });
 }
 
-function getFuncsEfetivados() {
-  return DB.funcs.getAll().filter(function(f) {
+async function getFuncsEfetivados() {
+  return (await DB.funcs.getAll()).filter(function(f) {
     if (!f.admissao || f.desligado) return false;
     var fim = addDays(f.admissao, 90);
     return new Date(fim) < new Date();
@@ -424,8 +395,8 @@ function voltarParaLista() {
   renderLista();
 }
 
-function renderDetalhe() {
-  var f = DB.funcs.getAll().find(function(x){ return x.id === funcAtivoId; });
+async function renderDetalhe() {
+  var f = await DB.funcs.getAll().find(function(x){ return x.id === funcAtivoId; });
   if (!f) return;
   var exp = DB.exp.get(f.id) || { checks: {} };
   var cfg = DB.cfg.get();
@@ -601,7 +572,7 @@ function addVideo() {
   if (!titulo || !dia) { toast('Preencha titulo e dia.', 'err'); return; }
   var cfg = DB.cfg.get();
   cfg.videos.push({ id: 'v_' + Date.now(), titulo: titulo, dia: dia, link: link });
-  DB.cfg.save(cfg);
+  await DB.cfg.saveAll(cfg);
   toast('Video adicionado!');
   renderConfig('videos');
 }
@@ -610,7 +581,7 @@ function remVideo(id) {
   if (!confirm('Remover video?')) return;
   var cfg = DB.cfg.get();
   cfg.videos = cfg.videos.filter(function(v){ return v.id !== id; });
-  DB.cfg.save(cfg);
+  await DB.cfg.saveAll(cfg);
   renderConfig('videos');
 }
 
@@ -620,7 +591,7 @@ function addContato() {
   if (!desc || !dia) { toast('Preencha descricao e dia.', 'err'); return; }
   var cfg = DB.cfg.get();
   cfg.contatos.push({ id: 'c_' + Date.now(), desc: desc, dia: dia });
-  DB.cfg.save(cfg);
+  await DB.cfg.saveAll(cfg);
   toast('Contato adicionado!');
   renderConfig('contatos');
 }
@@ -629,7 +600,7 @@ function remContato(id) {
   if (!confirm('Remover contato?')) return;
   var cfg = DB.cfg.get();
   cfg.contatos = cfg.contatos.filter(function(c){ return c.id !== id; });
-  DB.cfg.save(cfg);
+  await DB.cfg.saveAll(cfg);
   renderConfig('contatos');
 }
 

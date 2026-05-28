@@ -133,6 +133,9 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;}
 .checkbox-row input{width:15px;height:15px;cursor:pointer;accent-color:var(--black);}
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-db.js"></script>
 </head>
 <body>
 <div class="app">
@@ -301,12 +304,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 
 <script>
 // ======== DATA LAYER ========
-const DB = {
-  processos:{key:'nova_adm_processos_v1',getAll(){try{return JSON.parse(localStorage.getItem(this.key))||[];}catch{return[];}},save(d){localStorage.setItem(this.key,JSON.stringify(d));},add(p){const a=this.getAll();p.id='adm_'+Date.now();p.criadoEm=new Date().toISOString();a.push(p);this.save(a);return p;},update(id,p){const a=this.getAll();const i=a.findIndex(x=>x.id===id);if(i>=0){a[i]={...a[i],...p};this.save(a);}},remove(id){this.save(this.getAll().filter(x=>x.id!==id));}},
-  itens:{key:'nova_adm_itens_v1',getAll(){try{const d=localStorage.getItem(this.key);return d?JSON.parse(d):ITENS_DEFAULT;}catch{return ITENS_DEFAULT;}},save(d){localStorage.setItem(this.key,JSON.stringify(d));}},
-  perfis:{key:'nova_adm_perfis_v1',getAll(){try{const d=localStorage.getItem(this.key);return d?JSON.parse(d):PERFIS_DEFAULT;}catch{return PERFIS_DEFAULT;}},save(d){localStorage.setItem(this.key,JSON.stringify(d));}},
-  funcs:{key:'nova_funcionarios_v1',getAll(){try{return JSON.parse(localStorage.getItem(this.key))||[];}catch{return[];}}}
-};
+const DB={processos:FDB.adm_processos,itens:FDB.adm_itens,perfis:FDB.adm_perfis,funcs:FDB.funcionarios};
 
 // ======== PERFIS DEFAULT ========
 const PERFIS_DEFAULT = [
@@ -416,8 +414,8 @@ function initUpper(){
 }
 function toast(msg,type='ok'){const t=document.createElement('div');const bg=type==='ok'?'#1a3a28':type==='err'?'#8b1c1c':'#0e0f12';const cl=type==='ok'?'#6ee8a0':type==='err'?'#fbd8d8':'#d7ff3d';t.style.cssText=`position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;z-index:9999;color:${cl};background:${bg};box-shadow:0 4px 20px rgba(0,0,0,.25)`;t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
 
-function getItensParaPerfil(perfilId) {
-  const todos = DB.itens.getAll();
+async function getItensParaPerfil(perfilId) {
+  const todos = await DB.itens.getAll();
   return todos.filter(it => !it.condicional || it.condicional.length === 0 || it.condicional.includes(perfilId));
 }
 
@@ -429,10 +427,10 @@ function calcProgresso(proc) {
 }
 
 // ======== STATS ========
-function getCandidatosPendentes(){
+async function getCandidatosPendentes(){
   // Busca candidatos na etapa 6 (integração agendada) no módulo R&S
   const vagas = JSON.parse(localStorage.getItem('nova_vagas_v3') || '[]');
-  const procs = DB.processos.getAll();
+  const procs = await DB.processos.getAll();
   const pendentes = [];
   vagas.forEach(v => {
     if(v.isBancoTalentos) return;
@@ -456,8 +454,8 @@ function getCandidatosPendentes(){
   return pendentes;
 }
 
-function updateStats(){
-  const procs = DB.processos.getAll();
+async function updateStats(){
+  const procs = await DB.processos.getAll();
   const andamento = procs.filter(p => !p.concluido).length;
   const mes = new Date().getMonth();
   const concluidos = procs.filter(p => p.concluido && new Date(p.concluidoEm||p.criadoEm).getMonth()===mes).length;
@@ -525,11 +523,11 @@ function abrirNovoParaCandidato(encoded){
 }
 
 // ======== LISTA ========
-function renderLista(){
+async function renderLista(){
   const q=(document.getElementById('search').value||'').toLowerCase();
   const fs=document.getElementById('filter-status').value;
   const fe=document.getElementById('filter-empresa').value;
-  let procs=DB.processos.getAll().sort((a,b)=>new Date(b.criadoEm)-new Date(a.criadoEm));
+  let procs = await DB.processos.getAll().sort((a,b)=>new Date(b.criadoEm)-new Date(a.criadoEm));
   if(q)procs=procs.filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.empresa||'').toLowerCase().includes(q));
   if(fs==='andamento')procs=procs.filter(p=>!p.concluido);
   if(fs==='concluido')procs=procs.filter(p=>p.concluido);
@@ -561,16 +559,16 @@ function renderLista(){
 }
 
 // ======== NOVO PROCESSO ========
-function openNovoProcesso(){
+async function openNovoProcesso(){
   // popular select de funcionários
-  const funcs=DB.funcs.getAll();
+  const funcs = await DB.funcs.getAll();
   const sel=document.getElementById('np-func');
   sel.innerHTML='<option value="">— Selecionar funcionário cadastrado —</option>'+
     funcs.map(f=>`<option value="${f.id}">${f.nome} — ${f.empresa} (${fmtDate(f.admissao)})</option>`).join('');
   // popular perfis
   const psel=document.getElementById('np-perfil');
   psel.innerHTML='<option value="">Selecione o perfil</option>'+
-    DB.perfis.getAll().map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+    (await DB.perfis.getAll()).map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
   ['np-nome','np-cargo','np-depto'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('np-empresa').value='';
   document.getElementById('np-admissao').value='';
@@ -579,10 +577,10 @@ function openNovoProcesso(){
   setTimeout(initUpper, 50);
 }
 
-function preencherFunc(){
+async function preencherFunc(){
   const id=document.getElementById('np-func').value;
   if(!id)return;
-  const f=DB.funcs.getAll().find(x=>x.id===id);
+  const f = await DB.funcs.getAll().find(x=>x.id===id);
   if(!f)return;
   document.getElementById('np-nome').value=f.nome||'';
   document.getElementById('np-empresa').value=f.empresa||'';
@@ -604,7 +602,7 @@ function criarProcesso(){
     checks:{},concluido:false,
     funcId:document.getElementById('np-func').value||null,
   };
-  DB.processos.add(proc);
+  await DB.processos.add(proc);
   toast('Processo aberto!');
   closeModal('modal-novo');
   renderLista();
@@ -636,8 +634,8 @@ function voltarLista(){
   renderLista();
 }
 
-function renderChecklist(){
-  const proc=DB.processos.getAll().find(x=>x.id===processoAtivoId);
+async function renderChecklist(){
+  const proc = await DB.processos.getAll().find(x=>x.id===processoAtivoId);
   if(!proc)return;
   const pg=calcProgresso(proc);
   const itens=getItensParaPerfil(proc.perfil);
@@ -707,49 +705,49 @@ function toggleSecao(sec){
   renderChecklist();
 }
 
-function toggleItem(itemId, checked){
-  const procs=DB.processos.getAll();
+async function toggleItem(itemId, checked){
+  const procs = await DB.processos.getAll();
   const proc=procs.find(x=>x.id===processoAtivoId);if(!proc)return;
   if(!proc.checks)proc.checks={};
   if(!proc.checks[itemId])proc.checks[itemId]={done:false,date:'',obs:''};
   proc.checks[itemId].done=checked;
   if(checked&&!proc.checks[itemId].date)proc.checks[itemId].date=today();
-  DB.processos.save(procs);
+  await DB.processos.saveAll(procs);
   renderChecklist();
 }
 
-function salvarData(itemId, val){
-  const procs=DB.processos.getAll();
+async function salvarData(itemId, val){
+  const procs = await DB.processos.getAll();
   const proc=procs.find(x=>x.id===processoAtivoId);if(!proc)return;
   if(!proc.checks)proc.checks={};
   if(!proc.checks[itemId])proc.checks[itemId]={done:false,date:'',obs:''};
   proc.checks[itemId].date=val;
-  DB.processos.save(procs);
+  await DB.processos.saveAll(procs);
 }
 
-function salvarObs(itemId, val){
-  const procs=DB.processos.getAll();
+async function salvarObs(itemId, val){
+  const procs = await DB.processos.getAll();
   const proc=procs.find(x=>x.id===processoAtivoId);if(!proc)return;
   if(!proc.checks)proc.checks={};
   if(!proc.checks[itemId])proc.checks[itemId]={done:false,date:'',obs:''};
   proc.checks[itemId].obs=val;
-  DB.processos.save(procs);
+  await DB.processos.saveAll(procs);
 }
 
-function concluirProcesso(){
-  const proc=DB.processos.getAll().find(x=>x.id===processoAtivoId);if(!proc)return;
+async function concluirProcesso(){
+  const proc = await DB.processos.getAll().find(x=>x.id===processoAtivoId);if(!proc)return;
   const pg=calcProgresso(proc);
   if(pg.pct<100){
     if(!confirm(`Ainda há ${pg.total-pg.done} item(ns) obrigatório(s) pendente(s). Deseja concluir mesmo assim?`))return;
   }
-  DB.processos.update(processoAtivoId,{concluido:true,concluidoEm:new Date().toISOString()});
+  await DB.processos.update(processoAtivoId,{concluido:true,concluidoEm:new Date().toISOString()});
   toast('Processo concluído!');
   voltarLista();
 }
 
 // ======== EXPORTAR ========
-function exportarPDF(id){
-  const proc=DB.processos.getAll().find(x=>x.id===id||x.id===processoAtivoId);if(!proc)return;
+async function exportarPDF(id){
+  const proc = await DB.processos.getAll().find(x=>x.id===id||x.id===processoAtivoId);if(!proc)return;
   const itens=getItensParaPerfil(proc.perfil);
   const rows=[
     ['CHECKLIST DE ADMISSÃO — NOVA. RH'],
@@ -779,18 +777,18 @@ function exportarPDF(id){
 }
 
 // ======== GERENCIAR ITENS ========
-function openGerenciarItens(){
+async function openGerenciarItens(){
   renderPerfisAdm();
   renderItensGerenciar();
   // popular condicional select
   const csel=document.getElementById('ni-condicional');
-  csel.innerHTML=DB.perfis.getAll().map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
+  csel.innerHTML=(await DB.perfis.getAll()).map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
   openModal('modal-itens');
   setTimeout(initUpper, 50);
 }
 
-function renderPerfisAdm(){
-  document.getElementById('lista-perfis-adm').innerHTML=DB.perfis.getAll().map(p=>`
+async function renderPerfisAdm(){
+  document.getElementById('lista-perfis-adm').innerHTML=(await DB.perfis.getAll()).map(p=>`
     <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r);font-size:12px;font-weight:700">
       ${p.nome}
       <button class="btn-icon" style="width:20px;height:20px" onclick="removerPerfil('${p.id}')"><i class="ti ti-x" style="font-size:11px"></i></button>
@@ -800,24 +798,24 @@ function renderPerfisAdm(){
 function addPerfil(){
   const nome=(document.getElementById('novo-perfil-nome').value||'').trim().toUpperCase();
   if(!nome){toast('Nome obrigatório.','err');return;}
-  const perfis=DB.perfis.getAll();
+  const perfis = await DB.perfis.getAll();
   if(perfis.find(p=>p.nome===nome)){toast('Perfil já existe.','err');return;}
   perfis.push({id:'p_'+Date.now(),nome});
-  DB.perfis.save(perfis);
+  await DB.perfis.saveAll(perfis);
   document.getElementById('novo-perfil-nome').value='';
   renderPerfisAdm();
   toast('Perfil adicionado!');
 }
 
-function removerPerfil(id){
+async function removerPerfil(id){
   if(!confirm('Remover perfil?'))return;
-  DB.perfis.save(DB.perfis.getAll().filter(p=>p.id!==id));
+  await DB.perfis.saveAll((await DB.perfis.getAll()).filter(p=>p.id!==id));
   renderPerfisAdm();
 }
 
-function renderItensGerenciar(){
+async function renderItensGerenciar(){
   const filtroSec=document.getElementById('filtro-secao-itens').value;
-  let itens=DB.itens.getAll();
+  let itens = await DB.itens.getAll();
   if(filtroSec)itens=itens.filter(it=>it.secao===filtroSec);
   document.getElementById('lista-itens-gerenciar').innerHTML=itens.map(it=>`
     <div class="item-row">
@@ -835,17 +833,17 @@ function addItem(){
   const csel=document.getElementById('ni-condicional');
   const condicional=Array.from(csel.selectedOptions).map(o=>o.value);
   const opcional=document.getElementById('ni-opcional').checked;
-  const itens=DB.itens.getAll();
+  const itens = await DB.itens.getAll();
   itens.push({id:'i_'+Date.now(),secao,texto,condicional,opcional});
-  DB.itens.save(itens);
+  await DB.itens.saveAll(itens);
   document.getElementById('ni-texto').value='';
   renderItensGerenciar();
   toast('Item adicionado!');
 }
 
-function removerItem(id){
+async function removerItem(id){
   if(!confirm('Remover este item?'))return;
-  DB.itens.save(DB.itens.getAll().filter(it=>it.id!==id));
+  await DB.itens.saveAll((await DB.itens.getAll()).filter(it=>it.id!==id));
   renderItensGerenciar();
   toast('Item removido.');
 }

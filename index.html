@@ -126,6 +126,14 @@ iframe{flex:1;border:none;width:100%;height:100%;}
 /* ── BADGE SOL ── */
 .nav-badge{background:var(--lime);color:var(--black);font-size:9px;font-weight:900;padding:1px 5px;border-radius:8px;margin-left:auto;}
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">
+// ── Migração única localStorage → Firestore ──
+(async function migrarDados(){
+  try { await FDB.migrarLocalStorage(); } catch(e) { console.warn('Migração:', e); }
+})();
+</script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-db.js"></script>
 </head>
 <body>
 
@@ -278,13 +286,13 @@ var SOL_KEY     = 'nova_solicitacoes_v1';
 
 var usuarioAtivo = null;
 
-function getUsuarios(){
+function (await getUsuarios()){
   try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');}catch{return[];}
 }
-function saveUsuarios(d){localStorage.setItem(AUTH_KEY,JSON.stringify(d));}
+async function await saveUsuarios(d){await FDB.users.saveAll(d);}
 
-function initAuth(){
-  var users = getUsuarios();
+async function initAuth(){
+  var users = (await getUsuarios());
   var adminIdx = users.findIndex(function(u){return u.id==='u_admin';});
   var allMods = Object.keys(MODS);
   if(adminIdx>=0){
@@ -293,13 +301,13 @@ function initAuth(){
   } else {
     users.unshift({id:'u_admin',nome:'Administrador',login:'admin',senha:'nova2025',perfil:'admin',modulos:allMods});
   }
-  saveUsuarios(users);
+  await saveUsuarios(users);
 }
 
-function doLogin(){
+async function doLogin(){
   var login = (document.getElementById('inp-login').value||'').trim();
   var senha = (document.getElementById('inp-senha').value||'').trim();
-  var users  = getUsuarios();
+  var users  = (await getUsuarios());
   var u      = users.find(function(x){return x.login===login&&x.senha===senha;});
   if(!u){
     document.getElementById('login-err').style.display='block';
@@ -460,8 +468,8 @@ function openAdmin(){
   renderUsuarios();
 }
 
-function renderUsuarios(){
-  var users=getUsuarios();
+async function renderUsuarios(){
+  var users=(await getUsuarios());
   var el=document.getElementById('lista-usuarios');
   if(!users.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:10px 0">Nenhum usu\u00e1rio.</div>';return;}
   el.innerHTML=users.map(function(u){
@@ -481,20 +489,20 @@ function renderUsuarios(){
   }).join('');
 }
 
-function addUsuario(){
+async function addUsuario(){
   var nome=(document.getElementById('nu-nome').value||'').trim();
   var login=(document.getElementById('nu-login').value||'').trim().toLowerCase();
   var senha=(document.getElementById('nu-senha').value||'').trim();
   var perfil=document.getElementById('nu-perfil').value;
   if(!nome||!login||!senha){toast('Preencha nome, login e senha.','err');return;}
 
-  var users=getUsuarios();
+  var users=(await getUsuarios());
   if(users.find(function(u){return u.login===login;})){toast('Login já existe.','err');return;}
 
   var mods=Array.prototype.slice.call(document.querySelectorAll('#nu-modulos input:checked')).map(function(i){return i.value;});
 
   users.push({id:'u_'+Date.now(),nome,login,senha,perfil,modulos:perfil==='admin'?Object.keys(MODS):mods});
-  saveUsuarios(users);
+  await saveUsuarios(users);
   toast('Usuário adicionado!','ok');
   document.getElementById('nu-nome').value='';
   document.getElementById('nu-login').value='';
@@ -502,10 +510,10 @@ function addUsuario(){
   renderUsuarios();
 }
 
-function removerUsuario(id){
+async function removerUsuario(id){
   if(!confirm('Remover este usuário?'))return;
-  var users=getUsuarios().filter(function(u){return u.id!==id;});
-  saveUsuarios(users);
+  var users=(await getUsuarios()).filter(function(u){return u.id!==id;});
+  await saveUsuarios(users);
   toast('Usuário removido.');
   renderUsuarios();
 }
@@ -524,7 +532,7 @@ function toast(msg,type){
 // BOOT
 // ────────────────────────────────────────────────
 document.getElementById('mod-iframe').addEventListener('load', iframeLoaded);
-initAuth();
+(async()=>{await initAuth();})();
 var sessao=checkSession();
 if(sessao){
   startShell(sessao);

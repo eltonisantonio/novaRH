@@ -149,6 +149,12 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .perfil-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);border-radius:var(--r);margin-bottom:6px;border:1px solid var(--border);}
 .perfil-nome{flex:1;font-weight:700;font-size:13px;}
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-db.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-db.js"></script>
 </head>
 <body>
 <div class="app">
@@ -394,11 +400,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 
 <script>
 // ======== DATA LAYER ========
-const DB={
-  vagas:{key:'nova_vagas_v3',getAll(){try{return JSON.parse(localStorage.getItem(this.key))||[];}catch{return[];}},save(d){localStorage.setItem(this.key,JSON.stringify(d));},add(v){const a=this.getAll();v.id='vg_'+Date.now();v.criadoEm=new Date().toISOString();v.candidatos=[];v.status='aberta';a.push(v);this.save(a);return v;},update(id,v){const a=this.getAll();const i=a.findIndex(x=>x.id===id);if(i>=0){a[i]={...a[i],...v,atualizadoEm:new Date().toISOString()};this.save(a);}},remove(id){this.save(this.getAll().filter(x=>x.id!==id));}},
-  eventos:{key:'nova_eventos_v1',getAll(){try{return JSON.parse(localStorage.getItem(this.key))||[];}catch{return[];}},save(d){localStorage.setItem(this.key,JSON.stringify(d));},add(e){const a=this.getAll();e.id='ev_'+Date.now();a.push(e);this.save(a);return e;},remove(id){this.save(this.getAll().filter(x=>x.id!==id));}},
-  perfis:{key:'nova_perfis_v1',defaults:[{id:'p1',nome:'OPERACIONAL',sla:10},{id:'p2',nome:'MOTORISTA',sla:25},{id:'p3',nome:'MANUTENCAO',sla:45},{id:'p4',nome:'GESTAO',sla:30},{id:'p5',nome:'ADMINISTRATIVO',sla:15},{id:'p6',nome:'PCD',sla:45},{id:'p7',nome:'AJUDANTE DE MOTORISTA',sla:15}],getAll(){try{const d=localStorage.getItem(this.key);return d?JSON.parse(d):this.defaults;}catch{return this.defaults;}},save(d){localStorage.setItem(this.key,JSON.stringify(d));}}
-};
+const DB={vagas:FDB.vagas,eventos:FDB.eventos,perfis:FDB.perfis};
 
 // ======== STATE ========
 let vagaAtivaId=null,candEditId=null,dragId=null;
@@ -444,8 +446,8 @@ function initUpper(){
 }
 
 // ======== STATS ========
-function updateStats(){
-  const vagas=DB.vagas.getAll().filter(v=>!v.isBancoTalentos&&v.status!=='cancelada');
+async function updateStats(){
+  const vagas = await DB.vagas.getAll().filter(v=>!v.isBancoTalentos&&v.status!=='cancelada');
   const abertas=vagas.filter(v=>v.status==='aberta');
   // ativos: apenas candidatos em vagas abertas ou pausadas, excluindo reprovados (etapa 7)
   const vagasAtivas=vagas.filter(v=>v.status==='aberta'||v.status==='pausada');
@@ -468,11 +470,11 @@ function setTab(tab,el){
 }
 
 // ======== VAGAS ========
-function renderVagas(){
+async function renderVagas(){
   const q=(document.getElementById('search-vaga').value||'').toLowerCase();
   const fe=document.getElementById('fe-vaga').value;
   const fs=document.getElementById('fs-vaga').value;
-  let vagas=DB.vagas.getAll();
+  let vagas = await DB.vagas.getAll();
 
   // banco de talentos always pinned at top
   const banco=vagas.find(v=>v.isBancoTalentos);
@@ -526,10 +528,10 @@ function vagaCard(v){
 }
 
 // ======== NOVA VAGA ========
-function calcPrazo(){
+async function calcPrazo(){
   const sel=document.getElementById('v-perfil').value;
   const ab=document.getElementById('v-abertura').value;
-  const p=DB.perfis.getAll().find(x=>x.nome===sel);
+  const p = await DB.perfis.getAll().find(x=>x.nome===sel);
   if(p){document.getElementById('v-sla').value=p.sla;if(ab)document.getElementById('v-prazo').value=addDaysFrom(ab,p.sla);}
   else{document.getElementById('v-sla').value='';document.getElementById('v-prazo').value='';}
 }
@@ -539,7 +541,7 @@ function toggleSubstituto(){
   const m=document.getElementById('v-motivo').value;
   document.getElementById('bloco-substituto').style.display=m==='SUBSTITUICAO'?'block':'none';
 }
-function openNovaVaga(){
+async function openNovaVaga(){
   document.getElementById('mv-title').textContent='Nova Vaga';
   ['v-cargo','v-depto','v-obs','v-substituto'].forEach(id=>document.getElementById(id).value='');
   ['v-empresa','v-perfil','v-motivo'].forEach(id=>document.getElementById(id).value='');
@@ -547,12 +549,12 @@ function openNovaVaga(){
   document.getElementById('v-prazo').value='';document.getElementById('v-abertura').value=today();
   document.getElementById('bloco-substituto').style.display='none';
   const sel=document.getElementById('v-perfil');
-  sel.innerHTML='<option value="">Selecione</option>'+DB.perfis.getAll().map(p=>`<option value="${p.nome}">${p.nome} (${p.sla}d)</option>`).join('');
+  sel.innerHTML='<option value="">Selecione</option>'+(await DB.perfis.getAll()).map(p=>`<option value="${p.nome}">${p.nome} (${p.sla}d)</option>`).join('');
   openModal('modal-vaga');setTimeout(initUpper,50);
 }
-function gerarCodigo(){
+async function gerarCodigo(){
   const ano=new Date().getFullYear();
-  const vagas=DB.vagas.getAll().filter(v=>!v.isBancoTalentos);
+  const vagas = await DB.vagas.getAll().filter(v=>!v.isBancoTalentos);
   const seq=String(vagas.length+1).padStart(3,'0');
   return`RH-${ano}-${seq}`;
 }
@@ -566,14 +568,14 @@ function salvarVaga(){
   const substituto=sanitize(document.getElementById('v-substituto').value.trim());
   if(!empresa||!cargo||!depto||!perfil||!abertura){toast('Preencha os campos obrigatórios.','err');return;}
   if(motivo==='SUBSTITUICAO'&&!substituto){toast('Informe o colaborador a ser substituído.','err');return;}
-  DB.vagas.add({codigo:gerarCodigo(),empresa,cargo,departamento:depto,perfil,sla:parseInt(document.getElementById('v-sla').value)||0,abertura,prazo:document.getElementById('v-prazo').value,qtd:parseInt(document.getElementById('v-qtd').value)||1,motivo,substituto:substituto||'',obs:sanitize(document.getElementById('v-obs').value)});
+  await DB.vagas.add({codigo:gerarCodigo(),empresa,cargo,departamento:depto,perfil,sla:parseInt(document.getElementById('v-sla').value)||0,abertura,prazo:document.getElementById('v-prazo').value,qtd:parseInt(document.getElementById('v-qtd').value)||1,motivo,substituto:substituto||'',obs:sanitize(document.getElementById('v-obs').value)});
   toast('Vaga aberta!');closeModal('modal-vaga');renderVagas();
 }
 
 // ======== DETALHE / KANBAN ========
-function abrirDetalhe(id){
+async function abrirDetalhe(id){
   vagaAtivaId=id;
-  const v=DB.vagas.getAll().find(x=>x.id===id);if(!v)return;
+  const v = await DB.vagas.getAll().find(x=>x.id===id);if(!v)return;
   const pi=prazoInfo(v);
   document.getElementById('det-title').textContent=v.cargo;
   document.getElementById('det-sub').textContent=`${v.empresa} · ${v.departamento||'—'} · ${v.perfil||'—'} · Abertura: ${fmtDate(v.abertura)}${v.prazo?' · '+pi.label:''}`;
@@ -583,9 +585,9 @@ function abrirDetalhe(id){
   document.getElementById('btn-pausar').style.display=(enc||isBT)?'none':'inline-flex';
   renderKanban(v);openModal('modal-detalhe');
 }
-function encerrarVaga(){
+async function encerrarVaga(){
   if(!confirm('Encerrar esta vaga?'))return;
-  const vagas=DB.vagas.getAll();
+  const vagas = await DB.vagas.getAll();
   const v=vagas.find(x=>x.id===vagaAtivaId);if(!v)return;
   const banco=vagas.find(x=>x.isBancoTalentos);
 
@@ -611,7 +613,7 @@ function encerrarVaga(){
 
   v.candidatos=ficam;
   v.status='encerrada';
-  DB.vagas.save(vagas);
+  await DB.vagas.saveAll(vagas);
 
   const msg=voltam.length>0
     ?`Vaga encerrada. ${voltam.length} candidato${voltam.length!==1?'s':''} retornado${voltam.length!==1?'s':''} ao Banco de Talentos.`
@@ -620,10 +622,10 @@ function encerrarVaga(){
   closeModal('modal-detalhe');
   renderVagas();
 }
-function pausarVaga(){
-  const v=DB.vagas.getAll().find(x=>x.id===vagaAtivaId);if(!v)return;
+async function pausarVaga(){
+  const v = await DB.vagas.getAll().find(x=>x.id===vagaAtivaId);if(!v)return;
   const novo=v.status==='pausada'?'aberta':'pausada';
-  DB.vagas.update(vagaAtivaId,{status:novo});
+  await DB.vagas.update(vagaAtivaId,{status:novo});
   toast(novo==='pausada'?'Vaga pausada.':'Vaga reativada.','warn');
   abrirDetalhe(vagaAtivaId);renderVagas();
 }
@@ -694,10 +696,10 @@ function renderKanban(v){
 function dragStart(e,id){dragId=id;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
 function dragOver(e,col){e.preventDefault();col.classList.add('drag-over');}
 function dragLeave(col){col.classList.remove('drag-over');}
-function dropCard(e,col,etapa){
+async function dropCard(e,col,etapa){
   e.preventDefault();col.classList.remove('drag-over');
   if(!dragId)return;
-  const vagas=DB.vagas.getAll();const v=vagas.find(x=>x.id===vagaAtivaId);if(!v)return;
+  const vagas = await DB.vagas.getAll();const v=vagas.find(x=>x.id===vagaAtivaId);if(!v)return;
   const c=(v.candidatos||[]).find(x=>x.id===dragId);if(!c)return;
   if(c.etapa===etapa){dragId=null;return;}
   // trigger popup
@@ -757,7 +759,7 @@ function mostrarPopupTransicao(cand,toEtapa){
       ${f.hint?`<span class="form-hint">${f.hint}</span>`:''}
     </div>`).join('');
   // pre-fill com dados existentes do candidato
-  const vagas=DB.vagas.getAll();const v=vagas.find(x=>x.id===pendingTransition.vagaId);
+  const vagas = await DB.vagas.getAll();const v=vagas.find(x=>x.id===pendingTransition.vagaId);
   const c=(v.candidatos||[]).find(x=>x.id===pendingTransition.candId);
   if(c){
     cfg.fields.forEach(f=>{
@@ -810,7 +812,7 @@ function mostrarPopupTransicao(cand,toEtapa){
 function cancelarTransicao(){
   pendingTransition={candId:null,toEtapa:null,vagaId:null};
   document.getElementById('popup-transicao').classList.remove('open');
-  const v=DB.vagas.getAll().find(x=>x.id===vagaAtivaId);if(v)renderKanban(v);
+  const v = await DB.vagas.getAll().find(x=>x.id===vagaAtivaId);if(v)renderKanban(v);
 }
 
 function confirmarTransicao(){
@@ -825,7 +827,7 @@ function confirmarTransicao(){
     }
   }
   // apply
-  const vagas=DB.vagas.getAll();
+  const vagas = await DB.vagas.getAll();
   const v=vagas.find(x=>x.id===pendingTransition.vagaId);if(!v)return;
   const c=(v.candidatos||[]).find(x=>x.id===pendingTransition.candId);if(!c)return;
 
@@ -851,11 +853,11 @@ function confirmarTransicao(){
 
     // ---- AUTO-AGENDA: cria evento se houver data de entrevista ou teste ----
     if(pendingTransition.toEtapa===1&&c.dtEntrevista)
-      DB.eventos.add({tipo:'ENTREVISTA',desc:`ENTREVISTA: ${c.nome} — ${v.cargo}`,dt:c.dtEntrevista,empresa:v.empresa||'',obs:v.codigo||''});
+      await DB.eventos.add({tipo:'ENTREVISTA',desc:`ENTREVISTA: ${c.nome} — ${v.cargo}`,dt:c.dtEntrevista,empresa:v.empresa||'',obs:v.codigo||''});
     if(pendingTransition.toEtapa===2&&c.dtTeste)
-      DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${c.nome} — ${v.cargo}`,dt:c.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
+      await DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${c.nome} — ${v.cargo}`,dt:c.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
     if(pendingTransition.toEtapa===3&&c.dtTeste)
-      DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${c.nome} — ${v.cargo}`,dt:c.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
+      await DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${c.nome} — ${v.cargo}`,dt:c.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
     // Se confirmou interesse, registrar aceite na vaga para parar contagem do prazo
     if(c.interesse==='sim'&&c.dtAceite&&!v.aceiteData){
       v.aceiteData=c.dtAceite;
@@ -866,7 +868,7 @@ function confirmarTransicao(){
     if(pendingTransition.toEtapa===1&&c.resultadoEntrevista==='reprovado'){
       c.etapa=7;c.historicoEtapas.push(7);
       if(!c.motivoRep)c.motivoRep='REPROVADO NA ENTREVISTA';
-      DB.vagas.save(vagas);
+      await DB.vagas.saveAll(vagas);
       document.getElementById('popup-transicao').classList.remove('open');
       pendingTransition={candId:null,toEtapa:null,vagaId:null};
       abrirDetalhe(vagaAtivaId);renderVagas();
@@ -877,7 +879,7 @@ function confirmarTransicao(){
     if(pendingTransition.toEtapa===3&&c.avaliacao==='reprovado'){
       c.etapa=7;c.historicoEtapas.push(7);
       if(!c.motivoRep)c.motivoRep='REPROVADO NO TESTE PRATICO';
-      DB.vagas.save(vagas);
+      await DB.vagas.saveAll(vagas);
       document.getElementById('popup-transicao').classList.remove('open');
       pendingTransition={candId:null,toEtapa:null,vagaId:null};
       abrirDetalhe(vagaAtivaId);renderVagas();
@@ -888,7 +890,7 @@ function confirmarTransicao(){
     if(pendingTransition.toEtapa===4&&c.interesse==='nao'){
       c.etapa=7;c.historicoEtapas.push(7);
       if(!c.motivoRep)c.motivoRep='NAO ACEITOU A PROPOSTA';
-      DB.vagas.save(vagas);
+      await DB.vagas.saveAll(vagas);
       document.getElementById('popup-transicao').classList.remove('open');
       pendingTransition={candId:null,toEtapa:null,vagaId:null};
       abrirDetalhe(vagaAtivaId);renderVagas();
@@ -915,21 +917,21 @@ function confirmarTransicao(){
     toast('Vaga encerrada automaticamente!','warn');
   }
 
-  DB.vagas.save(vagas);
+  await DB.vagas.saveAll(vagas);
   document.getElementById('popup-transicao').classList.remove('open');
   pendingTransition={candId:null,toEtapa:null,vagaId:null};
   abrirDetalhe(vagaAtivaId);renderVagas();
   toast('Candidato movido com sucesso!');
 }
 
-function confirmarTransicaoSimples(){
-  const vagas=DB.vagas.getAll();
+async function confirmarTransicaoSimples(){
+  const vagas = await DB.vagas.getAll();
   const v=vagas.find(x=>x.id===pendingTransition.vagaId);if(!v)return;
   const c=(v.candidatos||[]).find(x=>x.id===pendingTransition.candId);if(!c)return;
   if(!c.historicoEtapas)c.historicoEtapas=[c.etapa];
   c.etapa=pendingTransition.toEtapa;
   c.historicoEtapas.push(pendingTransition.toEtapa);
-  DB.vagas.save(vagas);
+  await DB.vagas.saveAll(vagas);
   pendingTransition={candId:null,toEtapa:null,vagaId:null};
   abrirDetalhe(vagaAtivaId);renderVagas();
 }
@@ -944,8 +946,8 @@ function openNovoCandidato(){
   document.getElementById('bloco-indicado').style.display='none';
   openModal('modal-cand');setTimeout(initUpper,50);
 }
-function editarCandidato(cid){
-  const v=DB.vagas.getAll().find(x=>x.id===vagaAtivaId);
+async function editarCandidato(cid){
+  const v = await DB.vagas.getAll().find(x=>x.id===vagaAtivaId);
   const c=(v.candidatos||[]).find(x=>x.id===cid);if(!c)return;
   candEditId=cid;
   document.getElementById('mc-title').textContent='Editar Candidato';
@@ -999,7 +1001,7 @@ function salvarCandidatoForm(){
     obs:sanitize(document.getElementById('c-obs').value),
     etapa:0,historicoEtapas:[0],
   };
-  const vagas=DB.vagas.getAll();
+  const vagas = await DB.vagas.getAll();
   const v=vagas.find(x=>x.id===vagaAtivaId);if(!v)return;
 
   if(candEditId){
@@ -1008,13 +1010,11 @@ function salvarCandidatoForm(){
       const old=v.candidatos[idx]; // captura ANTES de substituir
       cand.etapa=old.etapa;
       cand.historicoEtapas=old.historicoEtapas||[old.etapa];
-      // preservar dtIntegracao se não foi alterada (campo pode estar vazio no form mas dado já existe)
-      if(!cand.dtIntegracao&&old.dtIntegracao) cand.dtIntegracao=old.dtIntegracao;
       // agenda: só cria se a data mudou
       if(cand.dtEntrevista&&cand.dtEntrevista!==old.dtEntrevista)
-        DB.eventos.add({tipo:'ENTREVISTA',desc:`ENTREVISTA: ${cand.nome} — ${v.cargo}`,dt:cand.dtEntrevista,empresa:v.empresa||'',obs:v.codigo||''});
+        await DB.eventos.add({tipo:'ENTREVISTA',desc:`ENTREVISTA: ${cand.nome} — ${v.cargo}`,dt:cand.dtEntrevista,empresa:v.empresa||'',obs:v.codigo||''});
       if(cand.dtTeste&&cand.dtTeste!==old.dtTeste)
-        DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${cand.nome} — ${v.cargo}`,dt:cand.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
+        await DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${cand.nome} — ${v.cargo}`,dt:cand.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
       v.candidatos[idx]=cand;
     }
   } else {
@@ -1022,9 +1022,9 @@ function salvarCandidatoForm(){
     v.candidatos.push(cand);
     // agenda: novo candidato com datas preenchidas
     if(cand.dtEntrevista)
-      DB.eventos.add({tipo:'ENTREVISTA',desc:`ENTREVISTA: ${cand.nome} — ${v.cargo}`,dt:cand.dtEntrevista,empresa:v.empresa||'',obs:v.codigo||''});
+      await DB.eventos.add({tipo:'ENTREVISTA',desc:`ENTREVISTA: ${cand.nome} — ${v.cargo}`,dt:cand.dtEntrevista,empresa:v.empresa||'',obs:v.codigo||''});
     if(cand.dtTeste)
-      DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${cand.nome} — ${v.cargo}`,dt:cand.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
+      await DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${cand.nome} — ${v.cargo}`,dt:cand.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
   }
 
   if(cand.interesse==='sim'&&cand.dtAceite&&!v.aceiteData)v.aceiteData=cand.dtAceite;
@@ -1036,21 +1036,21 @@ function salvarCandidatoForm(){
     cand.historicoEtapas.push(7);
     if(!cand.motivoRep)cand.motivoRep='REPROVADO NA ENTREVISTA';
   }
-  DB.vagas.save(vagas);
+  await DB.vagas.saveAll(vagas);
   toast(candEditId?'Candidato atualizado.':'Candidato adicionado.');
   closeModal('modal-cand');abrirDetalhe(vagaAtivaId);renderVagas();
 }
-function removerCandidato(cid){
+async function removerCandidato(cid){
   if(!confirm('Remover candidato?'))return;
-  const vagas=DB.vagas.getAll();const v=vagas.find(x=>x.id===vagaAtivaId);if(!v)return;
-  v.candidatos=(v.candidatos||[]).filter(x=>x.id!==cid);DB.vagas.save(vagas);
+  const vagas = await DB.vagas.getAll();const v=vagas.find(x=>x.id===vagaAtivaId);if(!v)return;
+  v.candidatos=(v.candidatos||[]).filter(x=>x.id!==cid);await DB.vagas.saveAll(vagas);
   toast('Candidato removido.');abrirDetalhe(vagaAtivaId);renderVagas();
 }
 
 // ======== PERFIS ========
 function openPerfisModal(){renderPerfis();openModal('modal-perfis');}
-function renderPerfis(){
-  document.getElementById('lista-perfis').innerHTML=DB.perfis.getAll().map(p=>`
+async function renderPerfis(){
+  document.getElementById('lista-perfis').innerHTML=(await DB.perfis.getAll()).map(p=>`
     <div class="perfil-row">
       <div class="perfil-nome">${p.nome}</div>
       <div style="font-size:12px;color:var(--text2);font-weight:500">${p.sla} dias</div>
@@ -1062,27 +1062,27 @@ function addPerfil(){
   const nome=sanitize(document.getElementById('np-nome').value.trim());
   const sla=parseInt(document.getElementById('np-sla').value);
   if(!nome||!sla){toast('Preencha nome e SLA.','err');return;}
-  const perfis=DB.perfis.getAll();
+  const perfis = await DB.perfis.getAll();
   if(perfis.find(p=>p.nome===nome)){toast('Perfil já existe.','err');return;}
-  perfis.push({id:'p_'+Date.now(),nome,sla});DB.perfis.save(perfis);
+  perfis.push({id:'p_'+Date.now(),nome,sla});await DB.perfis.saveAll(perfis);
   document.getElementById('np-nome').value='';document.getElementById('np-sla').value='';
   renderPerfis();toast('Perfil adicionado!');
 }
-function editarPerfil(id){
-  const perfis=DB.perfis.getAll();const p=perfis.find(x=>x.id===id);if(!p)return;
+async function editarPerfil(id){
+  const perfis = await DB.perfis.getAll();const p=perfis.find(x=>x.id===id);if(!p)return;
   const nn=prompt(`Nome atual: "${p.nome}"\nNovo nome:`,p.nome);if(!nn)return;
   const ns=prompt(`SLA atual: ${p.sla} dias\nNovo SLA (dias):`,p.sla);if(!ns)return;
   p.nome=sanitize(nn.trim())||p.nome;p.sla=parseInt(ns)||p.sla;
-  DB.perfis.save(perfis);renderPerfis();toast('Perfil atualizado. Vale para novas vagas.','warn');
+  await DB.perfis.saveAll(perfis);renderPerfis();toast('Perfil atualizado. Vale para novas vagas.','warn');
 }
-function removerPerfil(id){
+async function removerPerfil(id){
   if(!confirm('Remover perfil?'))return;
-  DB.perfis.save(DB.perfis.getAll().filter(p=>p.id!==id));renderPerfis();toast('Perfil removido.');
+  await DB.perfis.saveAll((await DB.perfis.getAll()).filter(p=>p.id!==id));renderPerfis();toast('Perfil removido.');
 }
 
 // ======== AGENDA ========
-function renderAgenda(){
-  const eventos=DB.eventos.getAll().sort((a,b)=>new Date(a.dt)-new Date(b.dt));
+async function renderAgenda(){
+  const eventos = await DB.eventos.getAll().sort((a,b)=>new Date(a.dt)-new Date(b.dt));
   const hoje=new Date();hoje.setHours(0,0,0,0);
   const fut=eventos.filter(e=>new Date(e.dt)>=hoje),pas=eventos.filter(e=>new Date(e.dt)<hoje);
   document.getElementById('agenda-content').innerHTML=`
@@ -1113,21 +1113,21 @@ function salvarEvento(){
   const desc=sanitize(document.getElementById('ev-desc').value.trim());
   const dt=document.getElementById('ev-dt').value;
   if(!tipo||!desc||!dt){toast('Preencha os campos obrigatórios.','err');return;}
-  DB.eventos.add({tipo,desc,dt,empresa:document.getElementById('ev-empresa').value,obs:sanitize(document.getElementById('ev-obs').value)});
+  await DB.eventos.add({tipo,desc,dt,empresa:document.getElementById('ev-empresa').value,obs:sanitize(document.getElementById('ev-obs').value)});
   toast('Evento adicionado!');closeModal('modal-evento');renderAgenda();
 }
 function removerEvento(id){if(!confirm('Remover evento?'))return;DB.eventos.remove(id);renderAgenda();}
 
 // ======== CANCELAR VAGA ========
-function cancelarVaga(id){
+async function cancelarVaga(id){
   if(!confirm('Cancelar esta vaga? Ela ficará com status Cancelada.'))return;
-  DB.vagas.update(id,{status:'cancelada'});
+  await DB.vagas.update(id,{status:'cancelada'});
   toast('Vaga cancelada.','warn');renderVagas();
 }
 
 // ======== TRANSFERIR CANDIDATO ========
-function transferirCandidato(cid){
-  const vagas=DB.vagas.getAll();
+async function transferirCandidato(cid){
+  const vagas = await DB.vagas.getAll();
   const origem=vagas.find(x=>x.id===vagaAtivaId);if(!origem)return;
   const cand=(origem.candidatos||[]).find(x=>x.id===cid);if(!cand)return;
   const opcoes=vagas.filter(v=>v.id!==vagaAtivaId&&v.status!=='cancelada'&&v.status!=='encerrada');
@@ -1142,24 +1142,24 @@ function transferirCandidato(cid){
   origem.candidatos=(origem.candidatos||[]).filter(x=>x.id!==cid);
   destino.candidatos=destino.candidatos||[];
   destino.candidatos.push({...cand,id:'c_'+Date.now()});
-  DB.vagas.save(vagas);
+  await DB.vagas.saveAll(vagas);
   toast(`Candidato transferido para ${destino.cargo}!`);
   abrirDetalhe(vagaAtivaId);renderVagas();
 }
 
 // ======== AUTO-AGENDA (entrevista/teste) ========
-function autoAgenda(cand,vaga){
+async function autoAgenda(cand,vaga){
   if(cand.dtEntrevista){
-    DB.eventos.add({tipo:'ENTREVISTA',desc:`ENTREVISTA: ${cand.nome} — ${vaga.cargo}`,dt:cand.dtEntrevista,empresa:vaga.empresa,obs:vaga.codigo||''});
+    await DB.eventos.add({tipo:'ENTREVISTA',desc:`ENTREVISTA: ${cand.nome} — ${vaga.cargo}`,dt:cand.dtEntrevista,empresa:vaga.empresa,obs:vaga.codigo||''});
   }
   if(cand.dtTeste){
-    DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${cand.nome} — ${vaga.cargo}`,dt:cand.dtTeste,empresa:vaga.empresa,obs:vaga.codigo||''});
+    await DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${cand.nome} — ${vaga.cargo}`,dt:cand.dtTeste,empresa:vaga.empresa,obs:vaga.codigo||''});
   }
 }
 
 // ======== EXPORTAR VAGA EXCEL ========
-function exportarVagaExcel(id){
-  const v=DB.vagas.getAll().find(x=>x.id===id);if(!v)return;
+async function exportarVagaExcel(id){
+  const v = await DB.vagas.getAll().find(x=>x.id===id);if(!v)return;
   const rows=[
     ['Código','Cargo','Empresa','Departamento','Perfil','SLA','Abertura','Prazo','Motivo','Substituto','Status'],
     [v.codigo||'—',v.cargo,v.empresa,v.departamento||'—',v.perfil||'—',v.sla||'—',fmtDate(v.abertura),fmtDate(v.prazo),v.motivo||'—',v.substituto||'—',v.isBancoTalentos?'Banco de Talentos':v.status],
@@ -1185,8 +1185,8 @@ function exportarVagaExcel(id){
 }
 
 // ======== EXPORTAR TODAS AS VAGAS ========
-function exportarTodasVagas(){
-  const vagas=DB.vagas.getAll().filter(v=>!v.isBancoTalentos);
+async function exportarTodasVagas(){
+  const vagas = await DB.vagas.getAll().filter(v=>!v.isBancoTalentos);
   const rows=[['Código','Cargo','Empresa','Departamento','Perfil','SLA','Abertura','Prazo','Status','Motivo','Substituto','Candidatos','Ativos','Integrações']];
   vagas.forEach(v=>{
     const nC=(v.candidatos||[]).length;
@@ -1202,11 +1202,11 @@ function exportarTodasVagas(){
 }
 
 // ======== BANCO DE TALENTOS INIT ========
-function ensureBancoTalentos(){
-  const vagas=DB.vagas.getAll();
+async function ensureBancoTalentos(){
+  const vagas = await DB.vagas.getAll();
   if(!vagas.find(v=>v.isBancoTalentos)){
     const b={id:'banco_talentos',isBancoTalentos:true,cargo:'BANCO DE TALENTOS',departamento:'—',perfil:'—',empresa:'Nova.',status:'aberta',candidatos:[],criadoEm:'2000-01-01T00:00:00.000Z',codigo:'BT-0001'};
-    vagas.unshift(b);DB.vagas.save(vagas);
+    vagas.unshift(b);await DB.vagas.saveAll(vagas);
   }
 }
 

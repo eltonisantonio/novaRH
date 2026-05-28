@@ -124,6 +124,9 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 /* SHEET */
 .sheet{position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:2px solid var(--black);padding:22px 32px 28px;z-index:200;box-shadow:0 -4px 24px rgba(0,0,0,.15);}
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-db.js"></script>
 </head>
 <body>
 <div class="app">
@@ -157,45 +160,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 </div>
 
 <script>
-var DB = {
-  funcs: {
-    key: 'nova_funcionarios_v1',
-    getAll: function() {
-      try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e) { return []; }
-    }
-  },
-  eventos: {
-    key: 'nova_dossie_v1',
-    getAll: function() {
-      try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e) { return []; }
-    },
-    save: function(d) { localStorage.setItem(this.key, JSON.stringify(d)); },
-    add: function(ev) {
-      var all = this.getAll();
-      ev.id = 'ev_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
-      ev.criadoEm = new Date().toISOString();
-      ev.fonte = 'manual';
-      all.push(ev);
-      this.save(all);
-      return ev;
-    },
-    remove: function(id) {
-      this.save(this.getAll().filter(function(x){ return x.id !== id; }));
-    }
-  },
-  exp: {
-    key: 'nova_exp_v1',
-    getAll: function() {
-      try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e) { return []; }
-    }
-  },
-  adm: {
-    key: 'nova_adm_processos_v1',
-    getAll: function() {
-      try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e) { return []; }
-    }
-  }
-};
+var DB={funcs:FDB.funcionarios,eventos:FDB.dossie,exp:FDB.experiencias,processos:FDB.adm_processos};
 
 var funcAtivoId = null;
 var pagAtual = 1;
@@ -243,13 +208,13 @@ function toast(msg, type) {
 }
 
 // pega eventos de todos os modulos para um funcionario
-function getEventosFuncionario(funcId) {
+async function getEventosFuncionario(funcId) {
   var eventos = [];
-  var f = DB.funcs.getAll().find(function(x){ return x.id === funcId; });
+  var f = await DB.funcs.getAll().find(function(x){ return x.id === funcId; });
   if (!f) return [];
 
   // 1. Eventos manuais do dossie
-  DB.eventos.getAll().filter(function(ev){ return ev.funcId === funcId; }).forEach(function(ev){
+  (await DB.eventos.getAll()).filter(function(ev){ return ev.funcId === funcId; }).forEach(function(ev){
     eventos.push({
       id: ev.id,
       tipo: ev.tipo,
@@ -263,7 +228,7 @@ function getEventosFuncionario(funcId) {
   });
 
   // 2. Admissao: processo
-  DB.adm.getAll().filter(function(p){
+  (await DB.adm.getAll()).filter(function(p){
     return p.funcId === funcId || (p.nome && f.nome && p.nome.toUpperCase() === f.nome.toUpperCase());
   }).forEach(function(p){
     eventos.push({
@@ -279,7 +244,7 @@ function getEventosFuncionario(funcId) {
   });
 
   // 3. Experiencia: feedbacks e acoes registradas
-  var expRec = DB.exp.getAll().find(function(x){ return x.funcId === funcId; });
+  var expRec = await DB.exp.getAll().find(function(x){ return x.funcId === funcId; });
   if (expRec && expRec.checks) {
     var checks = expRec.checks;
     Object.keys(checks).forEach(function(k) {
@@ -322,7 +287,7 @@ function setTabStatus(tab) {
   renderLista();
 }
 
-function renderLista() {
+async function renderLista() {
   var q = '';
   var fe = '';
   var searchEl = document.getElementById('search-func');
@@ -330,7 +295,7 @@ function renderLista() {
   if (searchEl) q = searchEl.value.toLowerCase();
   if (empEl) fe = empEl.value;
 
-  var funcs = DB.funcs.getAll();
+  var funcs = await DB.funcs.getAll();
   // filtro de status
   if (tabStatus === 'ativos') funcs = funcs.filter(function(f){ return !f.desligado; });
   else if (tabStatus === 'desligados') funcs = funcs.filter(function(f){ return !!f.desligado; });
@@ -343,8 +308,8 @@ function renderLista() {
   var start = (pagAtual - 1) * POR_PAGINA;
   var pagFuncs = funcs.slice(start, start + POR_PAGINA);
 
-  var totalAtivos = DB.funcs.getAll().filter(function(f){ return !f.desligado; }).length;
-  var totalDeslig = DB.funcs.getAll().filter(function(f){ return !!f.desligado; }).length;
+  var totalAtivos = await DB.funcs.getAll().filter(function(f){ return !f.desligado; }).length;
+  var totalDeslig = await DB.funcs.getAll().filter(function(f){ return !!f.desligado; }).length;
 
   var html = '<div style="display:flex;gap:2px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:3px;margin-bottom:16px;width:fit-content">'
     + '<button style="padding:7px 18px;border-radius:5px;font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:Inter,sans-serif;transition:all .15s;'
@@ -408,11 +373,11 @@ function renderLista() {
 }
 
 // ======== DOSSIE INDIVIDUAL ========
-function abrirDossie(id) {
+async function abrirDossie(id) {
   funcAtivoId = id;
   document.getElementById('view-lista').style.display = 'none';
   document.getElementById('view-dossie').style.display = 'block';
-  var f = DB.funcs.getAll().find(function(x){ return x.id === id; });
+  var f = await DB.funcs.getAll().find(function(x){ return x.id === id; });
   document.getElementById('topbar-title').textContent = f ? f.nome : 'Dossie';
   document.getElementById('topbar-actions').innerHTML =
     '<button class="btn btn-sm" onclick="voltarLista()"><i class="ti ti-arrow-left"></i> Voltar</button>'
@@ -430,8 +395,8 @@ function voltarLista() {
   renderLista();
 }
 
-function renderDossie() {
-  var f = DB.funcs.getAll().find(function(x){ return x.id === funcAtivoId; });
+async function renderDossie() {
+  var f = await DB.funcs.getAll().find(function(x){ return x.id === funcAtivoId; });
   if (!f) return;
   var eventos = getEventosFuncionario(funcAtivoId);
 
@@ -548,7 +513,7 @@ function salvarEvento() {
   var data = document.getElementById('ev-data').value;
   var desc = (document.getElementById('ev-desc').value || '').trim();
   if (!tipo || !data || !desc) { toast('Preencha os campos obrigatorios.', 'err'); return; }
-  DB.eventos.add({
+  await DB.eventos.add({
     funcId: funcAtivoId,
     tipo: tipo,
     data: data,
@@ -561,16 +526,16 @@ function salvarEvento() {
   renderDossie();
 }
 
-function removerEvento(id) {
+async function removerEvento(id) {
   if (!confirm('Remover este registro?')) return;
-  DB.eventos.remove(id);
+  await DB.eventos.remove(id);
   toast('Removido.');
   renderDossie();
 }
 
 // ======== EXPORTAR ========
-function exportarDossie() {
-  var f = DB.funcs.getAll().find(function(x){ return x.id === funcAtivoId; });
+async function exportarDossie() {
+  var f = await DB.funcs.getAll().find(function(x){ return x.id === funcAtivoId; });
   if (!f) return;
   var eventos = getEventosFuncionario(funcAtivoId);
 

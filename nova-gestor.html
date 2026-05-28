@@ -43,6 +43,9 @@ body{font-family:'Inter',sans-serif;background:var(--cream);min-height:100vh;dis
 .notice{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:var(--r);font-size:12px;font-weight:500;margin-bottom:16px;background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
 .notice i{font-size:14px;flex-shrink:0;margin-top:1px;}
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-db.js"></script>
 </head>
 <body>
 <div class="card">
@@ -152,10 +155,10 @@ body{font-family:'Inter',sans-serif;background:var(--cream);min-height:100vh;dis
 const SOL_KEY = 'nova_solicitacoes_v1';
 const SETORES_KEY = 'nova_sol_setores_v1';
 
-function carregarSetores(){
+async function carregarSetores(){
   var sel=document.getElementById('g-setor');
   try{
-    var setores=JSON.parse(localStorage.getItem(SETORES_KEY)||'[]');
+    var setores=await FDB.sol_setores.getAll();
     if(setores.length){
       setores.forEach(function(s){
         var opt=document.createElement('option');
@@ -173,7 +176,7 @@ function carregarSetores(){
   }
 }
 
-carregarSetores();
+(async()=>{await carregarSetores();})();
 
 function sanitize(s){
   var d=document.createElement('div');
@@ -190,15 +193,14 @@ function gerarId(){
   return 'sol_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
 }
 
-function gerarCodigo(){
+async function gerarCodigo(){
   var ano=new Date().getFullYear();
-  var sols=[];
-  try{sols=JSON.parse(localStorage.getItem(SOL_KEY)||'[]');}catch{}
+  var sols=await FDB.solicitacoes.getAll();
   var n=(sols.length+1).toString().padStart(3,'0');
   return 'SOL-'+ano+'-'+n;
 }
 
-function enviarSolicitacao(){
+async function enviarSolicitacao(){
   var nome=(document.getElementById('g-nome').value||'').trim();
   var email=(document.getElementById('g-email').value||'').trim();
   var empresa=document.getElementById('g-empresa').value;
@@ -224,7 +226,7 @@ function enviarSolicitacao(){
 
   var sol={
     id:gerarId(),
-    codigo:gerarCodigo(),
+    codigo:(await gerarCodigo()),
     criadoEm:new Date().toISOString(),
     status:'pendente', // pendente → aprovado / reprovado
     gestor:sanitize(nome),
@@ -246,8 +248,7 @@ function enviarSolicitacao(){
     }],
   };
 
-  sols.unshift(sol);
-  localStorage.setItem(SOL_KEY,JSON.stringify(sols));
+  await FDB.solicitacoes.add(sol);
 
   document.getElementById('sol-codigo').textContent='Protocolo: '+sol.codigo;
   document.getElementById('view-form').style.display='none';

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova. RH — Aprovação N2</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--white:#fff;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;}
+body{font-family:'Inter',sans-serif;background:var(--cream);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:40px 16px 60px;}
+.card{background:var(--white);border:1px solid var(--border);border-radius:14px;width:100%;max-width:620px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.07);}
+.card-header{background:var(--black);padding:24px 32px;display:flex;align-items:center;gap:14px;}
+.logo-text{font-size:20px;font-weight:900;letter-spacing:-.5px;color:var(--cream);}
+.logo-dot{width:8px;height:8px;background:var(--lime);border-radius:50%;display:inline-block;margin-left:2px;margin-bottom:1px;}
+.header-title{font-size:13px;font-weight:700;color:rgba(255,255,255,.9);margin-top:2px;}
+.header-sub{font-size:11px;color:rgba(255,255,255,.4);margin-top:2px;}
+.card-body{padding:28px 32px;}
+/* States */
+.state{display:none;}
+.state.active{display:block;}
+/* Loading */
+.loading-wrap{text-align:center;padding:48px 20px;}
+.loading-dots{display:flex;gap:6px;justify-content:center;margin-bottom:12px;}
+.loading-dot{width:8px;height:8px;border-radius:50%;background:var(--lime);animation:blink 1s infinite;}
+.loading-dot:nth-child(2){animation-delay:.2s;}
+.loading-dot:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+.loading-label{font-size:13px;font-weight:600;color:var(--text2);}
+/* Detail */
+.detail-row{display:flex;gap:8px;margin-bottom:10px;font-size:13px;}
+.detail-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;min-width:110px;flex-shrink:0;margin-top:1px;}
+.detail-value{color:var(--text);font-weight:500;line-height:1.5;}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+.section-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:12px;}
+/* Buttons */
+.btn-group{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px;}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;border-radius:var(--r);border:none;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.btn-aprovar{background:#1a5c35;color:#fff;}
+.btn-aprovar:hover{background:#14472a;}
+.btn-reprovar{background:#8b1c1c;color:#fff;}
+.btn-reprovar:hover{background:#6b1515;}
+/* Reprovar form */
+.reprovar-form{display:none;margin-top:20px;padding-top:20px;border-top:1px solid var(--border);}
+.reprovar-form.open{display:block;}
+.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.form-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;}
+.form-textarea{padding:10px 12px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;resize:vertical;min-height:100px;width:100%;}
+.form-textarea:focus{border-color:var(--black);}
+.btn-confirmar-rep{width:100%;padding:12px;border-radius:var(--r);border:none;background:#8b1c1c;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-top:8px;}
+.btn-cancelar-rep{width:100%;padding:10px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--text2);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;margin-top:6px;}
+/* Notice */
+.notice{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:var(--r);font-size:12px;font-weight:500;margin-bottom:16px;}
+.notice-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
+.notice-green{background:#e8f8ef;color:#1a5c35;border:1px solid #a8d8b8;}
+.notice-red{background:#fdeaea;color:#8b1c1c;border:1px solid #f5c6c6;}
+/* Result */
+.result-wrap{text-align:center;padding:40px 20px;}
+.result-icon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
+.result-icon.ok{background:var(--lime);}
+.result-icon.err{background:#fdeaea;}
+.result-icon i{font-size:28px;}
+.result-title{font-size:20px;font-weight:900;margin-bottom:8px;}
+.result-sub{font-size:13px;color:var(--text2);line-height:1.6;}
+/* Error */
+.error-wrap{text-align:center;padding:48px 20px;}
+.error-icon{font-size:40px;color:var(--text3);display:block;margin-bottom:12px;}
+.error-title{font-size:16px;font-weight:800;margin-bottom:6px;}
+.error-sub{font-size:13px;color:var(--text2);}
+/* Already answered */
+.badge-status{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:16px;}
+.badge-aprovado{background:#e8f8ef;color:#1a5c35;border:1px solid #a8d8b8;}
+.badge-reprovado{background:#fdeaea;color:#8b1c1c;border:1px solid #f5c6c6;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="card-header">
+    <div>
+      <div style="display:flex;align-items:baseline"><span class="logo-text">NOVA</span><span class="logo-dot"></span></div>
+      <div class="header-title">Aprovação de Solicitação de Vaga</div>
+      <div class="header-sub" id="header-sub">Carregando...</div>
+    </div>
+  </div>
+
+  <div class="card-body">
+
+    <!-- LOADING -->
+    <div class="state active" id="state-loading">
+      <div class="loading-wrap">
+        <div class="loading-dots">
+          <div class="loading-dot"></div>
+          <div class="loading-dot"></div>
+          <div class="loading-dot"></div>
+        </div>
+        <div class="loading-label">Carregando solicitação...</div>
+      </div>
+    </div>
+
+    <!-- ERROR -->
+    <div class="state" id="state-error">
+      <div class="error-wrap">
+        <i class="ti ti-alert-circle error-icon"></i>
+        <div class="error-title">Solicitação não encontrada</div>
+        <div class="error-sub" id="error-msg">O link pode estar incorreto ou a solicitação foi removida.</div>
+      </div>
+    </div>
+
+    <!-- JÁ RESPONDIDA -->
+    <div class="state" id="state-done">
+      <div id="done-content"></div>
+    </div>
+
+    <!-- FORMULÁRIO DE DECISÃO -->
+    <div class="state" id="state-form">
+      <div class="notice notice-amber">
+        <i class="ti ti-alert-triangle" style="font-size:14px;flex-shrink:0;margin-top:1px"></i>
+        <span>Você está avaliando esta solicitação como N2. Sua decisão será registrada e o RH será notificado.</span>
+      </div>
+
+      <div class="section-title">Dados da Solicitação</div>
+      <div class="detail-row"><span class="detail-label">Protocolo</span><span class="detail-value" id="d-codigo" style="font-weight:800"></span></div>
+      <div class="detail-row"><span class="detail-label">Gestor</span><span class="detail-value" id="d-gestor"></span></div>
+      <div class="detail-row"><span class="detail-label">Empresa</span><span class="detail-value" id="d-empresa"></span></div>
+      <div class="detail-row"><span class="detail-label">Setor</span><span class="detail-value" id="d-setor"></span></div>
+      <div class="divider"></div>
+      <div class="section-title">Vaga</div>
+      <div class="detail-row"><span class="detail-label">Cargo</span><span class="detail-value" id="d-cargo" style="font-weight:800"></span></div>
+      <div class="detail-row"><span class="detail-label">Motivo</span><span class="detail-value" id="d-motivo"></span></div>
+      <div class="detail-row"><span class="detail-label">Escala</span><span class="detail-value" id="d-escala"></span></div>
+      <div class="detail-row" id="row-substituto" style="display:none"><span class="detail-label">Substituto</span><span class="detail-value" id="d-substituto"></span></div>
+      <div class="detail-row" id="row-requisitos" style="display:none"><span class="detail-label">Requisitos</span><span class="detail-value" id="d-requisitos"></span></div>
+      <div class="detail-row" id="row-obs" style="display:none"><span class="detail-label">Observações</span><span class="detail-value" id="d-obs"></span></div>
+
+      <div class="btn-group">
+        <button class="btn btn-aprovar" onclick="aprovar()"><i class="ti ti-check"></i> Aprovar</button>
+        <button class="btn btn-reprovar" onclick="toggleReprovar()"><i class="ti ti-x"></i> Reprovar</button>
+      </div>
+
+      <div class="reprovar-form" id="reprovar-form">
+        <div class="form-group">
+          <label class="form-label">Justificativa da Reprovação <span style="color:#c0392b">*</span></label>
+          <textarea class="form-textarea" id="rep-just" placeholder="Descreva o motivo da reprovação..."></textarea>
+        </div>
+        <button class="btn-confirmar-rep" onclick="reprovar()"><i class="ti ti-x"></i> Confirmar Reprovação</button>
+        <button class="btn-cancelar-rep" onclick="toggleReprovar()">Cancelar</button>
+      </div>
+    </div>
+
+    <!-- SUCESSO -->
+    <div class="state" id="state-success">
+      <div class="result-wrap">
+        <div class="result-icon ok"><i class="ti ti-check" style="color:var(--black)"></i></div>
+        <div class="result-title" id="success-title">Aprovado!</div>
+        <div class="result-sub" id="success-sub">Sua decisão foi registrada. O RH foi notificado e dará continuidade ao processo.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── Firebase ──
+const firebaseConfig = {
+  apiKey: "AIzaSyAhoLSoe7bRdDakJ6apJcnWMBL5RHmQtDI",
+  authDomain: "novarh-4fbc6.firebaseapp.com",
+  projectId: "novarh-4fbc6",
+  storageBucket: "novarh-4fbc6.firebasestorage.app",
+  messagingSenderId: "805399291743",
+  appId: "1:805399291743:web:ac13f2572f875c0ec1b8ea"
+};
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ── EmailJS ──
+// SUBSTITUA com suas credenciais
+const EMAILJS_SERVICE  = 'service_v1stn8m';
+const EMAILJS_TEMPLATE_RH = 'template_f69wi39'; // template que notifica o RH
+const EMAILJS_PUBLIC   = 'AtHQdnGVUyUK30fSt';
+emailjs.init(EMAILJS_PUBLIC);
+
+// ── Estado ──
+let solId   = null;
+let solData = null;
+let reprovarAberto = false;
+
+// ── Funções de estado ──
+function showState(id){
+  document.querySelectorAll('.state').forEach(function(el){ el.classList.remove('active'); });
+  document.getElementById(id).classList.add('active');
+}
+
+function fmtDT(s){
+  if(!s) return '—';
+  var parts = s.split('T');
+  var ymd = parts[0].split('-');
+  return ymd[2]+'/'+ymd[1]+'/'+ymd[0];
+}
+
+// ── Carregar solicitação ──
+async function carregarSolicitacao(){
+  var params = new URLSearchParams(window.location.search);
+  solId = params.get('sol');
+
+  if(!solId){
+    document.getElementById('error-msg').textContent = 'Nenhum ID de solicitação fornecido no link.';
+    showState('state-error');
+    return;
+  }
+
+  try {
+    var docRef = db.collection('solicitacoes').doc(solId);
+    var doc = await docRef.get();
+
+    if(!doc.exists){
+      document.getElementById('error-msg').textContent = 'Solicitação não encontrada. O link pode estar desatualizado.';
+      showState('state-error');
+      return;
+    }
+
+    solData = { id: doc.id, ...doc.data() };
+    document.getElementById('header-sub').textContent = solData.codigo + ' · ' + fmtDT(solData.criadoEm);
+
+    // Verificar se já foi respondida
+    if(solData.status === 'aprovado_n2' || solData.status === 'reprovado_n2' ||
+       solData.status === 'aprovado' || solData.status === 'reprovado'){
+      mostrarJaRespondida();
+      return;
+    }
+
+    // Verificar se está com N2 (status correto para resposta)
+    if(solData.status !== 'com_n2' && solData.status !== 'pendente'){
+      document.getElementById('error-msg').textContent = 'Esta solicitação não está aguardando aprovação do N2 (status: ' + solData.status + ').';
+      showState('state-error');
+      return;
+    }
+
+    preencherFormulario();
+    showState('state-form');
+
+  } catch(e){
+    console.error(e);
+    document.getElementById('error-msg').textContent = 'Erro ao carregar: ' + e.message;
+    showState('state-error');
+  }
+}
+
+function mostrarJaRespondida(){
+  var isAprov = solData.status === 'aprovado_n2' || solData.status === 'aprovado';
+  var badgeClass = isAprov ? 'badge-aprovado' : 'badge-reprovado';
+  var icon = isAprov ? 'ti-check' : 'ti-x';
+  var label = isAprov ? 'Aprovado pelo N2' : 'Reprovado pelo N2';
+
+  document.getElementById('done-content').innerHTML =
+    '<div style="text-align:center;padding:32px 0 16px">'
+    +'<div class="badge-status '+badgeClass+'"><i class="ti '+icon+'"></i> '+label+'</div>'
+    +'<div style="font-size:13px;color:var(--text2);font-weight:500;margin-top:8px">Esta solicitação já foi avaliada.</div>'
+    +(solData.justReprovacaoN2 ? '<div style="margin-top:12px;font-size:12px;color:#8b1c1c;font-weight:600">Justificativa: '+solData.justReprovacaoN2+'</div>' : '')
+    +'</div>';
+  showState('state-done');
+}
+
+function preencherFormulario(){
+  document.getElementById('d-codigo').textContent = solData.codigo || '—';
+  document.getElementById('d-gestor').textContent = solData.gestor || '—';
+  document.getElementById('d-empresa').textContent = solData.empresa || '—';
+  document.getElementById('d-setor').textContent = solData.setor || '—';
+  document.getElementById('d-cargo').textContent = solData.cargo || '—';
+  document.getElementById('d-motivo').textContent = solData.motivo || '—';
+  document.getElementById('d-escala').textContent = solData.escala || '—';
+
+  if(solData.substituto){
+    document.getElementById('d-substituto').textContent = solData.substituto;
+    document.getElementById('row-substituto').style.display = 'flex';
+  }
+  if(solData.requisitos){
+    document.getElementById('d-requisitos').textContent = solData.requisitos;
+    document.getElementById('row-requisitos').style.display = 'flex';
+  }
+  if(solData.obs){
+    document.getElementById('d-obs').textContent = solData.obs;
+    document.getElementById('row-obs').style.display = 'flex';
+  }
+}
+
+function toggleReprovar(){
+  reprovarAberto = !reprovarAberto;
+  var form = document.getElementById('reprovar-form');
+  form.classList.toggle('open', reprovarAberto);
+  if(reprovarAberto) document.getElementById('rep-just').focus();
+}
+
+async function aprovar(){
+  if(!confirm('Confirma a APROVAÇÃO desta solicitação?')) return;
+
+  try {
+    var hist = solData.historico || [];
+    hist.push({
+      dt: new Date().toISOString(),
+      acao: 'APROVADO_N2',
+      por: solData.n2Nome || 'N2',
+      obs: ''
+    });
+
+    await db.collection('solicitacoes').doc(solId).update({
+      status: 'aprovado_n2',
+      historico: hist,
+      atualizadoEm: new Date().toISOString()
+    });
+
+    // Notificar RH por e-mail
+    await notificarRH('APROVADO', '');
+
+    document.getElementById('success-title').textContent = 'Solicitação Aprovada!';
+    document.getElementById('success-sub').textContent = 'Sua aprovação foi registrada. O RH receberá uma notificação e dará seguimento à abertura da vaga.';
+    showState('state-success');
+
+  } catch(e){
+    alert('Erro ao registrar aprovação: ' + e.message);
+    console.error(e);
+  }
+}
+
+async function reprovar(){
+  var just = (document.getElementById('rep-just').value || '').trim();
+  if(!just){ alert('Informe a justificativa da reprovação.'); return; }
+  if(!confirm('Confirma a REPROVAÇÃO desta solicitação?')) return;
+
+  try {
+    var hist = solData.historico || [];
+    hist.push({
+      dt: new Date().toISOString(),
+      acao: 'REPROVADO_N2',
+      por: solData.n2Nome || 'N2',
+      obs: just
+    });
+
+    await db.collection('solicitacoes').doc(solId).update({
+      status: 'reprovado_n2',
+      justReprovacaoN2: just,
+      historico: hist,
+      atualizadoEm: new Date().toISOString()
+    });
+
+    // Notificar RH
+    await notificarRH('REPROVADO', just);
+
+    document.getElementById('success-title').textContent = 'Reprovação Registrada';
+    document.getElementById('success-sub').textContent = 'Sua decisão foi registrada com a justificativa informada. O RH foi notificado.';
+    showState('state-success');
+
+  } catch(e){
+    alert('Erro ao registrar reprovação: ' + e.message);
+    console.error(e);
+  }
+}
+
+async function notificarRH(decisao, justificativa){
+  try {
+    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_RH, {
+      to_email: 'rh@raguife.com.br',
+      gestor: solData.gestor,
+      cargo: solData.cargo,
+      setor: solData.setor,
+      empresa: solData.empresa,
+      codigo: solData.codigo,
+      n2_nome: solData.n2Nome || 'N2',
+      decisao: decisao,
+      justificativa: justificativa || '—',
+    });
+    console.log('[EmailJS] Notificação enviada ao RH');
+  } catch(e){
+    // Não bloquear a UI se o e-mail falhar
+    console.warn('[EmailJS] Falha ao enviar e-mail:', e);
+  }
+}
+
+// ── Iniciar ──
+carregarSolicitacao();
+</script>
+</body>
+</html>

@@ -165,6 +165,9 @@ tbody td.muted { color: var(--text2); font-size: 12px; }
 .row-actions { display: flex; gap: 3px; }
 .empresa-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 4px; font-size: 11px; font-weight: 700; background: var(--black); color: var(--lime); letter-spacing: 0.2px; }
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-db.js"></script>
 </head>
 <body>
 <div class="app">
@@ -510,14 +513,7 @@ tbody td.muted { color: var(--text2); font-size: 12px; }
 const EMPRESAS = ['Raguife Matriz','Raguife Bom Despacho','Neves Queiroz','Distribuidora','Haras Ambar Amaral','Holding','Mb Proni'];
 
 // ===================== DATA LAYER =====================
-const DB = {
-  key: 'nova_funcionarios_v1',
-  getAll() { try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch { return []; } },
-  save(data) { localStorage.setItem(this.key, JSON.stringify(data)); },
-  add(func) { const all = this.getAll(); func.id = 'f_' + Date.now(); func.criadoEm = new Date().toISOString(); all.push(func); this.save(all); return func; },
-  update(id, func) { const all = this.getAll(); const idx = all.findIndex(f => f.id === id); if (idx >= 0) { all[idx] = { ...all[idx], ...func, atualizadoEm: new Date().toISOString() }; this.save(all); } },
-  remove(id) { this.save(this.getAll().filter(f => f.id !== id)); }
-};
+const DB={key:"nova_funcionarios_v1",getAll:async function(){return await F(await DB.funcionarios.getAll());},save:async function(d){await FDB.funcionarios.saveAll(d);},add:async function(f){return await Fawait DB.funcionarios.add(f);},update:async function(id,f){await Fawait DB.funcionarios.update(id,f);},remove:async function(id){await Fawait DB.funcionarios.remove(id);}};
 
 // ===================== STATE =====================
 let currentPage = 1;

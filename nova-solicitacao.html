@@ -409,14 +409,14 @@ var solAtualId  = null;
 var repModo     = null; // 'rh' ou 'n2' — quem está reprovando
 
 // ── Utilitários ──
-async function (await getSols()){return await FDB.solicitacoes.getAll();}
+async function getSols(){return await FDB.solicitacoes.getAll();}
 async function saveSols(d){await FDB.solicitacoes.saveAll(d);}
-async function (await getPerfis()){return await FDB.perfis.getAll();}
-async function (await getVagas()){return await FDB.vagas.getAll();}
+async function getPerfis(){return await FDB.perfis.getAll();}
+async function getVagas(){return await FDB.vagas.getAll();}
 async function saveVagas(d){await FDB.vagas.saveAll(d);}
-async function (await getSetores()){return await FDB.sol_setores.getAll();}
+async function getSetores(){return await FDB.sol_setores.getAll();}
 async function saveSetores(d){await FDB.sol_setores.saveAll(d);}
-async function (await getN2s()){return await FDB.sol_n2s.getAll();}
+async function getN2s(){return await FDB.sol_n2s.getAll();}
 async function saveN2s(d){await FDB.sol_n2s.saveAll(d);}
 
 function fmtDT(s){

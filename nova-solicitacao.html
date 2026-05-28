@@ -448,10 +448,17 @@ function badgeStatus(s){
 
 // ── Link público ──
 function buildGestorUrl(){
-  // Funciona tanto em file:// quanto em https://
-  var href=window.location.href;
-  var base=href.replace(/\/[^\/]*(\?.*)?$/,'/');
-  return base+'nova-gestor.html';
+  // Quando dentro de iframe, usar referrer ou document.referrer
+  // para obter a URL base correta
+  var href = '';
+  try {
+    // Tentar pegar a URL do parent (shell)
+    href = window.parent.location.href;
+  } catch(e) {
+    href = window.location.href;
+  }
+  var base = href.replace(/\/[^\/]*(\?.*)?$/, '/');
+  return base + 'nova-gestor.html';
 }
 
 function copyLink(){
@@ -693,7 +700,7 @@ async function openAprovar(id){
   document.getElementById('modal-aprovar').classList.add('open');
 }
 
-function gerarCodigoVaga(){
+async function await gerarCodigoVaga(){
   var vagas=(await getVagas()).filter(function(v){return !v.isBancoTalentos;});
   var ano=new Date().getFullYear();
   return 'RH-'+ano+'-'+(vagas.length+1).toString().padStart(3,'0');
@@ -716,7 +723,7 @@ async function confirmarAprovacao(){
 
   var vagas=(await getVagas());
   var vagaId='vg_'+Date.now();
-  var vagaCodigo=gerarCodigoVaga();
+  var vagaCodigo=await await gerarCodigoVaga();
   var obsRH=(document.getElementById('ap-obs').value||'').trim();
 
   vagas.push({

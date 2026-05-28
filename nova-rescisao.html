@@ -170,6 +170,19 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .pw-input:focus{border-color:var(--black);}
 .pw-error{font-size:12px;color:#8b1c1c;font-weight:600;margin-top:6px;display:none;}
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-db.js"></script>
+<script>
+// Coleções extras da rescisão (declaradas inline pois firebase-db.js pode não tê-las)
+window.addEventListener('DOMContentLoaded', function() {
+  if(window.FDB) {
+    if(!FDB.rescisao)        FDB.rescisao        = FDB._col('rescisao');
+    if(!FDB.rescisao_itens)  FDB.rescisao_itens  = FDB._col('rescisao_itens');
+    if(!FDB.rescisao_perfis) FDB.rescisao_perfis = FDB._col('rescisao_perfis');
+  }
+});
+</script>
 </head>
 <body>
 
@@ -506,43 +519,29 @@ function getItensPadrao() {
 
 // =================== DB ===================
 var DB = {
-  key: 'nova_rescisao_v1',
-  itensKey: 'nova_rescisao_itens_v1',
-  getAll: function() { try { return JSON.parse(localStorage.getItem(this.key)) || []; } catch(e){ return []; } },
-  save: function(d) { localStorage.setItem(this.key, JSON.stringify(d)); },
-  add: function(p) {
-    var all = this.getAll();
+  getAll: async function() { return await FDB.rescisao.getAll(); },
+  save: async function(d) { await FDB.rescisao.saveAll(d); },
+  add: async function(p) {
     p.id = 'resc_' + Date.now();
     p.criadoEm = new Date().toISOString();
     p.checks = {};
     p.historico = [{ts: new Date().toISOString(), setor:'rh', acao:'Processo criado', resp: p.criadoBy||'RH'}];
     p.finalizado = false;
     p.homologacaoData = {};
-    all.push(p);
-    this.save(all);
-    return p;
+    return await FDB.rescisao.add(p);
   },
-  update: function(id, data) {
-    var all = this.getAll();
-    var idx = all.findIndex(function(x){ return x.id === id; });
-    if (idx >= 0) { all[idx] = Object.assign(all[idx], data, {atualizadoEm: new Date().toISOString()}); this.save(all); }
+  update: async function(id, data) { await FDB.rescisao.update(id, data); },
+  remove: async function(id) { await FDB.rescisao.remove(id); },
+  getItens: async function() {
+    var stored = await FDB.rescisao_itens.getAll();
+    return stored.length ? stored : getItensPadrao();
   },
-  remove: function(id) { this.save(this.getAll().filter(function(x){ return x.id !== id; })); },
-  getItens: function() {
-    try {
-      var stored = JSON.parse(localStorage.getItem(this.itensKey));
-      return stored && stored.length ? stored : getItensPadrao();
-    } catch(e) { return getItensPadrao(); }
+  saveItens: async function(d) { await FDB.rescisao_itens.saveAll(d); },
+  getPerfis: async function() {
+    var stored = await FDB.rescisao_perfis.getAll();
+    return stored.length ? stored : getPerfisDefault();
   },
-  saveItens: function(d) { localStorage.setItem(this.itensKey, JSON.stringify(d)); },
-  perfilKey: 'nova_rescisao_perfis_v1',
-  getPerfis: function() {
-    try {
-      var stored = JSON.parse(localStorage.getItem(this.perfilKey));
-      return stored && stored.length ? stored : getPerfisDefault();
-    } catch(e) { return getPerfisDefault(); }
-  },
-  savePerfis: function(d) { localStorage.setItem(this.perfilKey, JSON.stringify(d)); }
+  savePerfis: async function(d) { await FDB.rescisao_perfis.saveAll(d); }
 };
 
 // =================== ESTADO ===================
@@ -580,16 +579,16 @@ function prazoInfo(deslig) {
   if (diff <= 3) return {cls:'al-amber',lbl:'Prazo de homologacao encerra em ' + diff + 'd — ate ' + limStr,limDate:lim};
   return {cls:'',lbl:'',limDate:lim};
 }
-function secItems(proc, sec) {
-  var itens = DB.getItens().filter(function(it){ return it.sector === sec; });
+async function secItems(proc, sec) {
+  var itens = await DB.getItens().filter(function(it){ return it.sector === sec; });
   return itens.filter(function(it){
     if (!it.conditional) return true;
     var profs = proc.profiles || [];
     return it.conditional.some(function(c){ return profs.includes(c); });
   });
 }
-function progress(proc) {
-  var itens = DB.getItens().filter(function(it){
+async function progress(proc) {
+  var itens = await DB.getItens().filter(function(it){
     if (it.sector === 'rh' && !S.sector) return true;
     var profs = proc.profiles || [];
     if (it.conditional && !it.conditional.some(function(c){ return profs.includes(c); })) return false;
@@ -650,7 +649,7 @@ function topbarActions() {
 }
 
 // =================== LISTA ===================
-function renderLista() {
+async function renderLista() {
   document.getElementById('view-lista').style.display = 'block';
   document.getElementById('view-checklist').style.display = 'none';
   document.getElementById('topbar-title').textContent = 'Rescisao';
@@ -660,7 +659,7 @@ function renderLista() {
   var searchEl = document.getElementById('search-proc');
   if (searchEl) q = searchEl.value.toLowerCase();
 
-  var all = DB.getAll();
+  var all = await DB.getAll();
   var ativos = all.filter(function(p){ return !p.finalizado; });
   var finalizados = all.filter(function(p){ return p.finalizado; });
 
@@ -753,7 +752,7 @@ function initNovoModal() {
   document.getElementById('n-deslig').value = '';
   ['p-adm','p-lider','p-pcd','p-mot'].forEach(function(id){ document.getElementById(id).checked = false; });
   // popular select de perfis
-  var perfis = DB.getPerfis();
+  var perfis = await DB.getPerfis();
   var sel = document.getElementById('n-perfil');
   sel.innerHTML = '<option value="">Selecione um perfil (ou configure manualmente)</option>';
   perfis.forEach(function(p) {
@@ -769,7 +768,7 @@ function aplicarPerfil(id) {
   ['p-adm','p-lider','p-pcd','p-mot'].forEach(function(cid){ document.getElementById(cid).checked = false; });
   var el = document.getElementById('n-perfil-desc');
   if (!id) { el.textContent = ''; return; }
-  var p = DB.getPerfis().find(function(x){ return x.id === id; });
+  var p = await DB.getPerfis().find(function(x){ return x.id === id; });
   if (!p) return;
   var condMap = {adm:'p-adm',lider:'p-lider',pcd:'p-pcd',mot:'p-mot'};
   (p.profiles||[]).forEach(function(c){ if (condMap[c]) document.getElementById(condMap[c]).checked = true; });
@@ -797,7 +796,7 @@ function criarProcesso() {
   if (document.getElementById('p-lider').checked) profiles.push('lider');
   if (document.getElementById('p-pcd').checked) profiles.push('pcd');
   if (document.getElementById('p-mot').checked) profiles.push('mot');
-  DB.add({
+  await DB.add({
     nome: nome,
     chapa: document.getElementById('n-chapa').value.trim(),
     cargo: cargo, depto: depto, empresa: empresa, tipo: tipo,
@@ -818,8 +817,8 @@ function abrirChecklist(id) {
   renderChecklist();
 }
 
-function renderChecklist() {
-  var p = DB.getAll().find(function(x){ return x.id === S.proc; });
+async function renderChecklist() {
+  var p = await DB.getAll().find(function(x){ return x.id === S.proc; });
   if (!p) return;
   var pg = progress(p);
   var pi = prazoInfo(p.deslig);
@@ -933,16 +932,16 @@ function toggleSec(sec) {
   renderChecklist();
 }
 
-function toggleItem(id, checked) {
-  var p = DB.getAll().find(function(x){ return x.id === S.proc; });
+async function toggleItem(id, checked) {
+  var p = await DB.getAll().find(function(x){ return x.id === S.proc; });
   if (!p) return;
   if (!p.checks[id]) p.checks[id] = {done:false,date:today(),resp:'',obs:''};
   p.checks[id].done = checked;
   if (checked && !p.checks[id].date) p.checks[id].date = today();
   p.historico = p.historico || [];
-  var it = DB.getItens().find(function(x){ return x.id === id; });
+  var it = await DB.getItens().find(function(x){ return x.id === id; });
   p.historico.push({ts: new Date().toISOString(), setor: S.sector, acao: (checked ? '✅ Concluido' : '↩ Reaberto') + ': ' + (it ? it.text : id), resp: ''});
-  DB.update(S.proc, {checks: p.checks, historico: p.historico});
+  await DB.update(S.proc, {checks: p.checks, historico: p.historico});
   // update row visually
   var row = document.getElementById('ckrow_' + id);
   if (row) { row.className = 'ck-row' + (checked ? ' done' : ''); }
@@ -950,8 +949,8 @@ function toggleItem(id, checked) {
   renderChecklistHeader();
 }
 
-function saveItem(id) {
-  var p = DB.getAll().find(function(x){ return x.id === S.proc; });
+async function saveItem(id) {
+  var p = await DB.getAll().find(function(x){ return x.id === S.proc; });
   if (!p || !p.checks[id]) return;
   var dtEl = document.getElementById('ckd_' + id);
   var rpEl = document.getElementById('ckr_' + id);
@@ -959,11 +958,11 @@ function saveItem(id) {
   if (dtEl) p.checks[id].date = dtEl.value;
   if (rpEl) p.checks[id].resp = rpEl.value;
   if (obEl) p.checks[id].obs = obEl.value;
-  DB.update(S.proc, {checks: p.checks});
+  await DB.update(S.proc, {checks: p.checks});
 }
 
-function renderChecklistHeader() {
-  var p = DB.getAll().find(function(x){ return x.id === S.proc; });
+async function renderChecklistHeader() {
+  var p = await DB.getAll().find(function(x){ return x.id === S.proc; });
   if (!p) return;
   var pg = progress(p);
   var valEl = document.querySelector('.cl-stat-val');
@@ -976,16 +975,16 @@ function voltarLista() {
 }
 
 // =================== FINALIZAR ===================
-function initHomol() {
-  var p = DB.getAll().find(function(x){ return x.id === S.proc; });
+async function initHomol() {
+  var p = await DB.getAll().find(function(x){ return x.id === S.proc; });
   if (!p) return;
   document.getElementById('h-data').value = addDays(p.deslig, 10);
   document.getElementById('h-local').value = '';
   document.getElementById('h-resp').value = '';
   document.getElementById('h-obs').value = '';
 }
-function finalizarProcesso() {
-  var p = DB.getAll().find(function(x){ return x.id === S.proc; });
+async function finalizarProcesso() {
+  var p = await DB.getAll().find(function(x){ return x.id === S.proc; });
   if (!p) return;
   var hd = {
     data: document.getElementById('h-data').value,
@@ -995,15 +994,15 @@ function finalizarProcesso() {
   };
   p.historico = p.historico || [];
   p.historico.push({ts: new Date().toISOString(), setor:'rh', acao:'Processo finalizado/homologado', resp: hd.responsavel||'RH'});
-  DB.update(S.proc, {finalizado: true, homologacaoData: hd, historico: p.historico});
+  await DB.update(S.proc, {finalizado: true, homologacaoData: hd, historico: p.historico});
   closeModal('modal-homol');
   toast('Processo finalizado!');
   renderChecklist();
 }
 
 // =================== HISTORICO ===================
-function renderHist() {
-  var p = DB.getAll().find(function(x){ return x.id === S.proc; });
+async function renderHist() {
+  var p = await DB.getAll().find(function(x){ return x.id === S.proc; });
   if (!p) return;
   var hist = (p.historico || []).slice().reverse();
   var html = hist.length ? hist.map(function(h){
@@ -1016,11 +1015,11 @@ function renderHist() {
 }
 
 // =================== EXCLUIR ===================
-function excluirProcesso() {
-  var p = DB.getAll().find(function(x){ return x.id === S.proc; });
+async function excluirProcesso() {
+  var p = await DB.getAll().find(function(x){ return x.id === S.proc; });
   if (!p) return;
   if (!confirm('Excluir o processo de "' + p.nome + '"? Esta acao nao pode ser desfeita.')) return;
-  DB.remove(S.proc);
+  await DB.remove(S.proc);
   toast('Processo removido.');
   voltarLista();
 }
@@ -1053,8 +1052,8 @@ function renderItensModal() {
   switchItensTab('itens');
 }
 
-function renderItensTab() {
-  var itens = DB.getItens();
+async function renderItensTab() {
+  var itens = await DB.getItens();
   var secKeys = ['rh','sesmt','amb','ti','log','alm'];
   var condMap = {adm:'Adm',lider:'Lider',pcd:'PCD',mot:'Motorista'};
   var html = '';
@@ -1082,10 +1081,10 @@ function renderItensTab() {
   document.getElementById('itens-tab-itens').innerHTML = html;
 }
 
-function renderPerfisTab() {
-  var perfis = DB.getPerfis();
+async function renderPerfisTab() {
+  var perfis = await DB.getPerfis();
   var condMap = {adm:'Administrativo',lider:'Lideranca',pcd:'PCD',mot:'Motorista'};
-  var totalItens = DB.getItens().length;
+  var totalItens = await DB.getItens().length;
   var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
     + '<div style="font-size:12px;font-weight:600;color:var(--text2)">Perfis pre-configuram os itens e condicionais ao abrir um processo.</div>'
     + '<button class="btn btn-primary btn-sm" onclick="addPerfil()"><i class="ti ti-plus"></i> Novo Perfil</button>'
@@ -1122,25 +1121,25 @@ function addItem(sec) {
   if (cond && cond.trim()) {
     conditional = cond.split(',').map(function(c){ return c.trim(); }).filter(Boolean);
   }
-  var itens = DB.getItens();
+  var itens = await DB.getItens();
   itens.push({id: 'custom_' + Date.now(), sector: sec, text: text.trim(), conditional: conditional});
-  DB.saveItens(itens);
+  await DB.saveItens(itens);
   renderItensTab();
   toast('Item adicionado!');
 }
 
-function removeItem(id) {
+async function removeItem(id) {
   if (!confirm('Remover este item?')) return;
-  DB.saveItens(DB.getItens().filter(function(it){ return it.id !== id; }));
+  await DB.saveItens(await DB.getItens().filter(function(it){ return it.id !== id; }));
   renderItensTab();
   toast('Item removido.');
 }
 
 var editandoPerfilId = null;
 
-function abrirModalPerfil(id) {
+async function abrirModalPerfil(id) {
   editandoPerfilId = id || null;
-  var p = id ? DB.getPerfis().find(function(x){ return x.id === id; }) : null;
+  var p = id ? await DB.getPerfis().find(function(x){ return x.id === id; }) : null;
   document.getElementById('modal-perfil-title').textContent = p ? 'Editar Perfil' : 'Novo Perfil';
   document.getElementById('pf-nome').value = p ? p.nome : '';
   document.getElementById('pf-desc').value = p ? (p.desc||'') : '';
@@ -1151,8 +1150,8 @@ function abrirModalPerfil(id) {
   openModal('modal-perfil');
 }
 
-function renderPerfilItensLista(p) {
-  var itens = DB.getItens();
+async function renderPerfilItensLista(p) {
+  var itens = await DB.getItens();
   var secKeys = ['rh','sesmt','amb','ti','log','alm'];
   var condMap = {adm:'Adm',lider:'Lider',pcd:'PCD',mot:'Motorista'};
   var selectedIds = p ? (p.itemIds || []) : [];
@@ -1218,14 +1217,14 @@ function salvarPerfil() {
   document.querySelectorAll('#pf-itens-lista input[type=checkbox]:checked').forEach(function(cb){
     itemIds.push(cb.getAttribute('data-id'));
   });
-  var perfis = DB.getPerfis();
+  var perfis = await DB.getPerfis();
   if (editandoPerfilId) {
     var idx = perfis.findIndex(function(x){ return x.id === editandoPerfilId; });
     if (idx >= 0) { perfis[idx].nome = nome; perfis[idx].desc = desc; perfis[idx].profiles = profiles; perfis[idx].itemIds = itemIds; }
   } else {
     perfis.push({id: 'perf_' + Date.now(), nome: nome, desc: desc, profiles: profiles, itemIds: itemIds});
   }
-  DB.savePerfis(perfis);
+  await DB.savePerfis(perfis);
   closeModal('modal-perfil');
   renderPerfisTab();
   toast(editandoPerfilId ? 'Perfil atualizado!' : 'Perfil criado!');
@@ -1234,18 +1233,18 @@ function salvarPerfil() {
 function addPerfil() { abrirModalPerfil(null); }
 function editPerfil(id) { abrirModalPerfil(id); }
 
-function removePerfil(id) {
+async function removePerfil(id) {
   if (!confirm('Remover este perfil?')) return;
-  DB.savePerfis(DB.getPerfis().filter(function(p){ return p.id !== id; }));
+  await DB.savePerfis(await DB.getPerfis().filter(function(p){ return p.id !== id; }));
   renderPerfisTab();
   toast('Perfil removido.');
 }
 
 // =================== PDF ===================
-function exportarPDF() {
-  var p = DB.getAll().find(function(x){ return x.id === S.proc; });
+async function exportarPDF() {
+  var p = await DB.getAll().find(function(x){ return x.id === S.proc; });
   if (!p) return;
-  var itens = DB.getItens();
+  var itens = await DB.getItens();
   var secs = ['rh','sesmt','amb','ti','log','alm'];
 
   var linhas = '';

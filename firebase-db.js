@@ -138,6 +138,9 @@ window.FDB = {
   sol_setores:  _col('sol_setores'),
   sol_n2s:      _col('sol_n2s'),
   users:        _col('users'),
+  rescisao:         _col('rescisao'),
+  rescisao_itens:   _col('rescisao_itens'),
+  rescisao_perfis:  _col('rescisao_perfis'),
   // Firestore ref direto para operações avançadas
   _db,
   _col,
@@ -165,6 +168,9 @@ window.FDB.migrarLocalStorage = async function() {
     { ls: 'nova_sol_setores_v1',     col: 'sol_setores'    },
     { ls: 'nova_sol_n2s_v1',         col: 'sol_n2s'        },
     { ls: 'nova_rh_users_v1',        col: 'users'          },
+    { ls: 'nova_rescisao_v1',         col: 'rescisao'        },
+    { ls: 'nova_rescisao_itens_v1',   col: 'rescisao_itens'  },
+    { ls: 'nova_rescisao_perfis_v1',  col: 'rescisao_perfis' },
   ];
 
   let novasMigracoes = [];

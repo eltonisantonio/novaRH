@@ -203,9 +203,9 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="search-bar">
         <div class="search-wrap">
           <i class="ti ti-search"></i>
-          <input class="search-input" type="text" id="search" placeholder="Buscar por cargo, gestor ou empresa..." oninput="renderLista()">
+          <input class="search-input" type="text" id="search" placeholder="Buscar por cargo, gestor ou empresa..." oninput="await renderLista()">
         </div>
-        <select class="form-select" id="f-status" onchange="renderLista()" style="width:175px">
+        <select class="form-select" id="f-status" onchange="await renderLista()" style="width:175px">
           <option value="">Todos os status</option>
           <option value="pendente">Pendentes</option>
           <option value="com_n2">Com N2</option>
@@ -214,7 +214,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           <option value="aprovado">Aprovadas (RH)</option>
           <option value="reprovado">Reprovadas (RH)</option>
         </select>
-        <select class="form-select" id="f-empresa" onchange="renderLista()" style="width:185px">
+        <select class="form-select" id="f-empresa" onchange="await renderLista()" style="width:185px">
           <option value="">Todas as empresas</option>
           <option>Raguife Matriz</option><option>Raguife Bom Despacho</option><option>Neves Queiroz</option>
           <option>Distribuidora</option><option>Haras Ambar Amaral</option><option>Holding</option><option>Mb Proni</option>
@@ -235,7 +235,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
             <label class="form-label-sm">Nome do Setor</label>
             <input class="form-input-sm" type="text" id="ns-nome" placeholder="Ex: LOGÍSTICA, FINANCEIRO...">
           </div>
-          <button class="btn btn-primary" onclick="addSetor()" style="height:38px"><i class="ti ti-plus"></i> Adicionar</button>
+          <button class="btn btn-primary" onclick="await addSetor()" style="height:38px"><i class="ti ti-plus"></i> Adicionar</button>
         </div>
         <table class="config-table">
           <thead><tr><th>Setor</th><th>N2 Vinculado</th><th style="width:60px"></th></tr></thead>
@@ -260,7 +260,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
             <label class="form-label-sm">Setor</label>
             <select class="form-input-sm" id="nn-setor"><option value="">Selecione</option></select>
           </div>
-          <button class="btn btn-primary" onclick="addN2()" style="height:38px"><i class="ti ti-plus"></i> Adicionar</button>
+          <button class="btn btn-primary" onclick="await addN2()" style="height:38px"><i class="ti ti-plus"></i> Adicionar</button>
         </div>
         <table class="config-table">
           <thead><tr><th>Nome</th><th>E-mail</th><th>Setor</th><th style="width:60px"></th></tr></thead>
@@ -410,14 +410,14 @@ var repModo     = null; // 'rh' ou 'n2' — quem está reprovando
 
 // ── Utilitários ──
 async function getSols(){return await FDB.solicitacoes.getAll();}
-async function saveSols(d){await FDB.solicitacoes.saveAll(d);}
+async function await saveSols(d){await FDB.solicitacoes.saveAll(d);}
 async function getPerfis(){return await FDB.perfis.getAll();}
 async function getVagas(){return await FDB.vagas.getAll();}
-async function saveVagas(d){await FDB.vagas.saveAll(d);}
+async function await saveVagas(d){await FDB.vagas.saveAll(d);}
 async function getSetores(){return await FDB.sol_setores.getAll();}
-async function saveSetores(d){await FDB.sol_setores.saveAll(d);}
+async function await saveSetores(d){await FDB.sol_setores.saveAll(d);}
 async function getN2s(){return await FDB.sol_n2s.getAll();}
-async function saveN2s(d){await FDB.sol_n2s.saveAll(d);}
+async function await saveN2s(d){await FDB.sol_n2s.saveAll(d);}
 
 function fmtDT(s){
   if(!s)return'—';
@@ -475,16 +475,16 @@ function fallbackCopy(url){
 }
 
 // ── Tabs ──
-function showTab(t){
+async function showTab(t){
   document.getElementById('view-sol').style.display=(t==='sol')?'block':'none';
   document.getElementById('view-cfg').style.display=(t==='cfg')?'block':'none';
   document.getElementById('tab-sol').classList.toggle('active',t==='sol');
   document.getElementById('tab-cfg').classList.toggle('active',t==='cfg');
-  if(t==='cfg'){renderConfig();}
+  if(t==='cfg'){await renderConfig();}
 }
 
 // ── Stats ──
-async function updateStats(){
+async function await updateStats(){
   var sols=(await getSols());
   document.getElementById('stat-pend').textContent=sols.filter(function(s){return s.status==='pendente';}).length;
   document.getElementById('stat-n2').textContent=sols.filter(function(s){return s.status==='com_n2';}).length;
@@ -493,7 +493,7 @@ async function updateStats(){
 }
 
 // ── Render Lista ──
-async function renderLista(){
+async function await renderLista(){
   var q=(document.getElementById('search').value||'').toLowerCase();
   var fs=document.getElementById('f-status').value;
   var fe=document.getElementById('f-empresa').value;
@@ -502,7 +502,7 @@ async function renderLista(){
   if(fs)sols=sols.filter(function(s){return s.status===fs;});
   if(fe)sols=sols.filter(function(s){return s.empresa===fe;});
 
-  updateStats();
+  await updateStats();
 
   var el=document.getElementById('lista-sol');
   if(!sols.length){
@@ -651,13 +651,13 @@ async function confirmarEnvioN2(){
   sols[idx].n2Email=n2.email;
   sols[idx].historico=s.historico||[];
   sols[idx].historico.push({dt:new Date().toISOString(),acao:'ENCAMINHADO_N2',por:'RH',obs:'N2: '+n2.nome+(obs?' | '+obs:'')});
-  saveSols(sols);
+  await saveSols(sols);
 
   // Enviar e-mail ao N2
   var emailOk = await enviarEmailN2(s, n2);
   closeModal('modal-n2');
   toast(emailOk ? 'E-mail enviado para '+n2.nome+'!' : 'Encaminhado (e-mail pode ter falhado).', emailOk?'ok':'');
-  renderLista();
+  await renderLista();
 }
 
 // ── Reprovar ──
@@ -679,10 +679,10 @@ async function confirmarReprovacao(){
   sols[idx].justReprovacao=just;
   sols[idx].historico=sols[idx].historico||[];
   sols[idx].historico.push({dt:new Date().toISOString(),acao:repModo==='n2'?'REPROVADO_N2':'REPROVADO_RH',por:repModo==='n2'?'N2':'RH',obs:just});
-  saveSols(sols);
+  await saveSols(sols);
   closeModal('modal-reprovar');
   toast('Solicitação reprovada.','err');
-  renderLista();
+  await renderLista();
 }
 
 // ── Aprovar (criar vaga) ──
@@ -734,50 +734,52 @@ async function confirmarAprovacao(){
     obs:(s.obs?s.obs+' | ':'')+'VIA SOL. '+s.codigo+' ('+s.gestor+')',
     status:'aberta',candidatos:[],solicitacaoId:s.id,solicitacaoCodigo:s.codigo,
   });
-  saveVagas(vagas);
+  await saveVagas(vagas);
 
   sols[idx].status='aprovado';
   sols[idx].vagaId=vagaId;
   sols[idx].vagaCodigo=vagaCodigo;
   sols[idx].historico=s.historico||[];
   sols[idx].historico.push({dt:new Date().toISOString(),acao:'APROVADO_RH',por:'RH',obs:(obsRH||'Vaga '+vagaCodigo+' criada no R&S')});
-  saveSols(sols);
+  await saveSols(sols);
 
   closeModal('modal-aprovar');
   toast('Aprovado! Vaga '+vagaCodigo+' criada no R&S.','ok');
-  renderLista();
+  await renderLista();
 }
 
 // ── Config: Setores ──
-async function addSetor(){
+async function await addSetor(){
   var nome=(document.getElementById('ns-nome').value||'').trim().toUpperCase();
   if(!nome){toast('Informe o nome do setor.','err');return;}
   var setores=(await getSetores());
   if(setores.find(function(s){return s.nome===nome;})){toast('Setor já existe.','err');return;}
   setores.push({id:'s_'+Date.now(),nome:nome});
-  saveSetores(setores);
+  await saveSetores(setores);
   document.getElementById('ns-nome').value='';
-  renderConfig();
+  await renderConfig();
   sincSetoresNaGestora();
   toast('Setor adicionado!','ok');
 }
 
 async function removerSetor(id){
   if(!confirm('Remover este setor? Os N2s vinculados a ele também serão removidos.'))return;
-  var setores=(await getSetores()).filter(function(s){return s.id!==id;});
-  var n2s=(await getN2s()).filter(function(n){
-    var s=(await getSetores()).find(function(x){return x.id===id;});
-    return !s||n.setor!==s.nome;
+  var todosSetores=await getSetores();
+  var todosN2s=await getN2s();
+  var setorRemovido=todosSetores.find(function(s){return s.id===id;});
+  var setores=todosSetores.filter(function(s){return s.id!==id;});
+  var n2s=todosN2s.filter(function(n){
+    return !setorRemovido||n.setor!==setorRemovido.nome;
   });
-  saveSetores(setores);
-  saveN2s(n2s);
-  renderConfig();
+  await saveSetores(setores);
+  await saveN2s(n2s);
+  await renderConfig();
   sincSetoresNaGestora();
   toast('Setor removido.');
 }
 
 // ── Config: N2s ──
-async function addN2(){
+async function await addN2(){
   var nome=(document.getElementById('nn-nome').value||'').trim();
   var email=(document.getElementById('nn-email').value||'').trim();
   var setor=document.getElementById('nn-setor').value;
@@ -785,22 +787,22 @@ async function addN2(){
   if(!email.includes('@')){toast('E-mail inválido.','err');return;}
   var n2s=(await getN2s());
   n2s.push({id:'n2_'+Date.now(),nome:nome,email:email,setor:setor});
-  saveN2s(n2s);
+  await saveN2s(n2s);
   document.getElementById('nn-nome').value='';
   document.getElementById('nn-email').value='';
   document.getElementById('nn-setor').value='';
-  renderConfig();
+  await renderConfig();
   toast('N2 adicionado!','ok');
 }
 
-async function removerN2(id){
+async function await removerN2(id){
   if(!confirm('Remover este N2?'))return;
-  saveN2s((await getN2s()).filter(function(n){return n.id!==id;}));
-  renderConfig();
+  await saveN2s((await getN2s()).filter(function(n){return n.id!==id;}));
+  await renderConfig();
   toast('N2 removido.');
 }
 
-async function renderConfig(){
+async function await renderConfig(){
   var setores=(await getSetores());
   var n2s=(await getN2s());
 
@@ -840,14 +842,14 @@ async function renderConfig(){
         +'<td style="font-weight:700">'+n.nome+'</td>'
         +'<td style="font-size:12px">'+n.email+'</td>'
         +'<td><span class="tag-empresa" style="background:var(--s2);color:var(--text2)">'+n.setor+'</span></td>'
-        +'<td><button class="btn-icon" onclick="removerN2(\''+n.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td>'
+        +'<td><button class="btn-icon" onclick="await removerN2(\''+n.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td>'
         +'</tr>';
     }).join('');
   }
 }
 
 // Sincroniza setores no localStorage para a página do gestor ler
-function sincSetoresNaGestora(){
+async function sincSetoresNaGestora(){
   // nova-gestor.html lê nova_sol_setores_v1 — já está salvo acima
   // nada extra necessário, mesmo domínio compartilha localStorage
 }
@@ -858,7 +860,7 @@ async function init(){
   var url=buildGestorUrl();
   document.getElementById('link-url').textContent=url;
   document.getElementById('btn-abrir-form').onclick=function(){window.open(url,'_blank');};
-  renderLista();
+  await renderLista();
 }
 
 (async()=>{await init();})();

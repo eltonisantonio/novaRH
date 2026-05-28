@@ -286,10 +286,8 @@ var SOL_KEY     = 'nova_solicitacoes_v1';
 
 var usuarioAtivo = null;
 
-function (await getUsuarios()){
-  try{return JSON.parse(localStorage.getItem(AUTH_KEY)||'[]');}catch{return[];}
-}
-async function await saveUsuarios(d){await FDB.users.saveAll(d);}
+async function getUsuarios(){return await FDB.users.getAll();}
+async function saveUsuarios(d){await FDB.users.saveAll(d);}
 
 async function initAuth(){
   var users = (await getUsuarios());

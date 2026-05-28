@@ -84,7 +84,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);min-height:100vh;dis
       </div>
       <div class="form-group full">
         <label class="form-label">Departamento / Setor <span class="req">*</span></label>
-        <input class="form-input upper" type="text" id="g-setor" placeholder="EX: LOGÍSTICA, ADMINISTRATIVO">
+        <select class="form-input" id="g-setor"><option value="">Selecione o setor</option></select>
       </div>
 
       <div class="section-title">Dados da Vaga</div>
@@ -150,6 +150,30 @@ body{font-family:'Inter',sans-serif;background:var(--cream);min-height:100vh;dis
 
 <script>
 const SOL_KEY = 'nova_solicitacoes_v1';
+const SETORES_KEY = 'nova_sol_setores_v1';
+
+function carregarSetores(){
+  var sel=document.getElementById('g-setor');
+  try{
+    var setores=JSON.parse(localStorage.getItem(SETORES_KEY)||'[]');
+    if(setores.length){
+      setores.forEach(function(s){
+        var opt=document.createElement('option');
+        opt.value=s.nome;opt.textContent=s.nome;
+        sel.appendChild(opt);
+      });
+    } else {
+      // fallback: campo livre se nenhum setor cadastrado
+      var div=sel.parentNode;
+      div.innerHTML='<label class="form-label">Departamento / Setor <span class="req">*</span></label>'
+        +'<input class="form-input upper" type="text" id="g-setor" placeholder="EX: LOGÍSTICA, ADMINISTRATIVO">';
+    }
+  }catch(e){
+    console.error(e);
+  }
+}
+
+carregarSetores();
 
 function sanitize(s){
   var d=document.createElement('div');

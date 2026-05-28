@@ -247,7 +247,7 @@ iframe{flex:1;border:none;width:100%;height:100%;}
         </div>
         <div class="loading-label">Carregando módulo...</div>
       </div>
-      <iframe id="mod-iframe" style="display:none" onload="iframeLoaded()"></iframe>
+      <iframe id="mod-iframe" style="display:none"></iframe>
     </div>
 
   </div>
@@ -285,7 +285,7 @@ function saveUsuarios(d){localStorage.setItem(AUTH_KEY,JSON.stringify(d));}
 
 function initAuth(){
   var users = getUsuarios();
-  var adminIdx = users.findIndex(u=>u.id==='u_admin');
+  var adminIdx = users.findIndex(function(u){return u.id==='u_admin';});
   var allMods = Object.keys(MODS);
   if(adminIdx>=0){
     users[adminIdx].senha='nova2025';
@@ -300,7 +300,7 @@ function doLogin(){
   var login = (document.getElementById('inp-login').value||'').trim();
   var senha = (document.getElementById('inp-senha').value||'').trim();
   var users  = getUsuarios();
-  var u      = users.find(x=>x.login===login&&x.senha===senha);
+  var u      = users.find(function(x){return x.login===login&&x.senha===senha;});
   if(!u){
     document.getElementById('login-err').style.display='block';
     return;
@@ -383,7 +383,7 @@ function buildHomeGrid(u){
 function updateBadgeSol(){
   try{
     var sols=JSON.parse(localStorage.getItem(SOL_KEY)||'[]');
-    var n=sols.filter(s=>s.status==='pendente').length;
+    var n=sols.filter(function(s){return s.status==='pendente';}).length;
     var b=document.getElementById('badge-sol');
     if(b){
       b.textContent=n;
@@ -489,9 +489,9 @@ function addUsuario(){
   if(!nome||!login||!senha){toast('Preencha nome, login e senha.','err');return;}
 
   var users=getUsuarios();
-  if(users.find(u=>u.login===login)){toast('Login já existe.','err');return;}
+  if(users.find(function(u){return u.login===login;})){toast('Login já existe.','err');return;}
 
-  var mods=[...document.querySelectorAll('#nu-modulos input:checked')].map(i=>i.value);
+  var mods=Array.prototype.slice.call(document.querySelectorAll('#nu-modulos input:checked')).map(function(i){return i.value;});
 
   users.push({id:'u_'+Date.now(),nome,login,senha,perfil,modulos:perfil==='admin'?Object.keys(MODS):mods});
   saveUsuarios(users);
@@ -504,7 +504,7 @@ function addUsuario(){
 
 function removerUsuario(id){
   if(!confirm('Remover este usuário?'))return;
-  var users=getUsuarios().filter(u=>u.id!==id);
+  var users=getUsuarios().filter(function(u){return u.id!==id;});
   saveUsuarios(users);
   toast('Usuário removido.');
   renderUsuarios();
@@ -517,12 +517,13 @@ function toast(msg,type){
   var el=document.getElementById('toast');
   el.textContent=msg;el.className='toast '+(type||'');
   el.classList.add('show');
-  setTimeout(()=>el.classList.remove('show'),2800);
+  setTimeout(function(){el.classList.remove('show');},2800);
 }
 
 // ────────────────────────────────────────────────
 // BOOT
 // ────────────────────────────────────────────────
+document.getElementById('mod-iframe').addEventListener('load', iframeLoaded);
 initAuth();
 var sessao=checkSession();
 if(sessao){

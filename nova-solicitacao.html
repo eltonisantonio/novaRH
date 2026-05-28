@@ -700,7 +700,7 @@ async function openAprovar(id){
   document.getElementById('modal-aprovar').classList.add('open');
 }
 
-async function await gerarCodigoVaga(){
+async function gerarCodigoVaga(){
   var vagas=(await getVagas()).filter(function(v){return !v.isBancoTalentos;});
   var ano=new Date().getFullYear();
   return 'RH-'+ano+'-'+(vagas.length+1).toString().padStart(3,'0');
@@ -723,7 +723,7 @@ async function confirmarAprovacao(){
 
   var vagas=(await getVagas());
   var vagaId='vg_'+Date.now();
-  var vagaCodigo=await await gerarCodigoVaga();
+  var vagaCodigo=await gerarCodigoVaga();
   var obsRH=(document.getElementById('ap-obs').value||'').trim();
 
   vagas.push({

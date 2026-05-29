@@ -244,7 +244,20 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
     <div class="modal-h"><span class="modal-title">Novo Processo de Rescisão</span><button class="btn-icon" onclick="closeModal('modal-proc')"><i class="ti ti-x"></i></button></div>
     <div class="modal-b">
       <div class="form-grid-2">
-        <div class="fg" style="grid-column:1/-1"><label class="fl">Nome do Funcionário <span style="color:#c0392b">*</span></label><input class="fi upper" type="text" id="np2-nome"></div>
+        <div class="fg" style="grid-column:1/-1">
+          <label class="fl">Funcionário <span style="color:#c0392b">*</span></label>
+          <select class="fs" id="np2-func" onchange="preencherDadosFunc(this.value)">
+            <option value="">Selecione o funcionário</option>
+            <optgroup label="── Funcionários Ativos ──" id="optgroup-ativos"></optgroup>
+            <optgroup label="── Cadastro Manual ──">
+              <option value="__manual__">Digitar manualmente...</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="fg" style="grid-column:1/-1" id="bloco-nome-manual" style="display:none">
+          <label class="fl">Nome do Funcionário <span style="color:#c0392b">*</span></label>
+          <input class="fi upper" type="text" id="np2-nome" placeholder="Nome completo">
+        </div>
         <div class="fg"><label class="fl">Cargo</label><input class="fi upper" type="text" id="np2-cargo"></div>
         <div class="fg"><label class="fl">Empresa</label>
           <select class="fs" id="np2-empresa">
@@ -408,7 +421,19 @@ function entrarSetor(){
 }
 
 // ════ LISTENERS ════
+var _funcAtivos = []; // funcionários da Admissão
+
 function iniciarListeners(){
+  // Funcionários ativos da Admissão
+  db.collection('adm_processos').onSnapshot(function(snap){
+    _funcAtivos = snap.docs.map(function(d){
+      var p=d.data(), dd=p.dados||{};
+      var adm=dd.admissao||'';
+      if(adm&&adm.includes('/')){var pts=adm.split('/');if(pts.length===3)adm=pts[2]+'-'+pts[1].padStart(2,'0')+'-'+pts[0].padStart(2,'0');}
+      return {id:'adm_'+d.id, nome:dd.nome||'', cargo:dd.cargo||'', empresa:dd.empresa||'', admissao:adm};
+    }).filter(function(f){return !!f.nome;});
+    _funcAtivos.sort(function(a,b){return (a.nome||'').localeCompare(b.nome||'');});
+  });
   db.collection('rescisao_processos').onSnapshot(function(snap){
     _processos=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
     _processos.sort(function(a,b){return (b.criadoEm||'').localeCompare(a.criadoEm||'');});
@@ -649,7 +674,17 @@ function excluirProcesso(){
 // ════ NOVO PROCESSO ════
 function openNovoProcesso(){
   popularSelectPerfis();
-  ['np2-nome','np2-cargo','np2-obs','np2-resp'].forEach(function(id){document.getElementById(id).value='';});
+  // Popular select de funcionários
+  var optgroup = document.getElementById('optgroup-ativos');
+  if(optgroup){
+    optgroup.innerHTML = _funcAtivos.map(function(f){
+      return '<option value="'+f.id+'" data-cargo="'+f.cargo+'" data-empresa="'+f.empresa+'">'+f.nome+(f.cargo?' — '+f.cargo:'')+(f.empresa?' ('+f.empresa+')':'')+'</option>';
+    }).join('');
+  }
+  document.getElementById('np2-func').value='';
+  document.getElementById('bloco-nome-manual').style.display='none';
+  document.getElementById('np2-nome').value='';
+  ['np2-cargo','np2-obs','np2-resp'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('np2-empresa').value='';
   document.getElementById('np2-tipo').value='pedido_demissao';
   document.getElementById('np2-perfil').value='';
@@ -657,10 +692,30 @@ function openNovoProcesso(){
   openModal('modal-proc');
 }
 
+function preencherDadosFunc(val){
+  var manual = val==='__manual__';
+  document.getElementById('bloco-nome-manual').style.display = manual?'block':'none';
+  if(!val||manual){
+    if(manual){document.getElementById('np2-nome').value='';document.getElementById('np2-cargo').value='';document.getElementById('np2-empresa').value='';}
+    return;
+  }
+  var f=_funcAtivos.find(function(x){return x.id===val;});
+  if(!f)return;
+  document.getElementById('np2-cargo').value=f.cargo||'';
+  document.getElementById('np2-empresa').value=f.empresa||'';
+}
+
 function criarProcesso(){
-  var nome=(document.getElementById('np2-nome').value||'').trim().toUpperCase();
+  var funcVal=document.getElementById('np2-func').value;
+  var nome='';
+  if(funcVal==='__manual__'){
+    nome=(document.getElementById('np2-nome').value||'').trim().toUpperCase();
+  } else if(funcVal){
+    var f=_funcAtivos.find(function(x){return x.id===funcVal;});
+    nome=f?f.nome:'';
+  }
   var deslig=document.getElementById('np2-deslig').value;
-  if(!nome||!deslig){toast('Nome e data de desligamento são obrigatórios.','err');return;}
+  if(!nome||!deslig){toast('Selecione o funcionário e informe a data de desligamento.','err');return;}
   var docRef=db.collection('rescisao_processos').doc();
   docRef.set({
     id:docRef.id,

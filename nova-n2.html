@@ -179,7 +179,7 @@ const db = firebase.firestore();
 // ── EmailJS ──
 // SUBSTITUA com suas credenciais
 const EMAILJS_SERVICE  = 'service_v1stn8m';
-const EMAILJS_TEMPLATE_RH = 'template_f69wi39'; // template que notifica o RH
+const EMAILJS_TEMPLATE_RH = 'template_wz1kq37'; // template que notifica o RH
 const EMAILJS_PUBLIC   = 'AtHQdnGVUyUK30fSt';
 emailjs.init(EMAILJS_PUBLIC);
 
@@ -367,6 +367,7 @@ async function notificarRH(decisao, justificativa){
       message:  'O N2 ' + (solData.n2Nome||'N2') + ' ' + (decisao==='APROVADO'?'aprovou':'reprovou') + ' a solicitação ' + solData.codigo + '.',
       gestor:   solData.gestor,
       cargo:    solData.cargo,
+      referencia: solData.codigo,
       decisao:  decisao,
       justificativa: justificativa || '—',
     });

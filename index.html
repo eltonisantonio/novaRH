@@ -126,14 +126,21 @@ iframe{flex:1;border:none;width:100%;height:100%;}
 /* ── BADGE SOL ── */
 .nav-badge{background:var(--lime);color:var(--black);font-size:9px;font-weight:900;padding:1px 5px;border-radius:8px;margin-left:auto;}
 </style>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">
-// ── Migração única localStorage → Firestore ──
-(async function migrarDados(){
-  try { await FDB.migrarLocalStorage(); } catch(e) { console.warn('Migração:', e); }
-})();
-</script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-db.js"></script>
+<script>
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey:"AIzaSyAhoLSoe7bRdDakJ6apJcnWMBL5RHmQtDI",
+    authDomain:"novarh-4fbc6.firebaseapp.com",
+    projectId:"novarh-4fbc6",
+    storageBucket:"novarh-4fbc6.firebasestorage.app",
+    messagingSenderId:"805399291743",
+    appId:"1:805399291743:web:ac13f2572f875c0ec1b8ea"
+  });
+}
+var _db = firebase.firestore();
+</script>
 </head>
 <body>
 
@@ -166,6 +173,7 @@ iframe{flex:1;border:none;width:100%;height:100%;}
     </div>
     <nav class="nav" id="sidebar-nav">
       <div class="nav-s">Módulos</div>
+      <div class="nav-item" id="nav-dashboard" onclick="loadMod('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
       <div class="nav-item" id="nav-home" onclick="goHome()"><i class="ti ti-home"></i> Início</div>
       <div class="nav-item" id="nav-rs"         onclick="loadMod('rs')"><i class="ti ti-user-search"></i> R&amp;S</div>
       <div class="nav-item" id="nav-admissao"   onclick="loadMod('admissao')"><i class="ti ti-file-check"></i> Admissão</div>
@@ -217,6 +225,7 @@ iframe{flex:1;border:none;width:100%;height:100%;}
         <div style="margin-top:12px">
           <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Módulos</div>
           <div class="mod-check-grid" id="nu-modulos">
+            <label class="mod-check"><input type="checkbox" value="dashboard" checked> Dashboard</label>
             <label class="mod-check"><input type="checkbox" value="rs" checked> R&amp;S</label>
             <label class="mod-check"><input type="checkbox" value="admissao" checked> Admissão</label>
             <label class="mod-check"><input type="checkbox" value="experiencia" checked> Experiência</label>
@@ -266,6 +275,7 @@ iframe{flex:1;border:none;width:100%;height:100%;}
 // CONFIGURAÇÃO DOS MÓDULOS
 // ────────────────────────────────────────────────
 var MODS = {
+  dashboard:   {nome:'Dashboard',              tag:'Analytics', file:'nova-dashboard.html',   icon:'ti-layout-dashboard', desc:'Indicadores consolidados de R&S, Admissão, Experiência, Rescisão e Solicitações.'},
   rs:          {nome:'Recrutamento & Seleção', tag:'Módulo 1', file:'nova-rs.html',         icon:'ti-user-search', desc:'Vagas, candidatos, kanban de seleção, banco de talentos e agenda do RH.'},
   admissao:    {nome:'Admissão',               tag:'Módulo 3', file:'nova-admissao.html',   icon:'ti-file-check',  desc:'Checklist de admissão por perfil, integração com R&S e controle de etapas.'},
   experiencia: {nome:'Período de Experiência', tag:'Módulo 4', file:'nova-experiencia.html',icon:'ti-clock',       desc:'Acompanhamento do período de experiência, feedbacks e cerimônia de capacete.'},
@@ -283,11 +293,25 @@ var SOL_KEY     = 'nova_solicitacoes_v1';
 
 var usuarioAtivo = null;
 
-async function getUsuarios(){return await FDB.users.getAll();}
-async function saveUsuarios(d){await FDB.users.saveAll(d);}
+function getUsuarios(){
+  return _db.collection('rh_users').get().then(function(snap){
+    return snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
+  });
+}
+function saveUsuarios(lista){
+  var batch = _db.batch();
+  // Deletar todos e recriar (lista pequena)
+  return _db.collection('rh_users').get().then(function(snap){
+    snap.docs.forEach(function(d){batch.delete(d.ref);});
+    lista.forEach(function(u){
+      batch.set(_db.collection('rh_users').doc(u.id), u);
+    });
+    return batch.commit();
+  });
+}
 
-async function initAuth(){
-  var users = (await getUsuarios());
+function initAuth(){
+  return getUsuarios().then(function(users){
   var adminIdx = users.findIndex(function(u){return u.id==='u_admin';});
   var allMods = Object.keys(MODS);
   if(adminIdx>=0){
@@ -296,21 +320,23 @@ async function initAuth(){
   } else {
     users.unshift({id:'u_admin',nome:'Administrador',login:'admin',senha:'nova2025',perfil:'admin',modulos:allMods});
   }
-  await saveUsuarios(users);
+  return saveUsuarios(users);
+  });
 }
 
-async function doLogin(){
+function doLogin(){
   var login = (document.getElementById('inp-login').value||'').trim();
   var senha = (document.getElementById('inp-senha').value||'').trim();
-  var users  = (await getUsuarios());
+  getUsuarios().then(function(users){
   var u      = users.find(function(x){return x.login===login&&x.senha===senha;});
   if(!u){
     document.getElementById('login-err').style.display='block';
     return;
   }
-  sessionStorage.setItem(SESSION_KEY,JSON.stringify({id:u.id,nome:u.nome,perfil:u.perfil,modulos:u.modulos||[]}));
-  document.getElementById('login-err').style.display='none';
-  startShell(u);
+    sessionStorage.setItem(SESSION_KEY,JSON.stringify({id:u.id,nome:u.nome,perfil:u.perfil,modulos:u.modulos||[]}));
+    document.getElementById('login-err').style.display='none';
+    startShell(u);
+  });
 }
 
 function doLogout(){
@@ -384,15 +410,11 @@ function buildHomeGrid(u){
 }
 
 function updateBadgeSol(){
-  try{
-    var sols=JSON.parse(localStorage.getItem(SOL_KEY)||'[]');
-    var n=sols.filter(function(s){return s.status==='pendente';}).length;
+  _db.collection('solicitacoes').where('status','==','pendente').get().then(function(snap){
+    var n=snap.size;
     var b=document.getElementById('badge-sol');
-    if(b){
-      b.textContent=n;
-      b.style.display=n>0?'inline':'none';
-    }
-  }catch{}
+    if(b){b.textContent=n;b.style.display=n>0?'inline':'none';}
+  }).catch(function(){});
 }
 
 // ────────────────────────────────────────────────
@@ -455,7 +477,7 @@ function setActive(id){
 // ────────────────────────────────────────────────
 // ADMIN DE USUÁRIOS
 // ────────────────────────────────────────────────
-async function openAdmin(){
+function openAdmin(){
   document.getElementById('view-home').style.display='none';
   document.getElementById('view-mod').classList.remove('active');
   document.getElementById('view-admin').style.display='block';
@@ -463,11 +485,11 @@ async function openAdmin(){
   renderUsuarios();
 }
 
-async function renderUsuarios(){
-  var users=(await getUsuarios());
+function renderUsuarios(){
+  getUsuarios().then(function(users){
   var el=document.getElementById('lista-usuarios');
   if(!users.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:10px 0">Nenhum usu\u00e1rio.</div>';return;}
-  el.innerHTML=users.map(function(u){
+    el.innerHTML=users.map(function(u){
     var isAdmin=(u.id==='u_admin');
     var modsList=(u.modulos||[]).join(', ')||'\u2014';
     var badgeClass=u.perfil==='admin'?'badge-admin':'badge-user';
@@ -481,10 +503,11 @@ async function renderUsuarios(){
       +'</div>'
       +acaoBtn
       +'</div>';
-  }).join('');
+    }).join('');
+  });
 }
 
-async function addUsuario(){
+function addUsuario(){
   var nome=(document.getElementById('nu-nome').value||'').trim();
   var login=(document.getElementById('nu-login').value||'').trim().toLowerCase();
   var senha=(document.getElementById('nu-senha').value||'').trim();
@@ -505,12 +528,14 @@ async function addUsuario(){
   renderUsuarios();
 }
 
-async function removerUsuario(id){
+function removerUsuario(id){
   if(!confirm('Remover este usuário?'))return;
-  var users=(await getUsuarios()).filter(function(u){return u.id!==id;});
-  await saveUsuarios(users);
-  toast('Usuário removido.');
-  renderUsuarios();
+  getUsuarios().then(function(users){
+    saveUsuarios(users.filter(function(u){return u.id!==id;})).then(function(){
+      toast('Usuário removido.');
+      renderUsuarios();
+    });
+  });
 }
 
 // ────────────────────────────────────────────────
@@ -527,13 +552,14 @@ function toast(msg,type){
 // BOOT
 // ────────────────────────────────────────────────
 document.getElementById('mod-iframe').addEventListener('load', iframeLoaded);
-(async()=>{await initAuth();})();
-var sessao=checkSession();
-if(sessao){
-  startShell(sessao);
-} else {
-  document.getElementById('login-screen').style.display='flex';
-}
+initAuth().then(function(){
+  var sessao=checkSession();
+  if(sessao){
+    startShell(sessao);
+  } else {
+    document.getElementById('login-screen').style.display='flex';
+  }
+});
 </script>
 </body>
 </html>

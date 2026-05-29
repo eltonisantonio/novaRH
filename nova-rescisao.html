@@ -574,6 +574,7 @@ function abrirChecklist(id){
   document.getElementById('topbar-actions').innerHTML=
     '<button class="btn btn-sm" onclick="mostrarLista()"><i class="ti ti-arrow-left"></i> Voltar</button>'
     +(isRH&&!_procAtual.finalizado?'<button class="btn btn-success btn-sm" onclick="finalizarProcesso()"><i class="ti ti-check"></i> Finalizar</button>':'')
+    +(isRH&&_procAtual.finalizado?'<button class="btn btn-sm" onclick="sincronizarDossie()"><i class="ti ti-refresh"></i> Re-sincronizar Dossiê</button>':'')
     +(isRH?'<button class="btn btn-danger btn-sm" onclick="excluirProcesso()"><i class="ti ti-trash"></i> Excluir</button>':'');
   renderChecklist();
 }
@@ -725,18 +726,18 @@ function finalizarProcesso(){
     _procAtual.finalizado=true;
 
     // Criar evento no Dossiê — buscar por nome na adm_processos
-    var nomeBusca=(p.nome||'').toUpperCase();
+    var nomeBusca=(p.nome||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     var admDocId=null;
     db.collection('adm_processos').get().then(function(snap){
       var funcId=null;
       snap.docs.forEach(function(d){
-        var nome=((d.data().dados||{}).nome||'').toUpperCase();
+        var nome=((d.data().dados||{}).nome||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
         if(nome===nomeBusca){ funcId='adm_'+d.id; admDocId=d.id; }
       });
       // Também buscar em dossie_funcs (cadastro manual)
       db.collection('dossie_funcs').get().then(function(s2){
         s2.docs.forEach(function(d){
-          var nome=(d.data().nome||'').toUpperCase();
+          var nome=(d.data().nome||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
           if(nome===nomeBusca) funcId=d.id;
         });
         if(!funcId){
@@ -774,6 +775,39 @@ function finalizarProcesso(){
       });
     });
   }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+function sincronizarDossie(){
+  if(!_procAtual) return;
+  var p = _procAtual;
+  var now = new Date().toISOString();
+  var nomeBusca = (p.nome||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  toast('Buscando funcionário...','');
+  db.collection('adm_processos').get().then(function(snap){
+    var admDocId = null;
+    snap.docs.forEach(function(d){
+      var nome=((d.data().dados||{}).nome||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if(nome===nomeBusca) admDocId=d.id;
+    });
+    if(admDocId){
+      db.collection('adm_processos').doc(admDocId).update({desligado:true,desligadoEm:now,desligadoPor:p.criadoPor||'RH'})
+        .then(function(){toast('Dossiê atualizado! Funcionário marcado como desligado.','ok');});
+    } else {
+      db.collection('dossie_funcs').get().then(function(s2){
+        var funcId=null;
+        s2.docs.forEach(function(d){
+          var nome=(d.data().nome||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+          if(nome===nomeBusca) funcId=d.id;
+        });
+        if(funcId){
+          db.collection('dossie_funcs').doc(funcId).update({desligado:true,atualizadoEm:now})
+            .then(function(){toast('Dossiê atualizado!','ok');});
+        } else {
+          toast('Funcionário não encontrado no Dossiê. Verifique o nome.','err');
+        }
+      });
+    }
+  });
 }
 
 function excluirProcesso(){

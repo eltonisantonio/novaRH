@@ -508,6 +508,11 @@ function iniciarListeners() {
   db.collection('adm_processos').onSnapshot(function(snap) {
     _processos = snap.docs.map(function(d) { return Object.assign({id:d.id}, d.data()); });
     _processos.sort(function(a,b) { return (b.criadoEm||'').localeCompare(a.criadoEm||''); });
+    // Atualizar _procAtual se modal estiver aberto
+    if (_procAtual) {
+      var updated = _processos.find(function(p){ return p.id===_procAtual.id; });
+      if (updated) _procAtual = updated;
+    }
     renderProcessos();
   });
   db.collection('adm_perfis').onSnapshot(function(snap) {
@@ -634,13 +639,19 @@ function renderProcessos() {
     el.innerHTML = '<div class="empty"><i class="ti ti-file-check"></i><p>Nenhum processo de admissão. Faça upload do FO1029 para começar.</p></div>';
     return;
   }
+  // Event delegation — um único listener na lista
+  el.onclick = function(e) {
+    var card = e.target.closest('[data-proc-id]');
+    if (card) abrirProcesso(card.dataset.procId);
+  };
+
   el.innerHTML = _processos.map(function(p) {
     var pg = calcProgresso(p);
     var al = calcAlertas(p);
     var statusBadge = pg.pct===100
       ? '<span class="badge b-green"><i class="ti ti-check" style="font-size:9px"></i> Concluído</span>'
       : '<span class="badge b-amber"><i class="ti ti-clock" style="font-size:9px"></i> Em andamento</span>';
-    return '<div class="proc-card" onclick="abrirProcesso(\''+p.id+'\')">'+
+    return '<div class="proc-card" data-proc-id="'+p.id+'">'+
       '<div class="proc-top">'+
       '<div><div class="proc-nome">'+(p.dados&&p.dados.nome?p.dados.nome:'Sem nome')+'</div>'+
       '<div class="proc-meta">'+(p.dados&&p.dados.empresa?p.dados.empresa:'')+

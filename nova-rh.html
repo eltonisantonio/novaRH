@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova. RH</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--border:#e8e3d8;--border2:#d4cec0;--text2:#6b6558;--text3:#a09890;--r:6px;}
+body{font-family:'Inter',sans-serif;background:var(--cream);overflow:hidden;height:100vh;}
+
+/* ── LOGIN ── */
+.login-screen{position:fixed;inset:0;background:var(--black);display:flex;align-items:center;justify-content:center;z-index:999;}
+.login-box{background:var(--cream);border-radius:14px;padding:36px 40px;width:100%;max-width:380px;}
+.login-logo{display:flex;align-items:baseline;margin-bottom:6px;}
+.login-logo-text{font-size:24px;font-weight:900;letter-spacing:-.5px;color:var(--black);}
+.login-logo-dot{width:9px;height:9px;background:var(--lime);border-radius:50%;display:inline-block;margin-left:2px;margin-bottom:1px;}
+.login-sub{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:28px;}
+.login-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.login-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;}
+.login-input{padding:10px 12px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--black);font-size:14px;font-family:'Inter',sans-serif;font-weight:500;outline:none;transition:border-color .15s;}
+.login-input:focus{border-color:var(--black);}
+.login-btn{width:100%;padding:12px;border-radius:var(--r);border:none;background:var(--black);color:var(--lime);font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-top:8px;transition:background .15s;}
+.login-btn:hover{background:#1e2026;}
+.login-err{font-size:12px;font-weight:600;color:#c0392b;margin-top:8px;display:none;}
+
+/* ── SHELL ── */
+.shell{display:flex;height:100vh;}
+.sidebar{width:230px;background:var(--black);color:#fff;flex-shrink:0;display:flex;flex-direction:column;z-index:10;}
+.logo-wrap{padding:28px 24px 22px;border-bottom:1px solid rgba(255,255,255,.08);}
+.logo-mark{display:flex;align-items:baseline;}
+.logo-text{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--cream);}
+.logo-dot{width:9px;height:9px;background:var(--lime);border-radius:50%;display:inline-block;margin-left:2px;margin-bottom:1px;}
+.logo-sub{font-size:10px;font-weight:500;color:rgba(242,238,229,.4);letter-spacing:2px;text-transform:uppercase;margin-top:5px;}
+.nav{padding:20px 0;flex:1;overflow-y:auto;}
+.nav-s{padding:8px 24px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.5);transition:all .15s;border-left:2px solid transparent;user-select:none;}
+.nav-item:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05);}
+.nav-item.active{color:var(--lime);border-left-color:var(--lime);background:rgba(215,255,61,.06);}
+.nav-item.locked{opacity:.3;cursor:not-allowed;pointer-events:none;}
+.nav-item i{font-size:16px;}
+.sidebar-user{padding:14px 24px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;}
+.sidebar-user-info{flex:1;min-width:0;}
+.sidebar-user-nome{font-size:12px;font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sidebar-user-perfil{font-size:10px;color:rgba(255,255,255,.3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+.btn-logout{background:transparent;border:none;color:rgba(255,255,255,.3);cursor:pointer;padding:4px;border-radius:4px;transition:color .15s;font-size:16px;}
+.btn-logout:hover{color:rgba(255,255,255,.7);}
+
+/* ── CONTENT ── */
+.content{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--cream);}
+
+/* ── HOME ── */
+.home{flex:1;overflow-y:auto;padding:36px 40px;}
+.home-hero{margin-bottom:32px;}
+.home-title{font-size:28px;font-weight:900;color:var(--black);letter-spacing:-.5px;}
+.home-sub{font-size:14px;color:var(--text2);font-weight:500;margin-top:6px;}
+.modules-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+.mod-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:24px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;}
+.mod-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--border);transition:all .15s;}
+.mod-card:hover{transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,.08);}
+.mod-card:hover::after,.mod-card.active-mod::after{background:var(--lime);}
+.mod-card.locked-card{opacity:.45;cursor:not-allowed;pointer-events:none;}
+.mod-icon{width:40px;height:40px;border-radius:8px;background:var(--black);display:flex;align-items:center;justify-content:center;margin-bottom:14px;}
+.mod-icon i{font-size:20px;color:var(--lime);}
+.mod-nome{font-size:15px;font-weight:800;color:var(--black);margin-bottom:4px;}
+.mod-desc{font-size:12px;color:var(--text2);font-weight:500;line-height:1.5;}
+.mod-badge{display:inline-flex;align-items:center;gap:4px;margin-top:10px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;background:var(--cream);color:var(--text3);}
+
+/* ── IFRAME VIEW ── */
+.iframe-view{flex:1;display:none;overflow:hidden;}
+.iframe-view.active{display:flex;flex-direction:column;}
+iframe{flex:1;border:none;width:100%;height:100%;}
+
+/* ── LOADING ── */
+.loading{flex:1;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:var(--cream);}
+.loading-dot{width:8px;height:8px;border-radius:50%;background:var(--lime);animation:blink 1s infinite;}
+.loading-dot:nth-child(2){animation-delay:.2s;}
+.loading-dot:nth-child(3){animation-delay:.4s;}
+@keyframes blink{0%,100%{opacity:.2}50%{opacity:1}}
+.loading-dots{display:flex;gap:6px;}
+.loading-label{font-size:13px;font-weight:600;color:var(--text2);}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--white);border-bottom:1px solid var(--border);height:58px;display:flex;align-items:center;padding:0 32px;gap:12px;flex-shrink:0;}
+.topbar-mod{font-size:15px;font-weight:700;}
+.topbar-tag{font-size:11px;font-weight:700;padding:3px 8px;border-radius:4px;background:rgba(215,255,61,.15);color:#3a5c00;}
+.topbar-back{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:var(--r);border:1px solid var(--border);background:var(--white);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;color:var(--text2);}
+.topbar-back:hover{background:var(--cream);}
+
+/* ── ADMIN PANEL ── */
+.admin-panel{flex:1;overflow-y:auto;padding:36px 40px;}
+.panel-title{font-size:22px;font-weight:900;letter-spacing:-.4px;margin-bottom:6px;}
+.panel-sub{font-size:13px;color:var(--text2);margin-bottom:28px;}
+.section-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:24px;margin-bottom:20px;}
+.section-card-title{font-size:13px;font-weight:800;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+.user-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.user-row:last-child{border-bottom:none;}
+.user-name{font-size:13px;font-weight:700;flex:1;}
+.user-meta{font-size:11px;color:var(--text3);font-weight:500;}
+.badge-admin{background:rgba(215,255,61,.15);color:#3a5c00;font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;}
+.badge-user{background:var(--cream);color:var(--text2);font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;}
+.form-inline{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;}
+.form-group-sm{display:flex;flex-direction:column;gap:4px;}
+.form-label-sm{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+.form-input-sm{padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--black);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;}
+.form-input-sm:focus{border-color:var(--black);}
+.form-select-sm{padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--black);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;}
+.btn-sm{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--black);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.btn-sm:hover{background:var(--cream);}
+.btn-primary-sm{background:var(--black);color:var(--lime);border-color:var(--black);}
+.btn-primary-sm:hover{background:#1e2026;}
+.btn-danger-sm{background:#fdeaea;color:#8b1c1c;border-color:#f5c6c6;}
+.btn-danger-sm:hover{background:#fad0d0;}
+.mod-check-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;}
+.mod-check{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer;}
+.mod-check input{width:14px;height:14px;accent-color:var(--black);}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--black);color:var(--cream);padding:12px 18px;border-radius:var(--r);font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.err{background:#8b1c1c;}
+.toast.ok{background:#1a5c35;}
+
+/* ── BADGE SOL ── */
+.nav-badge{background:var(--lime);color:var(--black);font-size:9px;font-weight:900;padding:1px 5px;border-radius:8px;margin-left:auto;}
+</style>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js">
+// ── Migração única localStorage → Firestore ──
+(async function migrarDados(){
+  try { await FDB.migrarLocalStorage(); } catch(e) { console.warn('Migração:', e); }
+})();
+</script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="firebase-db.js"></script>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo"><span class="login-logo-text">NOVA</span><span class="login-logo-dot"></span></div>
+    <div class="login-sub">Sistema de RH</div>
+    <div class="login-group">
+      <label class="login-label">Usuário</label>
+      <input class="login-input" type="text" id="inp-login" placeholder="usuário" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-group">
+      <label class="login-label">Senha</label>
+      <input class="login-input" type="password" id="inp-senha" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-err" id="login-err">Usuário ou senha incorretos.</div>
+  </div>
+</div>
+
+<!-- SHELL -->
+<div class="shell" id="shell" style="display:none">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo-wrap">
+      <div class="logo-mark"><span class="logo-text">NOVA</span><span class="logo-dot"></span></div>
+      <div class="logo-sub">Sistema de RH</div>
+    </div>
+    <nav class="nav" id="sidebar-nav">
+      <div class="nav-s">Módulos</div>
+      <div class="nav-item" id="nav-dashboard" onclick="loadMod('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+      <div class="nav-item" id="nav-home" onclick="goHome()"><i class="ti ti-home"></i> Início</div>
+      <div class="nav-item" id="nav-rs"         onclick="loadMod('rs')"><i class="ti ti-user-search"></i> R&amp;S</div>
+      <div class="nav-item" id="nav-admissao"   onclick="loadMod('admissao')"><i class="ti ti-file-check"></i> Admissão</div>
+      <div class="nav-item" id="nav-experiencia" onclick="loadMod('experiencia')"><i class="ti ti-clock"></i> Experiência</div>
+      <div class="nav-item" id="nav-dossie"     onclick="loadMod('dossie')"><i class="ti ti-notebook"></i> Dossiê</div>
+      <div class="nav-item" id="nav-rescisao"   onclick="loadMod('rescisao')"><i class="ti ti-file-minus"></i> Rescisão</div>
+      <div class="nav-item" id="nav-solicitacao" onclick="loadMod('solicitacao')"><i class="ti ti-send"></i> Solicitações <span class="nav-badge" id="badge-sol" style="display:none">0</span></div>
+      <div class="nav-s" id="nav-s-admin" style="display:none">Admin</div>
+      <div class="nav-item" id="nav-admin" style="display:none" onclick="openAdmin()"><i class="ti ti-settings"></i> Usuários</div>
+    </nav>
+    <div class="sidebar-user">
+      <div style="width:28px;height:28px;border-radius:50%;background:rgba(215,255,61,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <i class="ti ti-user" style="font-size:14px;color:var(--lime)"></i>
+      </div>
+      <div class="sidebar-user-info">
+        <div class="sidebar-user-nome" id="user-nome">—</div>
+        <div class="sidebar-user-perfil" id="user-perfil">—</div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()" title="Sair"><i class="ti ti-logout"></i></button>
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <div class="content" id="content">
+
+    <!-- HOME -->
+    <div class="home" id="view-home">
+      <div class="home-hero">
+        <div class="home-title" id="home-title">Bem-vindo ao Nova. RH</div>
+        <div class="home-sub">Sistema de gestão de pessoas — selecione um módulo para começar.</div>
+      </div>
+      <div class="modules-grid" id="modules-grid"></div>
+    </div>
+
+    <!-- ADMIN PANEL -->
+    <div class="admin-panel" id="view-admin" style="display:none">
+      <div class="panel-title">Gerenciar Usuários</div>
+      <div class="panel-sub">Adicione, edite ou remova usuários e defina quais módulos cada um pode acessar.</div>
+      <div class="section-card">
+        <div class="section-card-title"><i class="ti ti-user-plus" style="color:var(--text2);font-size:16px"></i> Novo Usuário</div>
+        <div class="form-inline" id="form-novo-usuario">
+          <div class="form-group-sm"><label class="form-label-sm">Nome</label><input class="form-input-sm" type="text" id="nu-nome" placeholder="Nome Completo"></div>
+          <div class="form-group-sm"><label class="form-label-sm">Login</label><input class="form-input-sm" type="text" id="nu-login" placeholder="usuario"></div>
+          <div class="form-group-sm"><label class="form-label-sm">Senha</label><input class="form-input-sm" type="text" id="nu-senha" placeholder="senha123"></div>
+          <div class="form-group-sm"><label class="form-label-sm">Perfil</label>
+            <select class="form-select-sm" id="nu-perfil"><option value="user">Usuário</option><option value="admin">Admin</option></select>
+          </div>
+        </div>
+        <div style="margin-top:12px">
+          <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Módulos</div>
+          <div class="mod-check-grid" id="nu-modulos">
+            <label class="mod-check"><input type="checkbox" value="dashboard" checked> Dashboard</label>
+            <label class="mod-check"><input type="checkbox" value="rs" checked> R&amp;S</label>
+            <label class="mod-check"><input type="checkbox" value="admissao" checked> Admissão</label>
+            <label class="mod-check"><input type="checkbox" value="experiencia" checked> Experiência</label>
+            <label class="mod-check"><input type="checkbox" value="dossie" checked> Dossiê</label>
+            <label class="mod-check"><input type="checkbox" value="rescisao" checked> Rescisão</label>
+            <label class="mod-check"><input type="checkbox" value="solicitacao" checked> Solicitações</label>
+          </div>
+        </div>
+        <div style="margin-top:14px">
+          <button class="btn-sm btn-primary-sm" onclick="addUsuario()"><i class="ti ti-plus"></i> Adicionar</button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-card-title"><i class="ti ti-users" style="color:var(--text2);font-size:16px"></i> Usuários Cadastrados</div>
+        <div id="lista-usuarios"></div>
+      </div>
+
+      <div style="margin-top:8px">
+        <button class="btn-sm" onclick="goHome()"><i class="ti ti-arrow-left"></i> Voltar ao Início</button>
+      </div>
+    </div>
+
+    <!-- MODULE VIEW -->
+    <div class="iframe-view" id="view-mod">
+      <div class="topbar" id="mod-topbar">
+        <button class="topbar-back" onclick="goHome()"><i class="ti ti-arrow-left" style="font-size:13px"></i> Início</button>
+        <span class="topbar-mod" id="mod-topbar-nome"></span>
+        <span class="topbar-tag" id="mod-topbar-tag"></span>
+      </div>
+      <div class="loading" id="mod-loading">
+        <div class="loading-dots">
+          <div class="loading-dot"></div><div class="loading-dot"></div><div class="loading-dot"></div>
+        </div>
+        <div class="loading-label">Carregando módulo...</div>
+      </div>
+      <iframe id="mod-iframe" style="display:none"></iframe>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ────────────────────────────────────────────────
+// CONFIGURAÇÃO DOS MÓDULOS
+// ────────────────────────────────────────────────
+var MODS = {
+  dashboard:   {nome:'Dashboard',              tag:'Analytics', file:'nova-dashboard.html',   icon:'ti-layout-dashboard', desc:'Indicadores consolidados de R&S, Admissão, Experiência, Rescisão e Solicitações.'},
+  rs:          {nome:'Recrutamento & Seleção', tag:'Módulo 1', file:'nova-rs.html',         icon:'ti-user-search', desc:'Vagas, candidatos, kanban de seleção, banco de talentos e agenda do RH.'},
+  admissao:    {nome:'Admissão',               tag:'Módulo 3', file:'nova-admissao.html',   icon:'ti-file-check',  desc:'Checklist de admissão por perfil, integração com R&S e controle de etapas.'},
+  experiencia: {nome:'Período de Experiência', tag:'Módulo 4', file:'nova-experiencia.html',icon:'ti-clock',       desc:'Acompanhamento do período de experiência, feedbacks e cerimônia de capacete.'},
+  dossie:      {nome:'Dossiê',                 tag:'Módulo 5', file:'nova-dossie.html',     icon:'ti-notebook',    desc:'Histórico completo de registros por funcionário, filtros, exportação em PDF.'},
+  rescisao:    {nome:'Rescisão',               tag:'Módulo 6', file:'nova-rescisao.html',   icon:'ti-file-minus',  desc:'Checklist de desligamento por setor com perfis, prazo de homologação e PDF.'},
+  solicitacao: {nome:'Solicitações de Vaga',   tag:'Módulo 7', file:'nova-solicitacao.html',icon:'ti-send',        desc:'Solicitações de abertura de vaga enviadas pelos gestores. Aprove e abra no R&S.'},
+};
+
+// ────────────────────────────────────────────────
+// AUTH
+// ────────────────────────────────────────────────
+var AUTH_KEY    = 'nova_rh_users_v1';
+var SESSION_KEY = 'nova_rh_session_v1';
+var SOL_KEY     = 'nova_solicitacoes_v1';
+
+var usuarioAtivo = null;
+
+async function getUsuarios(){return await FDB.users.getAll();}
+async function saveUsuarios(d){await FDB.users.saveAll(d);}
+
+async function initAuth(){
+  var users = (await getUsuarios());
+  var adminIdx = users.findIndex(function(u){return u.id==='u_admin';});
+  var allMods = Object.keys(MODS);
+  if(adminIdx>=0){
+    users[adminIdx].senha='nova2025';
+    users[adminIdx].modulos=allMods;
+  } else {
+    users.unshift({id:'u_admin',nome:'Administrador',login:'admin',senha:'nova2025',perfil:'admin',modulos:allMods});
+  }
+  await saveUsuarios(users);
+}
+
+async function doLogin(){
+  var login = (document.getElementById('inp-login').value||'').trim();
+  var senha = (document.getElementById('inp-senha').value||'').trim();
+  var users  = (await getUsuarios());
+  var u      = users.find(function(x){return x.login===login&&x.senha===senha;});
+  if(!u){
+    document.getElementById('login-err').style.display='block';
+    return;
+  }
+  sessionStorage.setItem(SESSION_KEY,JSON.stringify({id:u.id,nome:u.nome,perfil:u.perfil,modulos:u.modulos||[]}));
+  document.getElementById('login-err').style.display='none';
+  startShell(u);
+}
+
+function doLogout(){
+  sessionStorage.removeItem(SESSION_KEY);
+  usuarioAtivo=null;
+  document.getElementById('shell').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('inp-login').value='';
+  document.getElementById('inp-senha').value='';
+}
+
+function checkSession(){
+  try{
+    var s=sessionStorage.getItem(SESSION_KEY);
+    if(s){var u=JSON.parse(s);return u;}
+  }catch{}
+  return null;
+}
+
+// ────────────────────────────────────────────────
+// SHELL INIT
+// ────────────────────────────────────────────────
+function startShell(u){
+  usuarioAtivo=u;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('shell').style.display='flex';
+  document.getElementById('user-nome').textContent=u.nome;
+  document.getElementById('user-perfil').textContent=u.perfil==='admin'?'Administrador':'Usuário';
+
+  // Admin menu
+  if(u.perfil==='admin'){
+    document.getElementById('nav-s-admin').style.display='block';
+    document.getElementById('nav-admin').style.display='flex';
+  }
+
+  // Travar nav itens sem acesso
+  var mods = u.modulos||[];
+  Object.keys(MODS).forEach(function(key){
+    var nav=document.getElementById('nav-'+key);
+    if(nav){
+      if(u.perfil==='admin'||mods.includes(key)){
+        nav.classList.remove('locked');
+      } else {
+        nav.classList.add('locked');
+      }
+    }
+  });
+
+  buildHomeGrid(u);
+  goHome();
+  updateBadgeSol();
+  // Atualizar badge a cada 60s
+  setInterval(updateBadgeSol,60000);
+}
+
+function buildHomeGrid(u){
+  var grid=document.getElementById('modules-grid');
+  var mods=u.modulos||[];
+  grid.innerHTML=Object.entries(MODS).map(function(entry){
+    var key=entry[0],m=entry[1];
+    var locked=(u.perfil!=='admin'&&!mods.includes(key));
+    var cls='mod-card'+(locked?' locked-card':'');
+    var click=locked?'':'loadMod(\''+key+'\')';
+    return '<div class="'+cls+'" onclick="'+click+'">'
+      +'<div class="mod-icon"><i class="ti '+m.icon+'"></i></div>'
+      +'<div class="mod-nome">'+m.nome+'</div>'
+      +'<div class="mod-desc">'+m.desc+'</div>'
+      +'<div class="mod-badge"><i class="ti ti-point-filled" style="font-size:8px"></i> '+m.tag+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function updateBadgeSol(){
+  try{
+    var sols=JSON.parse(localStorage.getItem(SOL_KEY)||'[]');
+    var n=sols.filter(function(s){return s.status==='pendente';}).length;
+    var b=document.getElementById('badge-sol');
+    if(b){
+      b.textContent=n;
+      b.style.display=n>0?'inline':'none';
+    }
+  }catch{}
+}
+
+// ────────────────────────────────────────────────
+// NAVEGAÇÃO
+// ────────────────────────────────────────────────
+var modAtivo = null;
+
+function goHome(){
+  modAtivo=null;
+  document.getElementById('view-home').style.display='block';
+  document.getElementById('view-mod').classList.remove('active');
+  document.getElementById('view-admin').style.display='none';
+  document.getElementById('mod-iframe').src='about:blank';
+  document.getElementById('mod-iframe').style.display='none';
+  document.getElementById('mod-loading').style.display='flex';
+  setActive('nav-home');
+  document.title='Nova. RH';
+}
+
+function loadMod(key){
+  var m=MODS[key];if(!m)return;
+  // Verificar permissão
+  if(usuarioAtivo&&usuarioAtivo.perfil!=='admin'){
+    var mods=usuarioAtivo.modulos||[];
+    if(!mods.includes(key)){toast('Sem acesso a este módulo.','err');return;}
+  }
+  modAtivo=key;
+  document.getElementById('view-home').style.display='none';
+  document.getElementById('view-admin').style.display='none';
+  var vmod=document.getElementById('view-mod');
+  vmod.classList.add('active');
+  document.getElementById('mod-topbar-nome').textContent=m.nome;
+  document.getElementById('mod-topbar-tag').textContent=m.tag;
+  document.getElementById('mod-loading').style.display='flex';
+  document.getElementById('mod-iframe').style.display='none';
+  setActive('nav-'+key);
+  document.title='Nova. RH — '+m.nome;
+  document.getElementById('mod-iframe').src=m.file;
+  if(key==='solicitacao') updateBadgeSol();
+}
+
+function iframeLoaded(){
+  try{
+    var iframe=document.getElementById('mod-iframe');
+    var doc=iframe.contentDocument||iframe.contentWindow.document;
+    var style=doc.createElement('style');
+    style.textContent='.sidebar{display:none!important}.app,.main{min-height:100vh}';
+    doc.head.appendChild(style);
+  }catch(e){}
+  document.getElementById('mod-loading').style.display='none';
+  document.getElementById('mod-iframe').style.display='block';
+}
+
+function setActive(id){
+  document.querySelectorAll('.nav-item').forEach(function(el){el.classList.remove('active');});
+  var el=document.getElementById(id);
+  if(el)el.classList.add('active');
+}
+
+// ────────────────────────────────────────────────
+// ADMIN DE USUÁRIOS
+// ────────────────────────────────────────────────
+async function openAdmin(){
+  document.getElementById('view-home').style.display='none';
+  document.getElementById('view-mod').classList.remove('active');
+  document.getElementById('view-admin').style.display='block';
+  setActive('nav-admin');
+  renderUsuarios();
+}
+
+async function renderUsuarios(){
+  var users=(await getUsuarios());
+  var el=document.getElementById('lista-usuarios');
+  if(!users.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:10px 0">Nenhum usu\u00e1rio.</div>';return;}
+  el.innerHTML=users.map(function(u){
+    var isAdmin=(u.id==='u_admin');
+    var modsList=(u.modulos||[]).join(', ')||'\u2014';
+    var badgeClass=u.perfil==='admin'?'badge-admin':'badge-user';
+    var acaoBtn=isAdmin
+      ?'<span style="font-size:11px;color:var(--text3);font-weight:600">Master</span>'
+      :'<button class="btn-sm btn-danger-sm" onclick="removerUsuario(\''+u.id+'\')"><i class="ti ti-trash" style="font-size:13px"></i></button>';
+    return '<div class="user-row">'
+      +'<div style="flex:1">'
+      +'<div class="user-name">'+u.nome+' <span class="'+badgeClass+'">'+u.perfil+'</span></div>'
+      +'<div class="user-meta">Login: '+u.login+' &middot; M\u00f3dulos: '+modsList+'</div>'
+      +'</div>'
+      +acaoBtn
+      +'</div>';
+  }).join('');
+}
+
+async function addUsuario(){
+  var nome=(document.getElementById('nu-nome').value||'').trim();
+  var login=(document.getElementById('nu-login').value||'').trim().toLowerCase();
+  var senha=(document.getElementById('nu-senha').value||'').trim();
+  var perfil=document.getElementById('nu-perfil').value;
+  if(!nome||!login||!senha){toast('Preencha nome, login e senha.','err');return;}
+
+  var users=(await getUsuarios());
+  if(users.find(function(u){return u.login===login;})){toast('Login já existe.','err');return;}
+
+  var mods=Array.prototype.slice.call(document.querySelectorAll('#nu-modulos input:checked')).map(function(i){return i.value;});
+
+  users.push({id:'u_'+Date.now(),nome,login,senha,perfil,modulos:perfil==='admin'?Object.keys(MODS):mods});
+  await saveUsuarios(users);
+  toast('Usuário adicionado!','ok');
+  document.getElementById('nu-nome').value='';
+  document.getElementById('nu-login').value='';
+  document.getElementById('nu-senha').value='';
+  renderUsuarios();
+}
+
+async function removerUsuario(id){
+  if(!confirm('Remover este usuário?'))return;
+  var users=(await getUsuarios()).filter(function(u){return u.id!==id;});
+  await saveUsuarios(users);
+  toast('Usuário removido.');
+  renderUsuarios();
+}
+
+// ────────────────────────────────────────────────
+// TOAST
+// ────────────────────────────────────────────────
+function toast(msg,type){
+  var el=document.getElementById('toast');
+  el.textContent=msg;el.className='toast '+(type||'');
+  el.classList.add('show');
+  setTimeout(function(){el.classList.remove('show');},2800);
+}
+
+// ────────────────────────────────────────────────
+// BOOT
+// ────────────────────────────────────────────────
+document.getElementById('mod-iframe').addEventListener('load', iframeLoaded);
+(async()=>{await initAuth();})();
+var sessao=checkSession();
+if(sessao){
+  startShell(sessao);
+} else {
+  document.getElementById('login-screen').style.display='flex';
+}
+</script>
+</body>
+</html>

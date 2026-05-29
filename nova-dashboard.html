@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova. RH — Dashboard</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;}
+.app{display:flex;min-height:100vh;}
+.sidebar{width:230px;background:var(--black);color:#fff;flex-shrink:0;display:flex;flex-direction:column;}
+.sidebar-logo{padding:28px 24px 22px;border-bottom:1px solid rgba(255,255,255,.08);}
+.logo-mark{display:flex;align-items:baseline;}
+.logo-text{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--cream);}
+.logo-dot{width:9px;height:9px;background:var(--lime);border-radius:50%;display:inline-block;margin-left:2px;margin-bottom:1px;}
+.logo-sub{font-size:10px;font-weight:500;color:rgba(242,238,229,.4);letter-spacing:2px;text-transform:uppercase;margin-top:5px;}
+.sidebar-nav{padding:20px 0;flex:1;}
+.nav-s{padding:8px 24px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.5);transition:all .15s;border-left:2px solid transparent;}
+.nav-item.active{color:var(--lime);border-left-color:var(--lime);background:rgba(215,255,61,.06);}
+.nav-item.dis{opacity:.25;cursor:not-allowed;pointer-events:none;}
+.nav-item i{font-size:16px;}
+.sidebar-footer{padding:18px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.25);}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.topbar-title{font-size:15px;font-weight:700;}
+.filters{display:flex;gap:8px;align-items:center;}
+.form-select{padding:7px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:12px;font-family:'Inter',sans-serif;font-weight:500;outline:none;color:var(--text);}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.btn:hover{background:var(--s2);}
+.btn-primary{background:var(--black);color:var(--lime);border-color:var(--black);}
+.content{flex:1;padding:24px 32px;overflow-y:auto;}
+/* SECTION */
+.dash-section{margin-bottom:28px;}
+.section-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.section-title i{font-size:14px;}
+/* STAT CARDS */
+.stats-row{display:grid;gap:12px;}
+.stats-4{grid-template-columns:repeat(4,1fr);}
+.stats-3{grid-template-columns:repeat(3,1fr);}
+.stats-5{grid-template-columns:repeat(5,1fr);}
+.stat{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:16px 20px;position:relative;overflow:hidden;}
+.stat::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.stat.lime::after{background:var(--lime);}
+.stat.gold::after{background:var(--gold);}
+.stat.red::after{background:#e05252;}
+.stat.blue::after{background:#4a7fc1;}
+.stat.purple::after{background:#9b72cf;}
+.stat.green::after{background:#4caf80;}
+.stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:8px;}
+.stat-value{font-size:28px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.stat-sub{font-size:11px;color:var(--text3);font-weight:500;margin-top:4px;}
+.stat-trend{font-size:11px;font-weight:700;margin-top:6px;display:flex;align-items:center;gap:3px;}
+.stat-trend.up{color:#1a5c35;}
+.stat-trend.down{color:#8b1c1c;}
+.stat-trend.warn{color:#7d4e00;}
+/* CHARTS */
+.charts-row{display:grid;gap:16px;margin-bottom:16px;}
+.charts-2{grid-template-columns:1fr 1fr;}
+.charts-3{grid-template-columns:1fr 1fr 1fr;}
+.charts-13{grid-template-columns:1fr 3fr;}
+.chart-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:20px;}
+.chart-title{font-size:13px;font-weight:800;margin-bottom:4px;}
+.chart-sub{font-size:11px;color:var(--text2);margin-bottom:16px;}
+.chart-wrap{position:relative;}
+/* SLA */
+.sla-row{display:flex;flex-direction:column;gap:8px;}
+.sla-item{display:flex;align-items:center;gap:10px;font-size:12px;}
+.sla-label{width:160px;font-weight:600;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.sla-bar-wrap{flex:1;height:8px;background:var(--border);border-radius:4px;overflow:hidden;}
+.sla-bar{height:100%;border-radius:4px;transition:width .5s;}
+.sla-val{width:40px;text-align:right;font-weight:700;font-size:11px;}
+.sla-pct{width:36px;text-align:right;font-size:10px;color:var(--text3);}
+/* TABELA */
+.dash-table{width:100%;border-collapse:collapse;font-size:12px;}
+.dash-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+.dash-table td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.dash-table tr:last-child td{border-bottom:none;}
+.dash-table tr:hover td{background:var(--s2);}
+/* BADGE */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:10px;font-size:10px;font-weight:700;}
+.b-lime{background:#f0ffe0;color:#3a5c00;border:1px solid #c0e840;}
+.b-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
+.b-red{background:#fdeaea;color:#8b1c1c;border:1px solid #f5c6c6;}
+.b-blue{background:#eef3fb;color:#1e3a6e;border:1px solid #b0c8e4;}
+.b-gray{background:#f0ede6;color:var(--text2);border:1px solid var(--border2);}
+.b-green{background:#e8f8ef;color:#1a5c35;border:1px solid #a8d8b8;}
+/* LOADING */
+.loading-overlay{position:absolute;inset:0;background:rgba(255,255,255,.7);display:flex;align-items:center;justify-content:center;border-radius:var(--rl);z-index:5;}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--black);border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+/* VAZIO */
+.empty-chart{display:flex;align-items:center;justify-content:center;height:120px;color:var(--text3);font-size:13px;font-weight:500;}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"><span class="logo-text">NOVA</span><span class="logo-dot"></span></div>
+      <div class="logo-sub">Sistema de RH</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-s">Módulos</div>
+      <div class="nav-item active"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+      <div class="nav-item dis"><i class="ti ti-user-search"></i> R&amp;S</div>
+      <div class="nav-item dis"><i class="ti ti-file-check"></i> Admissão</div>
+      <div class="nav-item dis"><i class="ti ti-clock"></i> Experiência</div>
+      <div class="nav-item dis"><i class="ti ti-notebook"></i> Dossiê</div>
+      <div class="nav-item dis"><i class="ti ti-file-minus"></i> Rescisão</div>
+      <div class="nav-item dis"><i class="ti ti-send"></i> Solicitações</div>
+    </nav>
+    <div class="sidebar-footer">Dashboard Analítico</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title">Dashboard</span>
+      <div class="filters">
+        <select class="form-select" id="f-periodo" onchange="recarregar()">
+          <option value="30">Últimos 30 dias</option>
+          <option value="60">Últimos 60 dias</option>
+          <option value="90">Últimos 90 dias</option>
+          <option value="180">Últimos 6 meses</option>
+          <option value="365">Último ano</option>
+          <option value="0">Todo o período</option>
+        </select>
+        <select class="form-select" id="f-empresa" onchange="recarregar()" style="width:190px">
+          <option value="">Todas as empresas</option>
+        </select>
+        <button class="btn btn-primary" onclick="recarregar()"><i class="ti ti-refresh"></i> Atualizar</button>
+      </div>
+    </div>
+
+    <div class="content" id="dash-content">
+      <div style="display:flex;align-items:center;justify-content:center;height:300px;flex-direction:column;gap:12px">
+        <div class="spinner" style="width:32px;height:32px;border-width:3px"></div>
+        <div style="font-size:13px;font-weight:600;color:var(--text2)">Carregando dados...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey:"AIzaSyAhoLSoe7bRdDakJ6apJcnWMBL5RHmQtDI",
+    authDomain:"novarh-4fbc6.firebaseapp.com",
+    projectId:"novarh-4fbc6",
+    storageBucket:"novarh-4fbc6.firebasestorage.app",
+    messagingSenderId:"805399291743",
+    appId:"1:805399291743:web:ac13f2572f875c0ec1b8ea"
+  });
+}
+var db = firebase.firestore();
+var _charts = {};
+
+// ════ UTILS ════
+function fmtDate(s){if(!s)return'—';var p=String(s).split('T')[0].split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:s;}
+function normDate(s){
+  if(!s)return'';s=String(s).trim();
+  if(s.includes('/')){var p=s.split('/');if(p.length===3)return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');}
+  return s;
+}
+function today(){return new Date().toISOString().split('T')[0];}
+function addDays(dt,n){var d=new Date(dt+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
+function subDays(n){var d=new Date();d.setDate(d.getDate()-n);return d.toISOString().split('T')[0];}
+function meslabel(dt){var p=dt.split('-');var nomes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return nomes[parseInt(p[1])-1]+'/'+p[0].slice(2);}
+
+function getDataInicio(){
+  var dias=parseInt(document.getElementById('f-periodo').value);
+  return dias===0?'2020-01-01':subDays(dias);
+}
+function getEmpresa(){return document.getElementById('f-empresa').value;}
+
+function destroyChart(id){if(_charts[id]){_charts[id].destroy();delete _charts[id];}}
+
+// ════ CARREGAR DADOS ════
+var _dados = {};
+
+function recarregar(){
+  document.getElementById('dash-content').innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:center;height:300px;flex-direction:column;gap:12px">'
+    +'<div class="spinner" style="width:32px;height:32px;border-width:3px"></div>'
+    +'<div style="font-size:13px;font-weight:600;color:var(--text2)">Carregando dados...</div></div>';
+  Object.values(_charts).forEach(function(c){try{c.destroy();}catch(e){}});
+  _charts={};
+
+  Promise.all([
+    db.collection('vagas').get(),
+    db.collection('eventos').get(),
+    db.collection('adm_processos').get(),
+    db.collection('rescisao_processos').get(),
+    db.collection('solicitacoes').get(),
+    db.collection('exp_data').get(),
+    db.collection('perfis').get(),
+  ]).then(function(results){
+    _dados = {
+      vagas:      results[0].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      eventos:    results[1].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      processos:  results[2].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      rescisoes:  results[3].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      solicitacoes: results[4].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      expData:    results[5].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      perfis:     results[6].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+    };
+    popularEmpresaSelect();
+    renderDash();
+  }).catch(function(e){
+    document.getElementById('dash-content').innerHTML =
+      '<div class="empty-chart" style="height:200px"><i class="ti ti-alert-triangle" style="font-size:28px;color:#e05252;margin-right:8px"></i> Erro ao carregar: '+e.message+'</div>';
+  });
+}
+
+function popularEmpresaSelect(){
+  var sel = document.getElementById('f-empresa');
+  var val = sel.value;
+  var empresas = {};
+  _dados.vagas.forEach(function(v){if(v.empresa)empresas[v.empresa]=1;});
+  _dados.processos.forEach(function(p){var e=(p.dados||{}).empresa;if(e)empresas[e]=1;});
+  sel.innerHTML = '<option value="">Todas as empresas</option>';
+  Object.keys(empresas).sort().forEach(function(e){
+    var o=document.createElement('option');o.value=e;o.textContent=e;sel.appendChild(o);
+  });
+  if(val)sel.value=val;
+}
+
+// ════ FILTROS COMUNS ════
+function filtrarPorPeriodoeEmpresa(lista, dtField, empField){
+  var dtInicio = getDataInicio();
+  var emp = getEmpresa();
+  return lista.filter(function(item){
+    var dt = normDate(item[dtField]||'');
+    if(dtField && dt && dt < dtInicio) return false;
+    if(emp && empField && (item[empField]||'') !== emp) return false;
+    return true;
+  });
+}
+
+// ════ RENDER DASHBOARD ════
+function renderDash(){
+  var html = '';
+
+  // ── Resumo Geral ──
+  var vagasAbertas = _dados.vagas.filter(function(v){return !v.isBancoTalentos&&v.status==='aberta';});
+  var admsAtivas   = _dados.processos.filter(function(p){return p.fonte!=='importacao'&&p.status!=='concluido';});
+  var expAtivos    = _dados.processos.filter(function(p){
+    var adm=normDate((p.dados||{}).admissao||'');
+    return adm && addDays(adm,90)>=today();
+  });
+  var solPend = _dados.solicitacoes.filter(function(s){return s.status==='pendente';}).length;
+  var rescAtivas = _dados.rescisoes.filter(function(r){return !r.finalizado;}).length;
+
+  html += '<div class="dash-section">'
+    +'<div class="section-title"><i class="ti ti-chart-pie"></i> Visão Geral</div>'
+    +'<div class="stats-row stats-5">'
+    +statCard('Vagas Abertas', vagasAbertas.length, 'R&S', 'lime', 'ti-user-search')
+    +statCard('Admissões Ativas', admsAtivas.length, 'em andamento', 'blue', 'ti-file-check')
+    +statCard('Em Experiência', expAtivos.length, 'até 90 dias', 'gold', 'ti-clock')
+    +statCard('Rescisões Ativas', rescAtivas, 'em andamento', 'red', 'ti-file-minus')
+    +statCard('Solicitações Pendentes', solPend, 'aguardando N2', 'purple', 'ti-send')
+    +'</div></div>';
+
+  // ── R&S ──
+  html += renderSecaoRS();
+
+  // ── Admissões ──
+  html += renderSecaoAdmissao();
+
+  // ── Experiência ──
+  html += renderSecaoExperiencia();
+
+  // ── Rescisão ──
+  html += renderSecaoRescisao();
+
+  // ── Solicitações ──
+  html += renderSecaoSolicitacoes();
+
+  document.getElementById('dash-content').innerHTML = html;
+
+  // Renderizar gráficos após o HTML estar no DOM
+  setTimeout(function(){
+    renderGraficosRS();
+    renderGraficosAdmissao();
+    renderGraficosRescisao();
+    renderGraficosSolicitacoes();
+  }, 100);
+}
+
+function statCard(label, value, sub, color, icon){
+  return '<div class="stat '+color+'">'
+    +'<div class="stat-label"><i class="ti '+icon+'" style="font-size:11px;margin-right:4px"></i>'+label+'</div>'
+    +'<div class="stat-value">'+value+'</div>'
+    +'<div class="stat-sub">'+sub+'</div>'
+    +'</div>';
+}
+
+// ════ R&S ════
+function renderSecaoRS(){
+  var dtInicio = getDataInicio();
+  var emp = getEmpresa();
+  var vagas = _dados.vagas.filter(function(v){
+    if(v.isBancoTalentos) return false;
+    if(emp && v.empresa !== emp) return false;
+    if(v.criadoEm && normDate(v.criadoEm.split('T')[0]) < dtInicio) return false;
+    return true;
+  });
+
+  var abertas   = vagas.filter(function(v){return v.status==='aberta';}).length;
+  var encerradas= vagas.filter(function(v){return v.status==='encerrada';}).length;
+  var pausadas  = vagas.filter(function(v){return v.status==='pausada';}).length;
+
+  var totalCands = vagas.reduce(function(s,v){return s+(v.candidatos||[]).length;},0);
+  var integrados = vagas.reduce(function(s,v){return s+(v.candidatos||[]).filter(function(c){return c.etapa===7;}).length;},0);
+  var reprovados = vagas.reduce(function(s,v){return s+(v.candidatos||[]).filter(function(c){return c.etapa===8;}).length;},0);
+  var taxaConv   = totalCands>0?Math.round(integrados/totalCands*100):0;
+
+  // SLA por perfil
+  var perfis = {};
+  _dados.perfis.forEach(function(p){perfis[p.nome]=p.sla;});
+  if(!Object.keys(perfis).length){['OPERACIONAL','MOTORISTA','ADMINISTRATIVO','GESTAO','PCD'].forEach(function(n,i){perfis[n]=[10,25,15,30,45][i];});}
+
+  var vagasSla = vagas.filter(function(v){return v.abertura&&v.status==='aberta';}).map(function(v){
+    var diasAberto = Math.round((new Date()-new Date(v.abertura+'T12:00:00'))/86400000);
+    var slaEsperado = v.sla||perfis[v.perfil]||30;
+    return {cargo:v.cargo,empresa:v.empresa,diasAberto:diasAberto,slaEsperado:slaEsperado,pct:Math.round(diasAberto/slaEsperado*100)};
+  }).sort(function(a,b){return b.pct-a.pct;}).slice(0,8);
+
+  // Motivos de reprovação
+  var motivos = {};
+  vagas.forEach(function(v){
+    (v.candidatos||[]).filter(function(c){return c.etapa===8&&c.motivoRep;}).forEach(function(c){
+      motivos[c.motivoRep]=(motivos[c.motivoRep]||0)+1;
+    });
+  });
+
+  // Eventos (entrevistas/testes) no período
+  var eventosRS = _dados.eventos.filter(function(e){
+    if(emp && e.empresa !== emp) return false;
+    var dt = normDate((e.dt||'').split('T')[0]);
+    return dt >= dtInicio;
+  });
+  var entrevistas = eventosRS.filter(function(e){return (e.tipo||'').includes('ENTREVISTA');}).length;
+  var testes      = eventosRS.filter(function(e){return (e.tipo||'').includes('TESTE');}).length;
+
+  var html = '<div class="dash-section">'
+    +'<div class="section-title"><i class="ti ti-user-search"></i> Recrutamento & Seleção</div>'
+    +'<div class="stats-row stats-4" style="margin-bottom:16px">'
+    +statCard('Total de Vagas', vagas.length, abertas+' abertas · '+encerradas+' encerradas', 'lime', 'ti-briefcase')
+    +statCard('Candidatos', totalCands, integrados+' integrados · '+reprovados+' reprovados', 'blue', 'ti-users')
+    +statCard('Taxa de Conversão', taxaConv+'%', 'candidatos → integração', 'green', 'ti-trending-up')
+    +statCard('Entrevistas / Testes', entrevistas+' / '+testes, 'agendados no período', 'gold', 'ti-calendar')
+    +'</div>'
+
+    +'<div class="charts-row charts-2">'
+    +'<div class="chart-card"><div class="chart-title">Candidatos por Etapa</div><div class="chart-sub">Distribuição atual no kanban</div>'
+    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-etapas"></canvas></div></div>'
+
+    +'<div class="chart-card"><div class="chart-title">Vagas por Empresa</div><div class="chart-sub">Total no período selecionado</div>'
+    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-empresas-rs"></canvas></div></div>'
+    +'</div>'
+
+    +'<div class="charts-row charts-2">'
+    +'<div class="chart-card"><div class="chart-title">SLA das Vagas Abertas</div><div class="chart-sub">% do prazo consumido por vaga</div>'
+    +'<div id="sla-content">'+(vagasSla.length?renderSLA(vagasSla):'<div class="empty-chart">Sem vagas abertas</div>')+'</div></div>'
+
+    +'<div class="chart-card"><div class="chart-title">Motivos de Reprovação</div><div class="chart-sub">Top motivos no período</div>'
+    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-motivos"></canvas></div></div>'
+    +'</div>'
+    +'</div>';
+
+  // Guardar dados para gráficos
+  _dados._rs = {vagas, motivos};
+  return html;
+}
+
+function renderSLA(lista){
+  return '<div class="sla-row">'+lista.map(function(s){
+    var cor = s.pct>=100?'#e05252':s.pct>=80?'#d4a020':'#4caf80';
+    var badge = s.pct>=100?'<span class="badge b-red">Vencido</span>':s.pct>=80?'<span class="badge b-amber">'+s.pct+'%</span>':'<span class="badge b-lime">'+s.pct+'%</span>';
+    return '<div class="sla-item">'
+      +'<div class="sla-label" title="'+s.cargo+'">'+s.cargo+'</div>'
+      +'<div class="sla-bar-wrap"><div class="sla-bar" style="width:'+Math.min(100,s.pct)+'%;background:'+cor+'"></div></div>'
+      +'<div class="sla-val">'+s.diasAberto+'d</div>'
+      +badge
+      +'</div>';
+  }).join('')+'</div>';
+}
+
+function renderGraficosRS(){
+  var vagas = _dados._rs ? _dados._rs.vagas : [];
+
+  // Candidatos por etapa
+  var etapaLabels = ['Triagem','Ent.Agendada','Ent.Realizada','Teste Ag.','Teste Real.','Docs/Exame','Exame Rec.','Integração','Reprovado'];
+  var etapaCounts = [0,0,0,0,0,0,0,0,0];
+  vagas.forEach(function(v){
+    (v.candidatos||[]).forEach(function(c){ if(c.etapa>=0&&c.etapa<=8) etapaCounts[c.etapa]++; });
+  });
+  var etapaColors = ['#b0c8e4','#4a7fc1','#d4a020','#c07830','#9b72cf','#4caf80','#2196a0','#8ab800','#e05252'];
+  renderBarChart('chart-etapas', etapaLabels, etapaCounts, etapaColors);
+
+  // Vagas por empresa
+  var empMap = {};
+  vagas.filter(function(v){return v.status==='aberta';}).forEach(function(v){
+    var e=v.empresa||'Outros'; empMap[e]=(empMap[e]||0)+1;
+  });
+  renderDoughnutChart('chart-empresas-rs', Object.keys(empMap), Object.values(empMap));
+
+  // Motivos reprovação
+  var mot = _dados._rs ? _dados._rs.motivos : {};
+  var mKeys = Object.keys(mot).sort(function(a,b){return mot[b]-mot[a];}).slice(0,6);
+  if(mKeys.length){
+    renderBarChart('chart-motivos', mKeys.map(function(k){return k.length>20?k.slice(0,18)+'…':k;}), mKeys.map(function(k){return mot[k];}), '#e05252', true);
+  } else {
+    var el=document.getElementById('chart-motivos');
+    if(el)el.parentElement.innerHTML='<div class="empty-chart">Sem reprovações no período</div>';
+  }
+}
+
+// ════ ADMISSÃO ════
+function renderSecaoAdmissao(){
+  var dtInicio = getDataInicio();
+  var emp = getEmpresa();
+  var procs = _dados.processos.filter(function(p){
+    if(p.fonte==='importacao') return false;
+    var adm = normDate((p.dados||{}).admissao||p.criadoEm||'');
+    if(adm && adm < dtInicio) return false;
+    if(emp && (p.dados||{}).empresa !== emp) return false;
+    return true;
+  });
+
+  var concluidos = procs.filter(function(p){return p.status==='concluido';}).length;
+  var andamento  = procs.filter(function(p){return p.status!=='concluido';}).length;
+  var importados = _dados.processos.filter(function(p){return p.fonte==='importacao';}).length;
+
+  // % checklist médio
+  var pcts = procs.filter(function(p){return p.checks&&Object.keys(p.checks).length;}).map(function(p){
+    var checks = p.checks||{};
+    var total  = Object.keys(checks).length;
+    var feitos = Object.values(checks).filter(function(v){return v&&(v===true||(v.done))}).length;
+    return total?Math.round(feitos/total*100):0;
+  });
+  var pctMedio = pcts.length?Math.round(pcts.reduce(function(s,v){return s+v;},0)/pcts.length):0;
+
+  // Admissões por mês
+  var porMes = {};
+  procs.forEach(function(p){
+    var adm = normDate((p.dados||{}).admissao||'');
+    if(adm){var m=adm.slice(0,7);porMes[m]=(porMes[m]||0)+1;}
+  });
+
+  _dados._adm = {procs, porMes};
+
+  return '<div class="dash-section">'
+    +'<div class="section-title"><i class="ti ti-file-check"></i> Admissão</div>'
+    +'<div class="stats-row stats-4" style="margin-bottom:16px">'
+    +statCard('Total no Período', procs.length, concluidos+' concluídos · '+andamento+' em andamento', 'lime', 'ti-file-check')
+    +statCard('Concluídos', concluidos, 'checklist 100%', 'green', 'ti-check')
+    +statCard('Em Andamento', andamento, 'checklist incompleto', 'amber' , 'ti-clock')
+    +statCard('Base Importada', importados, 'funcionários existentes', 'blue', 'ti-database-import')
+    +'</div>'
+    +'<div class="charts-row charts-2">'
+    +'<div class="chart-card"><div class="chart-title">Admissões por Mês</div><div class="chart-sub">Volume no período selecionado</div>'
+    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-adm-mes"></canvas></div></div>'
+    +'<div class="chart-card"><div class="chart-title">Admissões por Empresa</div><div class="chart-sub">Distribuição no período</div>'
+    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-adm-emp"></canvas></div></div>'
+    +'</div>'
+    +'</div>';
+}
+
+function renderGraficosAdmissao(){
+  var dados = _dados._adm;
+  if(!dados) return;
+
+  // Por mês
+  var meses = Object.keys(dados.porMes).sort();
+  if(meses.length){
+    renderLineChart('chart-adm-mes', meses.map(meslabel), meses.map(function(m){return dados.porMes[m];}));
+  }
+
+  // Por empresa
+  var empMap = {};
+  dados.procs.forEach(function(p){var e=(p.dados||{}).empresa||'Outros';empMap[e]=(empMap[e]||0)+1;});
+  renderDoughnutChart('chart-adm-emp', Object.keys(empMap), Object.values(empMap));
+}
+
+// ════ EXPERIÊNCIA ════
+function renderSecaoExperiencia(){
+  var emp = getEmpresa();
+  var procs = _dados.processos.filter(function(p){
+    var adm = normDate((p.dados||{}).admissao||'');
+    if(!adm) return false;
+    if(emp && (p.dados||{}).empresa !== emp) return false;
+    return true;
+  });
+
+  var emExp = procs.filter(function(p){
+    var adm=normDate((p.dados||{}).admissao||'');
+    return adm && addDays(adm,90)>=today();
+  });
+  var efetivados = procs.filter(function(p){
+    var adm=normDate((p.dados||{}).admissao||'');
+    return adm && addDays(adm,90)<today();
+  });
+
+  // Pendências
+  var comPendencia = emExp.filter(function(p){
+    var exp = _dados.expData.find(function(e){return e.id==='adm_'+p.id||e.funcId==='adm_'+p.id;})||{checks:{}};
+    var adm = normDate((p.dados||{}).admissao||'');
+    var dd  = Math.round((new Date()-new Date(adm+'T12:00:00'))/86400000);
+    return (dd>=45&&!(exp.checks&&exp.checks.feedback45))||(dd>=85&&!(exp.checks&&exp.checks.feedback90));
+  }).length;
+
+  // Efetivações por mês
+  var efetPorMes = {};
+  efetivados.forEach(function(p){
+    var adm=normDate((p.dados||{}).admissao||'');
+    if(adm){var fim=addDays(adm,90);var m=fim.slice(0,7);efetPorMes[m]=(efetPorMes[m]||0)+1;}
+  });
+  var meses=Object.keys(efetPorMes).sort().slice(-6);
+
+  return '<div class="dash-section">'
+    +'<div class="section-title"><i class="ti ti-clock"></i> Período de Experiência</div>'
+    +'<div class="stats-row stats-4" style="margin-bottom:16px">'
+    +statCard('Em Experiência', emExp.length, 'dentro dos 90 dias', 'gold', 'ti-clock')
+    +statCard('Efetivados', efetivados.length, 'completaram os 90 dias', 'green', 'ti-user-check')
+    +statCard('Com Pendências', comPendencia, 'feedbacks atrasados', 'red', 'ti-alert-triangle')
+    +statCard('Efetivações no Mês', efetPorMes[today().slice(0,7)]||0, 'este mês', 'lime', 'ti-calendar-check')
+    +'</div>'
+    +(meses.length?'<div class="chart-card" style="margin-bottom:16px"><div class="chart-title">Efetivações por Mês</div><div class="chart-sub">Últimos 6 meses</div>'
+    +'<div class="chart-wrap" style="height:180px"><canvas id="chart-efet-mes"></canvas></div></div>':'')
+    +'</div>';
+}
+
+// ════ RESCISÃO ════
+function renderSecaoRescisao(){
+  var dtInicio = getDataInicio();
+  var emp = getEmpresa();
+  var rescs = _dados.rescisoes.filter(function(r){
+    var dt=normDate(r.deslig||r.criadoEm||'');
+    if(dt&&dt<dtInicio) return false;
+    if(emp && r.empresa!==emp) return false;
+    return true;
+  });
+
+  var finalizados = rescs.filter(function(r){return r.finalizado;}).length;
+  var ativos      = rescs.filter(function(r){return !r.finalizado;}).length;
+  var vencidos    = rescs.filter(function(r){
+    if(r.finalizado||!r.deslig) return false;
+    var lim=addDays(r.deslig,10);
+    return lim<today();
+  }).length;
+
+  // Por tipo
+  var tipoMap = {};
+  rescs.forEach(function(r){var t=(r.tipo||'outro').replace(/_/g,' ');tipoMap[t]=(tipoMap[t]||0)+1;});
+
+  // Por mês
+  var porMes = {};
+  rescs.forEach(function(r){
+    var dt=normDate(r.deslig||'');
+    if(dt){var m=dt.slice(0,7);porMes[m]=(porMes[m]||0)+1;}
+  });
+
+  _dados._resc = {rescs, tipoMap, porMes};
+
+  return '<div class="dash-section">'
+    +'<div class="section-title"><i class="ti ti-file-minus"></i> Rescisão</div>'
+    +'<div class="stats-row stats-4" style="margin-bottom:16px">'
+    +statCard('Total no Período', rescs.length, finalizados+' finalizados', 'blue', 'ti-file-minus')
+    +statCard('Em Andamento', ativos, 'processos abertos', 'amber', 'ti-clock')
+    +statCard('Finalizados', finalizados, 'homologação concluída', 'green', 'ti-check')
+    +statCard('Prazo Vencido', vencidos, 'homologação atrasada', 'red', 'ti-alert-triangle')
+    +'</div>'
+    +'<div class="charts-row charts-2">'
+    +'<div class="chart-card"><div class="chart-title">Desligamentos por Tipo</div><div class="chart-sub">No período selecionado</div>'
+    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-resc-tipo"></canvas></div></div>'
+    +'<div class="chart-card"><div class="chart-title">Desligamentos por Mês</div><div class="chart-sub">Evolução no período</div>'
+    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-resc-mes"></canvas></div></div>'
+    +'</div>'
+    +'</div>';
+}
+
+function renderGraficosRescisao(){
+  var dados = _dados._resc;
+  if(!dados) return;
+  var tKeys = Object.keys(dados.tipoMap);
+  if(tKeys.length) renderDoughnutChart('chart-resc-tipo', tKeys, tKeys.map(function(k){return dados.tipoMap[k];}));
+  var meses = Object.keys(dados.porMes).sort();
+  if(meses.length) renderLineChart('chart-resc-mes', meses.map(meslabel), meses.map(function(m){return dados.porMes[m];}), '#e05252');
+}
+
+// ════ SOLICITAÇÕES ════
+function renderSecaoSolicitacoes(){
+  var dtInicio = getDataInicio();
+  var emp = getEmpresa();
+  var sols = _dados.solicitacoes.filter(function(s){
+    var dt=normDate((s.criadoEm||'').split('T')[0]);
+    if(dt&&dt<dtInicio) return false;
+    if(emp && s.empresa!==emp) return false;
+    return true;
+  });
+
+  var pendentes   = sols.filter(function(s){return s.status==='pendente';}).length;
+  var aprovadas   = sols.filter(function(s){return s.status==='aprovado';}).length;
+  var reprovadas  = sols.filter(function(s){return s.status==='reprovado'||s.status==='reprovado_n2';}).length;
+  var comN2       = sols.filter(function(s){return s.status==='com_n2'||s.status==='aprovado_n2';}).length;
+
+  // Tempo médio de aprovação
+  var tempos = sols.filter(function(s){return s.status==='aprovado'&&s.criadoEm&&s.atualizadoEm;}).map(function(s){
+    return Math.round((new Date(s.atualizadoEm)-new Date(s.criadoEm))/86400000);
+  });
+  var tempoMedio = tempos.length?Math.round(tempos.reduce(function(a,b){return a+b;},0)/tempos.length):0;
+
+  // Por empresa
+  var empMap = {};
+  sols.forEach(function(s){var e=s.empresa||'Outros';empMap[e]=(empMap[e]||0)+1;});
+
+  _dados._sol = {sols, empMap};
+
+  return '<div class="dash-section">'
+    +'<div class="section-title"><i class="ti ti-send"></i> Solicitações de Vaga</div>'
+    +'<div class="stats-row stats-4" style="margin-bottom:16px">'
+    +statCard('Total', sols.length, 'no período', 'blue', 'ti-send')
+    +statCard('Aprovadas', aprovadas, 'viraram vagas no R&S', 'green', 'ti-check')
+    +statCard('Reprovadas', reprovadas, 'não aprovadas', 'red', 'ti-x')
+    +statCard('Tempo Médio', tempoMedio+'d', 'para aprovação', 'gold', 'ti-clock')
+    +'</div>'
+    +'<div class="charts-row charts-2">'
+    +'<div class="chart-card"><div class="chart-title">Status das Solicitações</div><div class="chart-sub">Distribuição no período</div>'
+    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-sol-status"></canvas></div></div>'
+    +'<div class="chart-card"><div class="chart-title">Solicitações por Empresa</div><div class="chart-sub">Volume no período</div>'
+    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-sol-emp"></canvas></div></div>'
+    +'</div>'
+    +'</div>';
+}
+
+function renderGraficosSolicitacoes(){
+  var dados = _dados._sol;
+  if(!dados) return;
+  var status = {
+    'Pendentes': _dados.solicitacoes.filter(function(s){return s.status==='pendente';}).length,
+    'Com N2':    _dados.solicitacoes.filter(function(s){return s.status==='com_n2'||s.status==='aprovado_n2';}).length,
+    'Aprovadas': _dados.solicitacoes.filter(function(s){return s.status==='aprovado';}).length,
+    'Reprovadas':_dados.solicitacoes.filter(function(s){return s.status==='reprovado'||s.status==='reprovado_n2';}).length,
+  };
+  var sKeys = Object.keys(status).filter(function(k){return status[k]>0;});
+  if(sKeys.length){
+    renderDoughnutChart('chart-sol-status', sKeys, sKeys.map(function(k){return status[k];}),
+      ['#d4a020','#4a7fc1','#4caf80','#e05252']);
+  }
+  var eKeys = Object.keys(dados.empMap);
+  if(eKeys.length) renderDoughnutChart('chart-sol-emp', eKeys, eKeys.map(function(k){return dados.empMap[k];}));
+}
+
+// ════ HELPERS CHART.JS ════
+var COLORS = ['#4a7fc1','#d4a020','#4caf80','#e05252','#9b72cf','#2196a0','#8ab800','#b6904a','#6b6558','#c07830'];
+
+function renderBarChart(id, labels, data, color, horizontal){
+  destroyChart(id);
+  var el = document.getElementById(id);
+  if(!el) return;
+  var colors = Array.isArray(color) ? color : labels.map(function(_,i){return COLORS[i%COLORS.length];});
+  _charts[id] = new Chart(el, {
+    type: 'bar',
+    data: {labels:labels, datasets:[{data:data, backgroundColor:colors, borderRadius:4, borderSkipped:false}]},
+    options: {
+      indexAxis: horizontal?'y':'x',
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:10}}},y:{grid:{color:'#f0ede6'},ticks:{font:{family:'Inter',size:10}}}}
+    }
+  });
+}
+
+function renderLineChart(id, labels, data, color){
+  destroyChart(id);
+  var el = document.getElementById(id);
+  if(!el) return;
+  var c = color||'#4a7fc1';
+  _charts[id] = new Chart(el, {
+    type:'line',
+    data:{labels:labels, datasets:[{data:data, borderColor:c, backgroundColor:c+'22', fill:true, tension:.3, pointRadius:4, pointBackgroundColor:c}]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{display:false},ticks:{font:{family:'Inter',size:10}}},y:{grid:{color:'#f0ede6'},ticks:{font:{family:'Inter',size:10},stepSize:1}}}
+    }
+  });
+}
+
+function renderDoughnutChart(id, labels, data, colors){
+  destroyChart(id);
+  var el = document.getElementById(id);
+  if(!el) return;
+  var bgColors = colors || labels.map(function(_,i){return COLORS[i%COLORS.length];});
+  _charts[id] = new Chart(el, {
+    type:'doughnut',
+    data:{labels:labels, datasets:[{data:data, backgroundColor:bgColors, borderWidth:2, borderColor:'#fff'}]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{font:{family:'Inter',size:11},boxWidth:12,padding:10}}}
+    }
+  });
+}
+
+// ════ INIT ════
+recarregar();
+</script>
+</body>
+</html>

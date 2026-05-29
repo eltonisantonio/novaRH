@@ -353,7 +353,7 @@ function iniciarListeners() {
         cpf: d2.cpf||'', matricula: d2.matricula||'',
         tel: d2.telefone||'', email: d2.email||'',
         status: p.status==='concluido' ? 'ativo' : 'em_admissao',
-        desligado: false,
+        desligado: !!p.desligado,
       };
     });
     // Funcionários manuais

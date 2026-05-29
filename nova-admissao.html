@@ -469,6 +469,26 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 
 <div class="toast" id="toast"></div>
 
+<!-- MODAL CONFIRMAR ITEM CHECKLIST -->
+<div class="overlay" id="modal-ck-item">
+  <div class="modal sm">
+    <div class="modal-h"><span class="modal-title" id="cki-title">Confirmar Item</span><button class="btn-icon" onclick="closeModal('modal-ck-item')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px" id="cki-desc"></div>
+      <div class="fg2"><label class="fl2">Data de Conclusão <span style="color:#c0392b">*</span></label>
+        <input class="fi2" type="date" id="cki-data"></div>
+      <div class="fg2"><label class="fl2">Responsável <span style="color:#c0392b">*</span></label>
+        <input class="fi2" type="text" id="cki-resp" placeholder="Seu nome"></div>
+      <div class="fg2"><label class="fl2">Observação</label>
+        <input class="fi2" type="text" id="cki-obs" placeholder="Opcional..."></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-ck-item')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarCkItem()"><i class="ti ti-check"></i> Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ════════════════════════════════════════════
 // FIREBASE
@@ -1085,6 +1105,12 @@ function renderChecklist() {
             +'</div>':'')
         +(st.status==='pending'&&!it.campoAuto?'<div class="check-value empty">Aguardando confirmação manual</div>':'')
         +(st.status==='pending'&&it.campoAuto?'<div class="check-value empty">Campo não preenchido no FO1029</div>':'')
+        +(st.status==='ok'&&_procAtual.checks&&typeof _procAtual.checks[it.id]==='object'&&_procAtual.checks[it.id].resp
+          ?'<div style="font-size:10px;color:var(--text3);margin-top:3px">'
+            +'<i class="ti ti-calendar" style="font-size:10px;vertical-align:-1px"></i> '+fmtDate(_procAtual.checks[it.id].data)
+            +' · <i class="ti ti-user" style="font-size:10px;vertical-align:-1px"></i> '+_procAtual.checks[it.id].resp
+            +(_procAtual.checks[it.id].obs?' · '+_procAtual.checks[it.id].obs:'')
+            +'</div>':'')
         +'</div></div>';
     });
     html += '</div></div>';
@@ -1097,11 +1123,43 @@ function toggleSecao(header) {
   body.style.display = body.style.display==='none' ? 'block' : 'none';
 }
 
+var _ckItemPendente = null;
+
 function toggleCheck(itemId) {
   if (!_procAtual) return;
   if (!_procAtual.checks) _procAtual.checks = {};
-  _procAtual.checks[itemId] = !_procAtual.checks[itemId];
+  // Se já marcado, desmarcar
+  if (_procAtual.checks[itemId]) {
+    _procAtual.checks[itemId] = false;
+    renderChecklist();
+    return;
+  }
+  // Abrir modal para data e responsável
+  var itens = _itens.length ? _itens : ITENS_DEFAULT;
+  var it = itens.find(function(x){ return x.id===itemId; });
+  _ckItemPendente = itemId;
+  document.getElementById('cki-title').textContent = 'Confirmar Item';
+  document.getElementById('cki-desc').textContent = it ? it.texto : itemId;
+  document.getElementById('cki-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('cki-resp').value = (document.getElementById('inp-responsavel')||{}).value || '';
+  document.getElementById('cki-obs').value = '';
+  openModal('modal-ck-item');
+}
+
+function confirmarCkItem() {
+  var data = document.getElementById('cki-data').value;
+  var resp = (document.getElementById('cki-resp').value||'').trim();
+  if (!data) { toast('Informe a data.','err'); return; }
+  if (!resp) { toast('Informe o responsável.','err'); return; }
+  if (!_procAtual.checks) _procAtual.checks = {};
+  _procAtual.checks[_ckItemPendente] = {
+    done: true, data: data, resp: resp,
+    obs: (document.getElementById('cki-obs').value||'').trim()
+  };
+  _ckItemPendente = null;
+  closeModal('modal-ck-item');
   renderChecklist();
+  toast('Item confirmado!','ok');
 }
 
 // ════════════════════════════════════════════

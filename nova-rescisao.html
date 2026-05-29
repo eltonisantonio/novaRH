@@ -238,6 +238,26 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
   </div>
 </div>
 
+<!-- MODAL CONFIRMAR ITEM -->
+<div class="overlay" id="modal-item">
+  <div class="modal" style="width:420px">
+    <div class="modal-h"><span class="modal-title" id="item-modal-title">Confirmar Item</span><button class="btn-icon" onclick="closeModal('modal-item')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px" id="item-modal-desc"></div>
+      <div class="fg"><label class="fl">Data de Conclusão <span style="color:#c0392b">*</span></label>
+        <input class="fi" type="date" id="item-data"></div>
+      <div class="fg"><label class="fl">Responsável <span style="color:#c0392b">*</span></label>
+        <input class="fi" type="text" id="item-resp" placeholder="Seu nome"></div>
+      <div class="fg"><label class="fl">Observação</label>
+        <input class="fi" type="text" id="item-obs" placeholder="Opcional..."></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-item')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarItem()"><i class="ti ti-check"></i> Confirmar</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL NOVO PROCESSO -->
 <div class="overlay" id="modal-proc">
   <div class="modal lg">
@@ -599,11 +619,18 @@ function renderChecklist(){
       +'<span>'+itsAtivos.filter(function(it){return p.checks&&p.checks[it.id];}).length+'/'+itsAtivos.length+'</span>'
       +'</div>'
       +itsAtivos.map(function(it){
-        var done=p.checks&&p.checks[it.id];
+        var ck = p.checks && p.checks[it.id];
+        var done = !!ck;
+        var meta = done && typeof ck === 'object'
+          ? '<div style="font-size:10px;color:var(--text3);margin-top:3px">'
+            +'<i class="ti ti-calendar" style="font-size:10px;vertical-align:-1px"></i> '+(ck.data?fmtDate(ck.data):'—')
+            +' · <i class="ti ti-user" style="font-size:10px;vertical-align:-1px"></i> '+(ck.resp||'—')
+            +(ck.obs?' · '+ck.obs:'')+'</div>'
+          : '';
         return '<div class="check-item'+(done?' done':'')+'">'
           +'<div class="check-box'+(done?' checked':'')+'" onclick="'+(podeMarcar?'toggleCheck(\''+it.id+'\')':'')+'">'
           +(done?'<i class="ti ti-check"></i>':'')+'</div>'
-          +'<span class="check-label'+(done?' done':'')+'">'+it.text+'</span>'
+          +'<div style="flex:1"><span class="check-label'+(done?' done':'')+'">'+it.text+'</span>'+meta+'</div>'
           +'</div>';
       }).join('')
       +'</div>';
@@ -628,15 +655,47 @@ function renderChecklist(){
 
 function setSetorTab(s){_setorTab=s;renderChecklist();}
 
+var _itemPendente = null;
+
 function toggleCheck(itemId){
   if(!_procAtual)return;
-  var checks=Object.assign({},_procAtual.checks||{});
-  checks[itemId]=!checks[itemId];
+  var checks = _procAtual.checks||{};
+  // Se já está marcado, desmarcar diretamente
+  if(checks[itemId]){
+    var newChecks = Object.assign({},checks);
+    delete newChecks[itemId];
+    db.collection('rescisao_processos').doc(_procAtual.id).update({
+      checks:newChecks, atualizadoEm:new Date().toISOString()
+    }).then(function(){_procAtual.checks=newChecks;renderChecklist();});
+    return;
+  }
+  // Abrir modal para data e responsável
+  var itens = (_itens.length?_itens:ITENS_DEFAULT);
+  var it = itens.find(function(x){return x.id===itemId;});
+  _itemPendente = itemId;
+  document.getElementById('item-modal-title').textContent = 'Confirmar Item';
+  document.getElementById('item-modal-desc').textContent = it?it.text:itemId;
+  document.getElementById('item-data').value = today();
+  document.getElementById('item-resp').value = '';
+  document.getElementById('item-obs').value = '';
+  openModal('modal-item');
+}
+
+function confirmarItem(){
+  var data = document.getElementById('item-data').value;
+  var resp = (document.getElementById('item-resp').value||'').trim();
+  if(!data){toast('Informe a data.','err');return;}
+  if(!resp){toast('Informe o responsável.','err');return;}
+  var newChecks = Object.assign({},_procAtual.checks||{});
+  newChecks[_itemPendente] = {done:true, data:data, resp:resp, obs:(document.getElementById('item-obs').value||'').trim()};
   db.collection('rescisao_processos').doc(_procAtual.id).update({
-    checks:checks, atualizadoEm:new Date().toISOString()
+    checks:newChecks, atualizadoEm:new Date().toISOString()
   }).then(function(){
-    _procAtual.checks=checks;
+    _procAtual.checks=newChecks;
+    closeModal('modal-item');
+    _itemPendente=null;
     renderChecklist();
+    toast('Item confirmado!','ok');
   }).catch(function(e){toast('Erro: '+e.message,'err');});
 }
 
@@ -655,13 +714,66 @@ function salvarHomologacao(){
 
 function finalizarProcesso(){
   if(!confirm('Finalizar este processo de rescisão?'))return;
-  db.collection('rescisao_processos').doc(_procAtual.id).update({
-    finalizado:true, finalizadoEm:new Date().toISOString()
+  var p=_procAtual;
+  var hom=p.homologacao||{};
+  var now=new Date().toISOString();
+
+  // Buscar funcionário no Dossiê pelo nome
+  db.collection('rescisao_processos').doc(p.id).update({
+    finalizado:true, finalizadoEm:now
   }).then(function(){
     _procAtual.finalizado=true;
-    toast('Processo finalizado!','ok');
-    mostrarLista();
-  });
+
+    // Criar evento no Dossiê — buscar por nome na adm_processos
+    var nomeBusca=(p.nome||'').toUpperCase();
+    var admDocId=null;
+    db.collection('adm_processos').get().then(function(snap){
+      var funcId=null;
+      snap.docs.forEach(function(d){
+        var nome=((d.data().dados||{}).nome||'').toUpperCase();
+        if(nome===nomeBusca){ funcId='adm_'+d.id; admDocId=d.id; }
+      });
+      // Também buscar em dossie_funcs (cadastro manual)
+      db.collection('dossie_funcs').get().then(function(s2){
+        s2.docs.forEach(function(d){
+          var nome=(d.data().nome||'').toUpperCase();
+          if(nome===nomeBusca) funcId=d.id;
+        });
+        if(!funcId){
+          toast('Processo finalizado! (Funcionário não encontrado no Dossiê — evento não criado)','warn');
+          mostrarLista(); return;
+        }
+        // Criar evento de desligamento no Dossiê
+        var evRef=db.collection('dossie_eventos').doc();
+        var obsTexto='Desligamento: '+p.deslig
+          +(p.tipo?' | Tipo: '+p.tipo.replace(/_/g,' '):'')
+          +(hom.data?' | Homologação: '+fmtDate(hom.data):'')
+          +(hom.local?' | Local: '+hom.local:'')
+          +(hom.obs?' | Obs: '+hom.obs:'');
+        evRef.set({
+          id:evRef.id, funcId:funcId, tipoId:'deslig',
+          titulo:'Desligamento — '+p.tipo.replace(/_/g,' '),
+          data:p.deslig||now.split('T')[0],
+          obs:obsTexto,
+          resp:p.criadoPor||'RH',
+          criadoEm:now, origemRescisao:p.id,
+        }).then(function(){
+          // Marcar como desligado
+          if(funcId.startsWith('adm_') && admDocId){
+            // Funcionário da Admissão — marcar desligado no processo
+            db.collection('adm_processos').doc(admDocId).update({
+              desligado:true, desligadoEm:now, desligadoPor:p.criadoPor||'RH'
+            });
+          } else {
+            // Cadastro manual no Dossiê
+            db.collection('dossie_funcs').doc(funcId).update({desligado:true,atualizadoEm:now});
+          }
+          toast('Processo finalizado! Evento criado no Dossiê.','ok');
+          mostrarLista();
+        });
+      });
+    });
+  }).catch(function(e){toast('Erro: '+e.message,'err');});
 }
 
 function excluirProcesso(){

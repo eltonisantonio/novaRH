@@ -168,7 +168,6 @@ iframe{flex:1;border:none;width:100%;height:100%;}
       <div class="nav-s">Módulos</div>
       <div class="nav-item" id="nav-home" onclick="goHome()"><i class="ti ti-home"></i> Início</div>
       <div class="nav-item" id="nav-rs"         onclick="loadMod('rs')"><i class="ti ti-user-search"></i> R&amp;S</div>
-      <div class="nav-item" id="nav-cadastro"   onclick="loadMod('cadastro')"><i class="ti ti-users"></i> Cadastro</div>
       <div class="nav-item" id="nav-admissao"   onclick="loadMod('admissao')"><i class="ti ti-file-check"></i> Admissão</div>
       <div class="nav-item" id="nav-experiencia" onclick="loadMod('experiencia')"><i class="ti ti-clock"></i> Experiência</div>
       <div class="nav-item" id="nav-dossie"     onclick="loadMod('dossie')"><i class="ti ti-notebook"></i> Dossiê</div>
@@ -219,7 +218,6 @@ iframe{flex:1;border:none;width:100%;height:100%;}
           <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Módulos</div>
           <div class="mod-check-grid" id="nu-modulos">
             <label class="mod-check"><input type="checkbox" value="rs" checked> R&amp;S</label>
-            <label class="mod-check"><input type="checkbox" value="cadastro" checked> Cadastro</label>
             <label class="mod-check"><input type="checkbox" value="admissao" checked> Admissão</label>
             <label class="mod-check"><input type="checkbox" value="experiencia" checked> Experiência</label>
             <label class="mod-check"><input type="checkbox" value="dossie" checked> Dossiê</label>
@@ -269,7 +267,6 @@ iframe{flex:1;border:none;width:100%;height:100%;}
 // ────────────────────────────────────────────────
 var MODS = {
   rs:          {nome:'Recrutamento & Seleção', tag:'Módulo 1', file:'nova-rs.html',         icon:'ti-user-search', desc:'Vagas, candidatos, kanban de seleção, banco de talentos e agenda do RH.'},
-  cadastro:    {nome:'Cadastro',               tag:'Módulo 2', file:'raguife-cadastro.html', icon:'ti-users',       desc:'Cadastro de funcionários, benefícios, importação em lote e planilhas Sicredi/EVA.'},
   admissao:    {nome:'Admissão',               tag:'Módulo 3', file:'nova-admissao.html',   icon:'ti-file-check',  desc:'Checklist de admissão por perfil, integração com R&S e controle de etapas.'},
   experiencia: {nome:'Período de Experiência', tag:'Módulo 4', file:'nova-experiencia.html',icon:'ti-clock',       desc:'Acompanhamento do período de experiência, feedbacks e cerimônia de capacete.'},
   dossie:      {nome:'Dossiê',                 tag:'Módulo 5', file:'nova-dossie.html',     icon:'ti-notebook',    desc:'Histórico completo de registros por funcionário, filtros, exportação em PDF.'},

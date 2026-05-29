@@ -808,13 +808,12 @@ function renderFormDados() {
     +'</select>'
     +'</div>';
 
-  var html = perfilSel + '<div class="form-grid">';
+  var html = perfilSel + '<div class="form-grid" id="form-dados">';
   FORM_SECTIONS.forEach(function(sec) {
     html += '<div class="form-section">'+sec.label+'</div>';
     sec.fields.forEach(function(key) {
       var val = d[key]||'';
       var label = FO_LABELS[key]||key;
-      // Verificar alerta
       var regra = regras.find(function(r){ return r.campo===key; });
       var isAlert = regra && val && String(val).trim().toUpperCase() !== String(regra.valor).trim().toUpperCase();
       html += '<div class="form-group">'
@@ -828,9 +827,9 @@ function renderFormDados() {
     });
   });
   html += '</div>';
-  document.getElementById('form-dados').outerHTML = '<div class="form-grid" id="form-dados">'+html+'</div>';
-  // Na verdade vamos colocar o HTML no container externo
-  document.getElementById('ptab-view-dados').innerHTML = '<div style="background:#eef3fb;border:1px solid #b0c8e4;border-radius:var(--r);padding:10px 14px;margin-bottom:18px;font-size:12px;color:#1e3a6e;font-weight:500;"><i class="ti ti-info-circle" style="margin-right:6px"></i>Dados importados do FO1029. Confira campo a campo e edite se necessário. Campos em vermelho têm divergência com a regra do perfil.</div>'+html;
+
+  var container = document.getElementById('ptab-view-dados');
+  container.innerHTML = '<div style="background:#eef3fb;border:1px solid #b0c8e4;border-radius:var(--r);padding:10px 14px;margin-bottom:18px;font-size:12px;color:#1e3a6e;font-weight:500;"><i class="ti ti-info-circle" style="margin-right:6px"></i>Dados importados do FO1029. Confira campo a campo e edite se necessário. Campos em vermelho têm divergência com a regra do perfil.</div>'+html;
 }
 
 function escHtml(s) {
@@ -1175,7 +1174,7 @@ function renderItensCfg() {
 // INIT
 // ════════════════════════════════════════════
 document.querySelectorAll('.overlay').forEach(function(el){
-  el.addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
+  el.addEventListener('click', function(e){ if(e.target===this) closeModal(this.id); });
 });
 iniciarListeners();
 </script>

@@ -978,6 +978,20 @@ document.querySelectorAll('.overlay').forEach(function(el){
 });
 iniciarLogin();
 iniciarListeners();
+
+// Auto-login pelo setor se vier do sistema
+(function autoLogin(){
+  var setor = sessionStorage.getItem('nova_rescisao_setor');
+  if(setor && SETORES[setor]){
+    _setor = setor;
+    _selSetor = setor;
+    var st = SETORES[setor];
+    document.getElementById('sidebar-setor').style.display='block';
+    document.getElementById('sidebar-setor').style.cssText='display:block;margin:12px 24px 0;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:700;background:'+st.bg+';color:'+st.color;
+    document.getElementById('sidebar-setor').textContent=st.emoji+' '+st.name;
+    mostrarLista();
+  }
+})();
 </script>
 </body>
 </html>

@@ -657,7 +657,7 @@ function vagaCard(v) {
     cancelada: '<span class="badge badge-cancel">Cancelada</span>',
   };
   var cls = 'vaga-card'+(v.status!=='aberta'?' '+v.status:'')+(v.isBancoTalentos?' banco-talentos-card':'');
-  return '<div class="'+cls+'" onclick="abrirDetalhe(\''+v.id+\')">'
+  return '<div class="'+cls+'" onclick="abrirDetalhe(\''+v.id+'\')">'
     +'<div class="vaga-top">'
     +'<div><div class="vaga-cargo">'+(v.isBancoTalentos?'<i class="ti ti-star" style="color:var(--lime);margin-right:4px"></i>':'')+v.cargo+'</div>'
     +'<div class="vaga-meta">'+(v.empresa||'')+(v.departamento?' · '+v.departamento:'')+(v.perfil?' · '+v.perfil:'')+'</div></div>'
@@ -1354,7 +1354,41 @@ document.querySelectorAll('.modal-overlay,.popup-overlay').forEach(function(el) 
   el.addEventListener('click', function(e) { if (e.target===this) this.classList.remove('open'); });
 });
 initUpper();
-iniciarListeners();
+
+// Migrar localStorage → Firestore (roda uma vez)
+(function migrarLS() {
+  var migKey = 'nova_rs_migrado_v1';
+  if (localStorage.getItem(migKey)) { iniciarListeners(); return; }
+  var vagasLS = [];
+  try { vagasLS = JSON.parse(localStorage.getItem('nova_vagas_v3')||'[]'); } catch(e){}
+  var eventosLS = [];
+  try { eventosLS = JSON.parse(localStorage.getItem('nova_eventos_v1')||'[]'); } catch(e){}
+  var perfisLS = [];
+  try { perfisLS = JSON.parse(localStorage.getItem('nova_perfis_v1')||'[]'); } catch(e){}
+
+  var batch = db.batch();
+  vagasLS.forEach(function(v) {
+    var id = String(v.id||'').replace(/[^a-zA-Z0-9_-]/g,'_')||('vg_'+Date.now());
+    batch.set(db.collection('vagas').doc(id), Object.assign({},v,{id:id}));
+  });
+  eventosLS.forEach(function(e) {
+    var id = String(e.id||'').replace(/[^a-zA-Z0-9_-]/g,'_')||('ev_'+Date.now());
+    batch.set(db.collection('eventos').doc(id), Object.assign({},e,{id:id}));
+  });
+  perfisLS.forEach(function(p) {
+    var id = String(p.id||'').replace(/[^a-zA-Z0-9_-]/g,'_');
+    if (id) batch.set(db.collection('perfis').doc(id), p);
+  });
+
+  batch.commit().then(function() {
+    localStorage.setItem(migKey, '1');
+    console.log('[RS] Migração concluída: '+vagasLS.length+' vagas, '+eventosLS.length+' eventos');
+    iniciarListeners();
+  }).catch(function(e) {
+    console.warn('[RS] Migração falhou, iniciando sem ela:', e);
+    iniciarListeners();
+  });
+})();
 </script>
 </body>
 </html>

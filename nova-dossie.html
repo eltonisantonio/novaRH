@@ -6,7 +6,6 @@
 <title>Nova. RH — Dossiê</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
@@ -653,18 +652,68 @@ function excluirFunc() {
 // ════ EXPORTAR ════
 function exportarDossie() {
   if (!_funcAtivo) return;
-  var evs = _eventos.filter(function(ev){ return ev.funcId===_funcAtivo.id; });
-  var rows = [['DATA','TIPO','TÍTULO','OBSERVAÇÕES','RESPONSÁVEL']];
-  evs.forEach(function(ev){
+  var f = _funcAtivo;
+  var evs = _eventos.filter(function(ev){ return ev.funcId===f.id; });
+  evs.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+
+  var linhas = evs.map(function(ev) {
     var tp = getTipo(ev.tipoId);
-    rows.push([fmtDate(ev.data), tp.nome, ev.titulo, ev.obs||'', ev.resp||'']);
-  });
-  var wb = XLSX.utils.book_new();
-  var ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [12,25,30,40,20].map(function(w){return{wch:w};});
-  XLSX.utils.book_append_sheet(wb, ws, 'Dossiê');
-  XLSX.writeFile(wb, 'dossie_'+(_funcAtivo.nome||'func').replace(/ /g,'_')+'.xlsx');
-  toast('Exportado!','ok');
+    return '<tr>'
+      +'<td style="padding:10px 12px;border-bottom:1px solid #e8e3d8;font-size:12px;white-space:nowrap">'+fmtDate(ev.data)+'</td>'
+      +'<td style="padding:10px 12px;border-bottom:1px solid #e8e3d8">'
+        +'<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;background:'+tp.cor+'22;color:'+tp.cor+'">'+tp.nome+'</span>'
+      +'</td>'
+      +'<td style="padding:10px 12px;border-bottom:1px solid #e8e3d8;font-size:13px;font-weight:600">'+ev.titulo+'</td>'
+      +'<td style="padding:10px 12px;border-bottom:1px solid #e8e3d8;font-size:12px;color:#6b6558">'+(ev.obs||'—')+'</td>'
+      +'<td style="padding:10px 12px;border-bottom:1px solid #e8e3d8;font-size:11px;color:#a09890">'+(ev.resp||'—')+'</td>'
+      +'</tr>';
+  }).join('');
+
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">'
+    +'<title>Dossiê — '+f.nome+'</title>'
+    +'<style>'
+    +'*{box-sizing:border-box;margin:0;padding:0;}'
+    +'body{font-family:Inter,Arial,sans-serif;background:#fff;color:#0e0f12;padding:40px;}'
+    +'.header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:32px;padding-bottom:20px;border-bottom:2px solid #0e0f12;}'
+    +'.logo{font-size:22px;font-weight:900;letter-spacing:-.5px;}'
+    +'.logo span{display:inline-block;width:8px;height:8px;background:#d7ff3d;border-radius:50%;margin-left:2px;margin-bottom:2px;vertical-align:middle;}'
+    +'.logo-sub{font-size:10px;font-weight:600;color:#a09890;letter-spacing:2px;text-transform:uppercase;margin-top:3px;}'
+    +'.func-block{margin-bottom:28px;background:#f7f5f0;border-radius:8px;padding:18px 22px;}'
+    +'.func-nome{font-size:20px;font-weight:900;margin-bottom:4px;}'
+    +'.func-meta{font-size:12px;color:#6b6558;margin-bottom:2px;}'
+    +'.section-title{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:#a09890;margin-bottom:12px;}'
+    +'table{width:100%;border-collapse:collapse;}'
+    +'thead tr{background:#0e0f12;color:#fff;}'
+    +'thead th{padding:10px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;}'
+    +'.footer{margin-top:32px;padding-top:16px;border-top:1px solid #e8e3d8;display:flex;justify-content:space-between;font-size:11px;color:#a09890;}'
+    +'@media print{body{padding:20px;} @page{margin:15mm;}}'
+    +'</style></head><body>'
+    +'<div class="header">'
+    +'<div><div class="logo">NOVA<span></span></div><div class="logo-sub">Sistema de RH</div></div>'
+    +'<div style="text-align:right;font-size:11px;color:#a09890"><div style="font-size:13px;font-weight:700;color:#0e0f12;margin-bottom:2px">Dossiê do Funcionário</div><div>Emitido em: '+fmtDate(new Date().toISOString())+'</div></div>'
+    +'</div>'
+    +'<div class="func-block">'
+    +'<div class="func-nome">'+f.nome+'</div>'
+    +(f.cargo?'<div class="func-meta"><strong>Cargo:</strong> '+f.cargo+'</div>':'')
+    +(f.empresa?'<div class="func-meta"><strong>Empresa:</strong> '+f.empresa+'</div>':'')
+    +(f.departamento?'<div class="func-meta"><strong>Departamento:</strong> '+f.departamento+'</div>':'')
+    +(f.admissao?'<div class="func-meta"><strong>Admissão:</strong> '+fmtDate(f.admissao)+'</div>':'')
+    +(f.matricula?'<div class="func-meta"><strong>Matrícula:</strong> '+f.matricula+'</div>':'')
+    +'</div>'
+    +'<div class="section-title">Histórico de Eventos ('+evs.length+' registro'+(evs.length!==1?'s':'')+')</div>'
+    +(evs.length?
+      '<table><thead><tr><th>Data</th><th>Tipo</th><th>Título</th><th>Observações</th><th>Responsável</th></tr></thead><tbody>'+linhas+'</tbody></table>'
+      :'<div style="padding:20px;text-align:center;color:#a09890;font-size:13px">Nenhum evento registrado.</div>')
+    +'<div class="footer">'
+    +'<span>Nova. RH — Grupo Raguife</span>'
+    +'<span>'+f.nome+' · '+evs.length+' eventos</span>'
+    +'</div>'
+    +'</body></html>';
+
+  var win = window.open('','_blank','width=900,height=700');
+  win.document.write(html);
+  win.document.close();
+  win.onload = function() { win.focus(); win.print(); };
 }
 
 // ════ CONFIGURAÇÕES ════

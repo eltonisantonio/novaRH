@@ -132,21 +132,6 @@ iframe{flex:1;border:none;width:100%;height:100%;}
 /* ── BADGE SOL ── */
 .nav-badge{background:var(--lime);color:var(--black);font-size:9px;font-weight:900;padding:1px 5px;border-radius:8px;margin-left:auto;}
 </style>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script>
-if (!firebase.apps.length) {
-  firebase.initializeApp({
-    apiKey:"AIzaSyAhoLSoe7bRdDakJ6apJcnWMBL5RHmQtDI",
-    authDomain:"novarh-4fbc6.firebaseapp.com",
-    projectId:"novarh-4fbc6",
-    storageBucket:"novarh-4fbc6.firebasestorage.app",
-    messagingSenderId:"805399291743",
-    appId:"1:805399291743:web:ac13f2572f875c0ec1b8ea"
-  });
-}
-var _db = firebase.firestore();
-</script>
 </head>
 <body>
 
@@ -276,7 +261,24 @@ var _db = firebase.firestore();
 
 <div class="toast" id="toast"></div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
+// ────────────────────────────────────────────────
+// FIREBASE
+// ────────────────────────────────────────────────
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey:"AIzaSyAhoLSoe7bRdDakJ6apJcnWMBL5RHmQtDI",
+    authDomain:"novarh-4fbc6.firebaseapp.com",
+    projectId:"novarh-4fbc6",
+    storageBucket:"novarh-4fbc6.firebasestorage.app",
+    messagingSenderId:"805399291743",
+    appId:"1:805399291743:web:ac13f2572f875c0ec1b8ea"
+  });
+}
+var _db = firebase.firestore();
+
 // ────────────────────────────────────────────────
 // CONFIGURAÇÃO DOS MÓDULOS
 // ────────────────────────────────────────────────
@@ -519,19 +521,18 @@ function addUsuario(){
   var senha=(document.getElementById('nu-senha').value||'').trim();
   var perfil=document.getElementById('nu-perfil').value;
   if(!nome||!login||!senha){toast('Preencha nome, login e senha.','err');return;}
-
-  var users=(await getUsuarios());
-  if(users.find(function(u){return u.login===login;})){toast('Login já existe.','err');return;}
-
-  var mods=Array.prototype.slice.call(document.querySelectorAll('#nu-modulos input:checked')).map(function(i){return i.value;});
-
-  users.push({id:'u_'+Date.now(),nome,login,senha,perfil,modulos:perfil==='admin'?Object.keys(MODS):mods});
-  await saveUsuarios(users);
-  toast('Usuário adicionado!','ok');
-  document.getElementById('nu-nome').value='';
-  document.getElementById('nu-login').value='';
-  document.getElementById('nu-senha').value='';
-  renderUsuarios();
+  getUsuarios().then(function(users){
+    if(users.find(function(u){return u.login===login;})){toast('Login já existe.','err');return;}
+    var mods=Array.prototype.slice.call(document.querySelectorAll('#nu-modulos input:checked')).map(function(i){return i.value;});
+    users.push({id:'u_'+Date.now(),nome:nome,login:login,senha:senha,perfil:perfil,modulos:perfil==='admin'?Object.keys(MODS):mods});
+    saveUsuarios(users).then(function(){
+      toast('Usuário adicionado!','ok');
+      document.getElementById('nu-nome').value='';
+      document.getElementById('nu-login').value='';
+      document.getElementById('nu-senha').value='';
+      renderUsuarios();
+    });
+  });
 }
 
 function removerUsuario(id){

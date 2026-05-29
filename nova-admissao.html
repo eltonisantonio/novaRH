@@ -267,9 +267,14 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 
     <!-- ABA IMPORTAÇÃO EM LOTE -->
     <div class="content" id="view-import" style="display:none">
-      <div style="margin-bottom:20px">
-        <div style="font-size:14px;font-weight:800;margin-bottom:4px">Importação em Lote</div>
-        <div style="font-size:12px;color:var(--text2)">Importe funcionários existentes via planilha Excel. Útil para cadastrar a base atual de colaboradores.</div>
+      <div style="margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between">
+        <div>
+          <div style="font-size:14px;font-weight:800;margin-bottom:4px">Importação em Lote</div>
+          <div style="font-size:12px;color:var(--text2)">Importe funcionários <strong>já existentes</strong> via planilha Excel. Estes registros não aparecem na lista de Processos — são usados apenas para Dossiê, Experiência, Rescisão e Exportações.</div>
+        </div>
+        <div style="background:#f0ffe0;border:1px solid #c0e840;border-radius:var(--r);padding:8px 14px;font-size:12px;font-weight:700;color:#3a5c00;white-space:nowrap;margin-left:16px">
+          <span id="importados-count">0</span> importados
+        </div>
       </div>
 
       <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:16px;">
@@ -622,7 +627,8 @@ var _procAtual = null;
 // ════════════════════════════════════════════
 function iniciarListeners() {
   db.collection('adm_processos').onSnapshot(function(snap) {
-    _processos = snap.docs.map(function(d) { return Object.assign({id:d.id}, d.data()); });
+    var todos = snap.docs.map(function(d) { return Object.assign({id:d.id}, d.data()); });
+    _processos = todos; // cache completo (exportações usam todos)
     _processos.sort(function(a,b) { return (b.criadoEm||'').localeCompare(a.criadoEm||''); });
     // Resetar select de empresa para repopular com dados reais
     var efEmp = document.getElementById('ef-empresa');
@@ -745,7 +751,7 @@ function showProcTab(t) {
 function renderProcessos() {
   var el = document.getElementById('lista-processos');
   var andamento=0, alertas=0, concluidos=0;
-  _processos.forEach(function(p) {
+  _processos.filter(function(p){ return p.fonte !== 'importacao'; }).forEach(function(p) {
     var pg = calcProgresso(p);
     var al = calcAlertas(p);
     if (pg.pct === 100) concluidos++;
@@ -755,19 +761,25 @@ function renderProcessos() {
   document.getElementById('st-andamento').textContent = andamento;
   document.getElementById('st-alertas').textContent   = alertas;
   document.getElementById('st-concluidos').textContent= concluidos;
-  document.getElementById('st-total').textContent     = _processos.length;
+  document.getElementById('st-total').textContent = _processos.filter(function(p){ return p.fonte !== 'importacao'; }).length;
 
-  if (!_processos.length) {
+  var listaProc = _processos.filter(function(p){ return p.fonte !== 'importacao'; });
+
+  // Atualizar contador de importados
+  var ctImport = document.getElementById('importados-count');
+  if (ctImport) ctImport.textContent = _processos.filter(function(p){ return p.fonte==='importacao'; }).length;
+
+  if (!listaProc.length) {
     el.innerHTML = '<div class="empty"><i class="ti ti-file-check"></i><p>Nenhum processo de admissão. Faça upload do FO1029 para começar.</p></div>';
     return;
   }
-  // Event delegation — um único listener na lista
+
   el.onclick = function(e) {
     var card = e.target.closest('[data-proc-id]');
     if (card) abrirProcesso(card.dataset.procId);
   };
 
-  el.innerHTML = _processos.map(function(p) {
+  el.innerHTML = listaProc.map(function(p) {
     var pg = calcProgresso(p);
     var al = calcAlertas(p);
     var statusBadge = pg.pct===100
@@ -1576,7 +1588,7 @@ function processarLote(file) {
         });
         if (!dados.nome) return;
         var docRef = db.collection('adm_processos').doc();
-        batch.set(docRef, {id:docRef.id, criadoEm:new Date().toISOString(), status:'em_andamento', perfil:'geral', dados:dados, checks:{}, obs:'', lancadoPor:resp.trim()||'RH', historico:[{dt:new Date().toISOString(),acao:'IMPORTADO_EM_LOTE',por:resp.trim()||'RH'}]});
+        batch.set(docRef, {id:docRef.id, criadoEm:new Date().toISOString(), status:'importado', fonte:'importacao', perfil:'geral', dados:dados, checks:{}, obs:'', lancadoPor:resp.trim()||'RH', historico:[{dt:new Date().toISOString(),acao:'IMPORTADO_EM_LOTE',por:resp.trim()||'RH'}]});
         criados++;
       });
       batch.commit().then(function(){

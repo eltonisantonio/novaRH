@@ -854,6 +854,7 @@ function renderKanban(v) {
         +'<div class="kc-meta">'+(c.origem||'')+(c.dtEntrevista?' · '+fmtDT(c.dtEntrevista):'')+'</div>'
         +metaExtra
         +'<div class="kc-actions">'
+        +'<button class="btn-icon" style="font-size:11px" title="Transferir para outra vaga" onclick="event.stopPropagation();transferirCandidato(\''+c.id+'\')"><i class="ti ti-arrows-transfer-down"></i></button>'
         +'<button class="btn-icon" style="font-size:11px" title="Remover" onclick="event.stopPropagation();removerCandidato(\''+c.id+'\')"><i class="ti ti-trash"></i></button>'
         +'</div>'
         +'</div>';
@@ -1220,17 +1221,78 @@ function transferirCandidato(cid) {
   if (!origem) return;
   var cand = (origem.candidatos||[]).find(function(x) { return x.id === cid; });
   if (!cand) return;
-  var destinos = vagas.filter(function(v) { return v.id !== vagaAtivaId && !v.isBancoTalentos && v.status === 'aberta'; });
-  if (!destinos.length) { toast('Sem outras vagas abertas para transferir.','err'); return; }
-  var opcoes = destinos.map(function(v,i) { return i+': '+v.cargo+' ('+v.empresa+')'; }).join('\n');
-  var idx = parseInt(prompt('Selecione a vaga de destino:\n'+opcoes));
-  if (isNaN(idx) || !destinos[idx]) return;
-  var dest = destinos[idx];
+
+  // Destinos: outras vagas abertas + banco de talentos
+  var destinos = vagas.filter(function(v) { return v.id !== vagaAtivaId && v.status !== 'cancelada'; });
+  if (!destinos.length) { toast('Sem outras vagas disponíveis.','err'); return; }
+
+  // Criar/reusar modal de transferência
+  var existing = document.getElementById('modal-transferir');
+  if (!existing) {
+    var div = document.createElement('div');
+    div.id = 'modal-transferir';
+    div.className = 'modal-overlay';
+    div.innerHTML = '<div class="modal" style="width:480px">'
+      +'<div class="modal-header"><span class="modal-title">Transferir Candidato</span>'
+      +'<button class="btn-icon" onclick="document.getElementById(\'modal-transferir\').classList.remove(\'open\')"><i class="ti ti-x"></i></button></div>'
+      +'<div class="modal-body" id="modal-transferir-body"></div>'
+      +'<div class="modal-footer">'
+      +'<button class="btn" onclick="document.getElementById(\'modal-transferir\').classList.remove(\'open\')">Cancelar</button>'
+      +'<button class="btn btn-primary" onclick="confirmarTransferencia()" id="btn-confirmar-transf"><i class="ti ti-arrows-transfer-down"></i> Transferir</button>'
+      +'</div></div>';
+    document.body.appendChild(div);
+  }
+
+  // Popular body
+  var html = '<div style="font-size:13px;font-weight:700;margin-bottom:4px">Candidato: '+cand.nome+'</div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-bottom:16px">Vaga atual: '+origem.cargo+(origem.empresa?' · '+origem.empresa:'')+'</div>'
+    +'<div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Selecione o destino</div>'
+    +'<div style="display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto">'
+    +destinos.map(function(v) {
+      var isBT = v.isBancoTalentos;
+      return '<label style="display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:var(--white)">'
+        +'<input type="radio" name="dest-vaga" value="'+v.id+'" style="accent-color:var(--black)">'
+        +'<div>'
+        +'<div style="font-size:13px;font-weight:700">'+(isBT?'⭐ ':'')+(v.cargo||'')+'</div>'
+        +'<div style="font-size:11px;color:var(--text2)">'+(isBT?'Banco de Talentos':(v.empresa||''))+(v.status!=='aberta'?' · '+v.status.toUpperCase():'')+'</div>'
+        +'</div></label>';
+    }).join('')
+    +'</div>';
+
+  document.getElementById('modal-transferir-body').innerHTML = html;
+
+  // Guardar candidato para uso no confirmar
+  document.getElementById('modal-transferir').dataset.cid = cid;
+  document.getElementById('modal-transferir').classList.add('open');
+}
+
+function confirmarTransferencia() {
+  var modal   = document.getElementById('modal-transferir');
+  var cid     = modal.dataset.cid;
+  var destId  = (document.querySelector('input[name="dest-vaga"]:checked')||{}).value;
+  if (!destId) { toast('Selecione a vaga de destino.','err'); return; }
+
+  var vagas  = DB.vagas.getAll();
+  var origem = vagas.find(function(x) { return x.id === vagaAtivaId; });
+  var dest   = vagas.find(function(x) { return x.id === destId; });
+  if (!origem || !dest) return;
+
+  var cand = (origem.candidatos||[]).find(function(x) { return x.id === cid; });
+  if (!cand) return;
+
+  // Mover candidato
   origem.candidatos = (origem.candidatos||[]).filter(function(x) { return x.id !== cid; });
   dest.candidatos = dest.candidatos||[];
-  dest.candidatos.push(Object.assign({},cand,{id:'c_'+Date.now(),etapa:0,historicoEtapas:[0]}));
+  dest.candidatos.push(Object.assign({}, cand, {
+    id: 'c_'+Date.now()+'_'+Math.random().toString(36).slice(2,5),
+    etapa: 0,
+    historicoEtapas: [0],
+    obs: (cand.obs?cand.obs+' | ':'')+'TRANSFERIDO DE: '+origem.cargo+(origem.codigo?' ('+origem.codigo+')':''),
+  }));
   DB.vagas.save(vagas);
-  toast('Candidato transferido para '+dest.cargo+'.');
+
+  modal.classList.remove('open');
+  toast('Transferido para '+dest.cargo+'!','ok');
   abrirDetalhe(vagaAtivaId);
 }
 

@@ -1,4 +1,4 @@
-<!DOCTYPE html><!-- v2026-05-28 18:46 -->
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
@@ -6,6 +6,9 @@
 <title>Nova. RH — Solicitações</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 :root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -20,135 +23,116 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .sidebar-nav{padding:20px 0;flex:1;}
 .nav-s{padding:8px 24px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.5);transition:all .15s;border-left:2px solid transparent;}
-.nav-item:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05);}
 .nav-item.active{color:var(--lime);border-left-color:var(--lime);background:rgba(215,255,61,.06);}
 .nav-item.dis{opacity:.25;cursor:not-allowed;pointer-events:none;}
 .nav-item i{font-size:16px;}
 .sidebar-footer{padding:18px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.25);font-weight:500;}
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;gap:12px;}
-.topbar-title{font-size:15px;font-weight:700;letter-spacing:-.2px;}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:58px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .topbar-tabs{display:flex;gap:2px;}
-.tab{padding:7px 14px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;color:var(--text2);transition:all .15s;border:none;background:transparent;font-family:'Inter',sans-serif;}
-.tab:hover{background:var(--s2);}
+.tab{padding:7px 14px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;color:var(--text2);border:none;background:transparent;font-family:'Inter',sans-serif;}
 .tab.active{background:var(--black);color:var(--lime);}
-.topbar-actions{display:flex;gap:8px;margin-left:auto;}
+.ml-auto{margin-left:auto;}
 .content{flex:1;padding:28px 32px;overflow-y:auto;}
-/* BUTTONS */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
 .btn:hover{background:var(--s2);}
 .btn-primary{background:var(--black);color:var(--lime);border-color:var(--black);}
-.btn-primary:hover{background:#1e2026;}
 .btn-success{background:#e8f8ef;color:#1a5c35;border-color:#a8d8b8;}
-.btn-success:hover{background:#d0f0e0;}
 .btn-danger{background:#fdeaea;color:#8b1c1c;border-color:#f5c6c6;}
-.btn-danger:hover{background:#fad0d0;}
 .btn-warn{background:#fef8ec;color:#7d4e00;border-color:#f0d080;}
-.btn-warn:hover{background:#fdeac0;}
 .btn-sm{padding:7px 12px;font-size:12px;}
-.btn i{font-size:15px;}
-/* STATS */
 .stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
-.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;position:relative;overflow:hidden;}
-.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
-.stat-card.s-gold::after{background:var(--gold);}
-.stat-card.s-blue::after{background:#4a7fc1;}
-.stat-card.s-lime::after{background:var(--lime);}
-.stat-card.s-red::after{background:#e05252;}
-.stat-card.s-black::after{background:var(--black);}
+.stat{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;position:relative;overflow:hidden;}
+.stat::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.stat.gold::after{background:var(--gold);}
+.stat.blue::after{background:#4a7fc1;}
+.stat.lime::after{background:var(--lime);}
+.stat.red::after{background:#e05252;}
 .stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px;}
-.stat-value{font-size:30px;font-weight:900;color:var(--black);letter-spacing:-1px;line-height:1;}
+.stat-value{font-size:30px;font-weight:900;letter-spacing:-1px;line-height:1;}
 .stat-sub{font-size:11px;color:var(--text3);font-weight:500;margin-top:4px;}
-/* LINK BOX */
 .link-box{background:var(--black);border-radius:var(--rl);padding:18px 24px;margin-bottom:24px;display:flex;align-items:center;gap:16px;}
 .link-box-icon{width:38px;height:38px;border-radius:8px;background:rgba(215,255,61,.12);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 .link-box-icon i{color:var(--lime);font-size:18px;}
 .link-box-info{flex:1;min-width:0;}
 .link-box-title{font-size:12px;font-weight:700;color:var(--cream);margin-bottom:3px;}
-.link-box-url{font-size:11px;font-weight:500;color:rgba(242,238,229,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.link-box-copy{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);border:1px solid rgba(215,255,61,.3);background:transparent;color:var(--lime);font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;flex-shrink:0;white-space:nowrap;}
-.link-box-copy:hover{background:rgba(215,255,61,.1);}
-/* SEARCH */
-.search-bar{display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
+.link-box-url{font-size:11px;color:rgba(242,238,229,.4);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.link-box-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--r);border:1px solid rgba(215,255,61,.3);background:transparent;color:var(--lime);font-size:12px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;}
+.link-box-btn:hover{background:rgba(215,255,61,.1);}
+.search-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
 .search-wrap{position:relative;flex:1;min-width:200px;}
 .search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;pointer-events:none;}
-.search-input{width:100%;padding:9px 11px 9px 32px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;}
-.search-input:focus{border-color:var(--black);}
-.form-select{padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;}
-/* CARDS */
-.sol-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;margin-bottom:10px;transition:all .15s;}
-.sol-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.06);}
+.search-input{width:100%;padding:9px 11px 9px 32px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;}
+.form-select{padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;color:var(--text);}
+.sol-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;margin-bottom:10px;}
 .sol-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;}
-.sol-cargo{font-size:15px;font-weight:800;letter-spacing:-.2px;}
+.sol-cargo{font-size:15px;font-weight:800;}
 .sol-meta{font-size:12px;color:var(--text2);font-weight:500;margin-top:2px;}
 .sol-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px;}
-.sol-actions{display:flex;gap:6px;flex-wrap:wrap;}
-/* BADGES */
+.sol-actions{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;}
 .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
-.badge-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
-.badge-blue{background:#eef3fb;color:#1e3a6e;border:1px solid #b0c8e4;}
-.badge-lime{background:#f0ffe0;color:#3a5c00;border:1px solid #c0e840;}
-.badge-red{background:#fdeaea;color:#8b1c1c;border:1px solid #f5c6c6;}
-.badge-gray{background:#f0ede6;color:var(--text2);border:1px solid var(--border2);}
-.tag-empresa{background:var(--black);color:var(--lime);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;}
-/* EMPTY */
+.b-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
+.b-blue{background:#eef3fb;color:#1e3a6e;border:1px solid #b0c8e4;}
+.b-lime{background:#f0ffe0;color:#3a5c00;border:1px solid #c0e840;}
+.b-green{background:#e8f8ef;color:#1a5c35;border:1px solid #a8d8b8;}
+.b-red{background:#fdeaea;color:#8b1c1c;border:1px solid #f5c6c6;}
+.b-gray{background:#f0ede6;color:var(--text2);border:1px solid var(--border2);}
+.tag-emp{background:var(--black);color:var(--lime);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;}
 .empty{text-align:center;padding:50px 20px;color:var(--text2);}
 .empty i{font-size:40px;color:var(--text3);display:block;margin-bottom:10px;}
-.empty p{font-size:13px;font-weight:500;}
 /* CONFIG */
-.config-section{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:20px;}
-.config-title{font-size:13px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px;}
-.config-sub{font-size:12px;color:var(--text2);margin-bottom:18px;}
-.config-form{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:16px;}
-.form-group-sm{display:flex;flex-direction:column;gap:4px;}
-.form-label-sm{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
-.form-input-sm{padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--black);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;width:100%;}
-.form-input-sm:focus{border-color:var(--black);}
-.config-table{width:100%;border-collapse:collapse;}
-.config-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
-.config-table td{font-size:13px;font-weight:500;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
-.config-table tr:last-child td{border-bottom:none;}
-.config-table tr:hover td{background:var(--s2);}
+.cfg-section{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:20px;}
+.cfg-title{font-size:13px;font-weight:800;margin-bottom:4px;}
+.cfg-sub{font-size:12px;color:var(--text2);margin-bottom:18px;}
+.cfg-form{display:grid;gap:10px;align-items:end;margin-bottom:16px;}
+.cfg-form-4{grid-template-columns:1fr 1fr 1fr auto;}
+.cfg-form-2{grid-template-columns:1fr auto;}
+.fg{display:flex;flex-direction:column;gap:4px;}
+.fl{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;}
+.fi{padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;width:100%;}
+.fi:focus{border-color:var(--black);}
+.cfg-table{width:100%;border-collapse:collapse;}
+.cfg-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+.cfg-table td{font-size:13px;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.cfg-table tr:last-child td{border-bottom:none;}
+.cfg-table tr:hover td{background:var(--s2);}
+.btn-icon{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r);border:none;background:transparent;cursor:pointer;color:var(--text2);}
+.btn-icon:hover{background:var(--s2);}
 /* MODAL */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(14,15,18,.55);z-index:100;align-items:center;justify-content:center;}
-.modal-overlay.open{display:flex;}
+.overlay{display:none;position:fixed;inset:0;background:rgba(14,15,18,.55);z-index:100;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
 .modal{background:var(--white);border-radius:var(--rl);width:600px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;}
-.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.modal-title{font-size:15px;font-weight:800;letter-spacing:-.2px;}
-.modal-body{padding:24px;overflow-y:auto;}
-.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
-.btn-icon{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r);border:none;background:transparent;cursor:pointer;color:var(--text2);transition:all .15s;}
-.btn-icon:hover{background:var(--s2);color:var(--text);}
-.detail-row{display:flex;gap:8px;margin-bottom:10px;font-size:13px;}
-.detail-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;min-width:120px;flex-shrink:0;margin-top:1px;}
-.detail-value{color:var(--text);font-weight:500;line-height:1.5;}
-.detail-divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
-.form-group{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
-.form-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;}
-.form-input,.form-textarea2{padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;width:100%;}
-.form-input:focus,.form-textarea2:focus{border-color:var(--black);}
-.form-textarea2{resize:vertical;min-height:80px;}
+.modal.sm{width:480px;}
+.modal-h{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:15px;font-weight:800;}
+.modal-b{padding:24px;overflow-y:auto;}
+.modal-f{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.dr{display:flex;gap:8px;margin-bottom:10px;font-size:13px;}
+.dl{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;min-width:110px;flex-shrink:0;margin-top:1px;}
+.dv{color:var(--text);font-weight:500;line-height:1.5;}
+.divider{border:none;border-top:1px solid var(--border);margin:14px 0;}
+.fg2{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.fl2{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;}
+.fi2{padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;width:100%;}
+.fi2:focus{border-color:var(--black);}
+textarea.fi2{resize:vertical;min-height:80px;}
+.flow-bar{display:flex;margin-bottom:20px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.flow-step{flex:1;padding:10px 14px;font-size:11px;font-weight:700;color:var(--text3);text-align:center;}
+.flow-step.done{background:#e8f8ef;color:#1a5c35;}
+.flow-step.active{background:var(--black);color:var(--lime);}
 .hist-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
 .hist-item:last-child{border-bottom:none;}
 .hist-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);flex-shrink:0;margin-top:4px;}
 .hist-acao{font-size:12px;font-weight:700;}
 .hist-meta{font-size:11px;color:var(--text3);margin-top:1px;}
-.flow-bar{display:flex;align-items:center;gap:0;margin-bottom:20px;background:var(--s2);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
-.flow-step{flex:1;padding:10px 14px;font-size:11px;font-weight:700;color:var(--text3);text-align:center;position:relative;}
-.flow-step.done{background:#e8f8ef;color:#1a5c35;}
-.flow-step.active{background:var(--black);color:var(--lime);}
-.flow-step.pending{color:var(--text3);}
-/* TOAST */
+.notice{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:var(--r);font-size:12px;font-weight:500;margin-bottom:16px;}
+.notice-green{background:#e8f8ef;color:#1a5c35;border:1px solid #a8d8b8;}
+.notice-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
 .toast{position:fixed;bottom:24px;right:24px;background:var(--black);color:var(--cream);padding:12px 18px;border-radius:var(--r);font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;}
 .toast.show{opacity:1;transform:translateY(0);}
 .toast.err{background:#8b1c1c;}
 .toast.ok{background:#1a5c35;}
 </style>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-db.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
-
 </head>
 <body>
 <div class="app">
@@ -167,7 +151,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="nav-item dis"><i class="ti ti-file-minus"></i> Rescisão</div>
       <div class="nav-item active"><i class="ti ti-send"></i> Solicitações</div>
     </nav>
-    <div class="sidebar-footer">Módulo 7 · Solicitações</div>
+    <div class="sidebar-footer">Módulo 7</div>
   </aside>
 
   <div class="main">
@@ -176,9 +160,9 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         <button class="tab active" id="tab-sol" onclick="showTab('sol')">Solicitações</button>
         <button class="tab" id="tab-cfg" onclick="showTab('cfg')">Configurações</button>
       </div>
-      <div class="topbar-actions">
+      <div class="ml-auto" style="display:flex;gap:8px;">
         <button class="btn btn-sm" onclick="copyLink()"><i class="ti ti-link"></i> Copiar Link do Gestor</button>
-        <button class="btn btn-primary btn-sm" id="btn-abrir-form"><i class="ti ti-external-link"></i> Abrir Formulário</button>
+        <button class="btn btn-primary btn-sm" id="btn-form"><i class="ti ti-external-link"></i> Abrir Formulário</button>
       </div>
     </div>
 
@@ -190,34 +174,35 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           <div class="link-box-title">Link público para gestores</div>
           <div class="link-box-url" id="link-url">Carregando...</div>
         </div>
-        <button class="link-box-copy" onclick="copyLink()"><i class="ti ti-copy" style="font-size:13px"></i> Copiar</button>
+        <button class="link-box-btn" onclick="copyLink()"><i class="ti ti-copy" style="font-size:13px"></i> Copiar</button>
       </div>
 
       <div class="stats-grid">
-        <div class="stat-card s-gold"><div class="stat-label">Pendentes</div><div class="stat-value" id="stat-pend">0</div><div class="stat-sub">aguardando N2</div></div>
-        <div class="stat-card s-blue"><div class="stat-label">Com N2</div><div class="stat-value" id="stat-n2">0</div><div class="stat-sub">em análise</div></div>
-        <div class="stat-card s-lime"><div class="stat-label">Aprovadas</div><div class="stat-value" id="stat-aprov">0</div><div class="stat-sub">vaga no R&amp;S</div></div>
-        <div class="stat-card s-red"><div class="stat-label">Reprovadas</div><div class="stat-value" id="stat-rep">0</div><div class="stat-sub">não aprovadas</div></div>
+        <div class="stat gold"><div class="stat-label">Pendentes</div><div class="stat-value" id="st-pend">0</div><div class="stat-sub">aguardando N2</div></div>
+        <div class="stat blue"><div class="stat-label">Com N2</div><div class="stat-value" id="st-n2">0</div><div class="stat-sub">em análise</div></div>
+        <div class="stat lime"><div class="stat-label">Aprovadas</div><div class="stat-value" id="st-aprov">0</div><div class="stat-sub">vaga no R&amp;S</div></div>
+        <div class="stat red"><div class="stat-label">Reprovadas</div><div class="stat-value" id="st-rep">0</div><div class="stat-sub">não aprovadas</div></div>
       </div>
 
       <div class="search-bar">
         <div class="search-wrap">
           <i class="ti ti-search"></i>
-          <input class="search-input" type="text" id="search" placeholder="Buscar por cargo, gestor ou empresa..." oninput="renderLista()">
+          <input class="search-input" type="text" id="busca" placeholder="Buscar por cargo, gestor ou empresa..." oninput="renderLista()">
         </div>
         <select class="form-select" id="f-status" onchange="renderLista()" style="width:175px">
           <option value="">Todos os status</option>
           <option value="pendente">Pendentes</option>
           <option value="com_n2">Com N2</option>
-          <option value="aprovado_n2">Aprovado N2</option>
-          <option value="reprovado_n2">Reprovado N2</option>
-          <option value="aprovado">Aprovadas (RH)</option>
-          <option value="reprovado">Reprovadas (RH)</option>
+          <option value="aprovado_n2">N2 Aprovado</option>
+          <option value="reprovado_n2">N2 Reprovado</option>
+          <option value="aprovado">Aprovadas</option>
+          <option value="reprovado">Reprovadas</option>
         </select>
-        <select class="form-select" id="f-empresa" onchange="renderLista()" style="width:185px">
+        <select class="form-select" id="f-emp" onchange="renderLista()" style="width:185px">
           <option value="">Todas as empresas</option>
-          <option>Raguife Matriz</option><option>Raguife Bom Despacho</option><option>Neves Queiroz</option>
-          <option>Distribuidora</option><option>Haras Ambar Amaral</option><option>Holding</option><option>Mb Proni</option>
+          <option>Raguife Matriz</option><option>Raguife Bom Despacho</option>
+          <option>Neves Queiroz</option><option>Distribuidora</option>
+          <option>Haras Ambar Amaral</option><option>Holding</option><option>Mb Proni</option>
         </select>
       </div>
       <div id="lista-sol"></div>
@@ -225,46 +210,31 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 
     <!-- ABA CONFIGURAÇÕES -->
     <div class="content" id="view-cfg" style="display:none">
-
-      <!-- Setores -->
-      <div class="config-section">
-        <div class="config-title"><i class="ti ti-building" style="color:var(--text2)"></i> Setores</div>
-        <div class="config-sub">Cadastre os setores da empresa. Eles aparecem no formulário do gestor.</div>
-        <div class="config-form" style="grid-template-columns:1fr auto">
-          <div class="form-group-sm">
-            <label class="form-label-sm">Nome do Setor</label>
-            <input class="form-input-sm" type="text" id="ns-nome" placeholder="Ex: LOGÍSTICA, FINANCEIRO...">
-          </div>
-          <button class="btn btn-primary" onclick="addSetor()" style="height:38px"><i class="ti ti-plus"></i> Adicionar</button>
+      <div class="cfg-section">
+        <div class="cfg-title">Setores</div>
+        <div class="cfg-sub">Cadastre os setores da empresa. Eles aparecem no formulário do gestor.</div>
+        <div class="cfg-form cfg-form-2">
+          <div class="fg"><label class="fl">Nome do Setor</label><input class="fi" type="text" id="ns-nome" placeholder="Ex: LOGÍSTICA"></div>
+          <button class="btn btn-primary" style="height:38px" onclick="addSetor()"><i class="ti ti-plus"></i> Adicionar</button>
         </div>
-        <table class="config-table">
-          <thead><tr><th>Setor</th><th>N2 Vinculado</th><th style="width:60px"></th></tr></thead>
-          <tbody id="tabela-setores"></tbody>
+        <table class="cfg-table">
+          <thead><tr><th>Setor</th><th>N2 Vinculado</th><th style="width:50px"></th></tr></thead>
+          <tbody id="tb-setores"></tbody>
         </table>
       </div>
 
-      <!-- N2s -->
-      <div class="config-section">
-        <div class="config-title"><i class="ti ti-user-check" style="color:var(--text2)"></i> Responsáveis N2</div>
-        <div class="config-sub">Cadastre os aprovadores N2 e vincule-os aos setores.</div>
-        <div class="config-form">
-          <div class="form-group-sm">
-            <label class="form-label-sm">Nome</label>
-            <input class="form-input-sm" type="text" id="nn-nome" placeholder="Nome do N2">
-          </div>
-          <div class="form-group-sm">
-            <label class="form-label-sm">E-mail</label>
-            <input class="form-input-sm" type="email" id="nn-email" placeholder="n2@empresa.com">
-          </div>
-          <div class="form-group-sm">
-            <label class="form-label-sm">Setor</label>
-            <select class="form-input-sm" id="nn-setor"><option value="">Selecione</option></select>
-          </div>
-          <button class="btn btn-primary" onclick="addN2()" style="height:38px"><i class="ti ti-plus"></i> Adicionar</button>
+      <div class="cfg-section">
+        <div class="cfg-title">Responsáveis N2</div>
+        <div class="cfg-sub">Cadastre os aprovadores N2 e vincule-os aos setores.</div>
+        <div class="cfg-form cfg-form-4">
+          <div class="fg"><label class="fl">Nome</label><input class="fi" type="text" id="nn-nome" placeholder="Nome do N2"></div>
+          <div class="fg"><label class="fl">E-mail</label><input class="fi" type="email" id="nn-email" placeholder="n2@empresa.com"></div>
+          <div class="fg"><label class="fl">Setor</label><select class="fi" id="nn-setor"><option value="">Selecione</option></select></div>
+          <button class="btn btn-primary" style="height:38px" onclick="addN2()"><i class="ti ti-plus"></i> Adicionar</button>
         </div>
-        <table class="config-table">
-          <thead><tr><th>Nome</th><th>E-mail</th><th>Setor</th><th style="width:60px"></th></tr></thead>
-          <tbody id="tabela-n2s"></tbody>
+        <table class="cfg-table">
+          <thead><tr><th>Nome</th><th>E-mail</th><th>Setor</th><th style="width:50px"></th></tr></thead>
+          <tbody id="tb-n2s"></tbody>
         </table>
       </div>
     </div>
@@ -272,86 +242,56 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 </div>
 
 <!-- MODAL DETALHE -->
-<div class="modal-overlay" id="modal-detalhe">
+<div class="overlay" id="modal-det">
   <div class="modal">
-    <div class="modal-header">
-      <span class="modal-title" id="md-title">Solicitação</span>
-      <button class="btn-icon" onclick="closeModal('modal-detalhe')"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="modal-body" id="md-body"></div>
-    <div class="modal-footer" id="md-footer"></div>
+    <div class="modal-h"><span class="modal-title" id="det-title">Solicitação</span><button class="btn-icon" onclick="closeModal('modal-det')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b" id="det-body"></div>
+    <div class="modal-f" id="det-footer"></div>
   </div>
 </div>
 
-<!-- MODAL ENVIAR N2 -->
-<div class="modal-overlay" id="modal-n2">
-  <div class="modal" style="width:480px">
-    <div class="modal-header">
-      <span class="modal-title">Encaminhar para N2</span>
-      <button class="btn-icon" onclick="closeModal('modal-n2')"><i class="ti ti-x"></i></button>
-    </div>
-    <div class="modal-body">
+<!-- MODAL ENCAMINHAR N2 -->
+<div class="overlay" id="modal-n2">
+  <div class="modal sm">
+    <div class="modal-h"><span class="modal-title">Encaminhar para N2</span><button class="btn-icon" onclick="closeModal('modal-n2')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
       <div id="n2-info" style="margin-bottom:16px"></div>
-      <div class="form-group">
-        <label class="form-label">Observação para o N2</label>
-        <textarea class="form-textarea2" id="n2-obs" rows="3" placeholder="Opcional..."></textarea>
-      </div>
+      <div class="fg2"><label class="fl2">Observação para o N2</label><textarea class="fi2" id="n2-obs" rows="3" placeholder="Opcional..."></textarea></div>
     </div>
-    <div class="modal-footer">
+    <div class="modal-f">
       <button class="btn" onclick="closeModal('modal-n2')">Cancelar</button>
-      <button class="btn btn-warn" onclick="confirmarEnvioN2()"><i class="ti ti-send"></i> Encaminhar</button>
+      <button class="btn btn-warn" onclick="confirmarN2()"><i class="ti ti-send"></i> Encaminhar</button>
     </div>
   </div>
 </div>
 
 <!-- MODAL REPROVAR -->
-<div class="modal-overlay" id="modal-reprovar">
-  <div class="modal" style="width:480px">
-    <div class="modal-header">
-      <span class="modal-title" id="rep-title">Reprovar Solicitação</span>
-      <button class="btn-icon" onclick="closeModal('modal-reprovar')"><i class="ti ti-x"></i></button>
+<div class="overlay" id="modal-rep">
+  <div class="modal sm">
+    <div class="modal-h"><span class="modal-title" id="rep-title">Reprovar</span><button class="btn-icon" onclick="closeModal('modal-rep')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div class="fg2"><label class="fl2">Justificativa <span style="color:#c0392b">*</span></label><textarea class="fi2" id="rep-just" rows="4" placeholder="Informe o motivo..."></textarea></div>
     </div>
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Justificativa <span style="color:#c0392b">*</span></label>
-        <textarea class="form-textarea2" id="rep-justificativa" rows="4" placeholder="Informe o motivo..."></textarea>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeModal('modal-reprovar')">Cancelar</button>
-      <button class="btn btn-danger" onclick="confirmarReprovacao()"><i class="ti ti-x"></i> Reprovar</button>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-rep')">Cancelar</button>
+      <button class="btn btn-danger" onclick="confirmarRep()"><i class="ti ti-x"></i> Reprovar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL APROVAR (RH cria vaga) -->
-<div class="modal-overlay" id="modal-aprovar">
-  <div class="modal" style="width:520px">
-    <div class="modal-header">
-      <span class="modal-title">Aprovar e Abrir Vaga no R&amp;S</span>
-      <button class="btn-icon" onclick="closeModal('modal-aprovar')"><i class="ti ti-x"></i></button>
+<!-- MODAL APROVAR -->
+<div class="overlay" id="modal-aprov">
+  <div class="modal sm" style="width:520px">
+    <div class="modal-h"><span class="modal-title">Aprovar e Abrir Vaga no R&amp;S</span><button class="btn-icon" onclick="closeModal('modal-aprov')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div class="notice notice-green"><i class="ti ti-check" style="font-size:14px;flex-shrink:0"></i><span>Uma vaga será criada automaticamente no R&amp;S com os dados desta solicitação.</span></div>
+      <div class="fg2"><label class="fl2">Perfil de Vaga (SLA)</label><select class="fi2" id="ap-perfil"><option value="">Selecione</option></select></div>
+      <div class="fg2"><label class="fl2">Data de Abertura</label><input class="fi2" type="date" id="ap-data"></div>
+      <div class="fg2"><label class="fl2">Observação do RH</label><textarea class="fi2" id="ap-obs" rows="2" placeholder="Opcional..."></textarea></div>
     </div>
-    <div class="modal-body">
-      <div style="background:#f0ffe0;border:1px solid #c0e840;border-radius:var(--r);padding:12px 14px;margin-bottom:18px;font-size:12px;color:#3a5c00;font-weight:500;">
-        <i class="ti ti-check" style="margin-right:6px"></i>
-        Ao aprovar, uma vaga será criada automaticamente no módulo R&amp;S com os dados desta solicitação.
-      </div>
-      <div class="form-group">
-        <label class="form-label">Perfil de Vaga (SLA)</label>
-        <select class="form-input" id="ap-perfil"><option value="">Selecione</option></select>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Data de Abertura</label>
-        <input class="form-input" type="date" id="ap-abertura">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Observação do RH</label>
-        <textarea class="form-textarea2" id="ap-obs" rows="2" placeholder="Opcional..."></textarea>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeModal('modal-aprovar')">Cancelar</button>
-      <button class="btn btn-success" onclick="confirmarAprovacao()"><i class="ti ti-check"></i> Aprovar e Abrir Vaga</button>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-aprov')">Cancelar</button>
+      <button class="btn btn-success" onclick="confirmarAprov()"><i class="ti ti-check"></i> Aprovar e Abrir Vaga</button>
     </div>
   </div>
 </div>
@@ -359,525 +299,503 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 <div class="toast" id="toast"></div>
 
 <script>
-// ── Chaves ──
-var SOL_KEY    = 'nova_solicitacoes_v1';
-var VAGAS_KEY  = 'nova_vagas_v3';
-var PERFIS_KEY = 'nova_perfis_v1';
-var SETORES_KEY= 'nova_sol_setores_v1';
-var N2S_KEY    = 'nova_sol_n2s_v1';
+// ════════════════════════════════════════════
+// FIREBASE
+// ════════════════════════════════════════════
+firebase.initializeApp({
+  apiKey: "AIzaSyAhoLSoe7bRdDakJ6apJcnWMBL5RHmQtDI",
+  authDomain: "novarh-4fbc6.firebaseapp.com",
+  projectId: "novarh-4fbc6",
+  storageBucket: "novarh-4fbc6.firebasestorage.app",
+  messagingSenderId: "805399291743",
+  appId: "1:805399291743:web:ac13f2572f875c0ec1b8ea"
+});
+var db = firebase.firestore();
 
-// ── EmailJS ──
-const EMAILJS_SERVICE   = 'service_v1stn8m';
-const EMAILJS_TEMPLATE_N2 = 'template_1vafvh8';
-const EMAILJS_PUBLIC    = 'AtHQdnGVUyUK30fSt';
-emailjs.init(EMAILJS_PUBLIC);
+// ════════════════════════════════════════════
+// EMAILJS
+// ════════════════════════════════════════════
+emailjs.init('AtHQdnGVUyUK30fSt');
+var EJ_SVC  = 'service_v1stn8m';
+var EJ_N2   = 'template_1vafvh8';
+var EJ_RH   = 'template_f69wi39';
 
-async function reenviarEmailN2(id){
-  var sols = await getSols();
-  var s = sols.find(function(x){return x.id===id;});
-  if(!s) return;
-  var n2s = await getN2s();
-  var n2 = n2s.find(function(n){return n.setor===s.setor;});
-  if(!n2){toast('Nenhum N2 cadastrado para o setor "'+s.setor+'".','err');return;}
-  var ok = await enviarEmailN2(s, n2);
-  toast(ok ? 'E-mail reenviado para '+n2.nome+'!' : 'Falha ao reenviar. Verifique o EmailJS.', ok?'ok':'err');
-}
-
-async function enviarEmailN2(sol, n2){
-  try {
-    var baseUrl = window.location.href.replace(/\/[^\/]*(\?.*)?$/, '/');
-    var linkN2 = baseUrl + 'nova-n2.html?sol=' + sol.id;
-    await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_N2, {
-      to_email:    n2.email,
-      name:        n2.nome,
-      message:     'Nova solicitação de vaga aguardando sua aprovação.',
-      n2_nome:     n2.nome,
-      gestor:      sol.gestor,
-      cargo:       sol.cargo,
-      departamento:sol.setor,
-      empresa:     sol.empresa,
-      motivo:      sol.motivo,
-      escala:      sol.escala,
-      referencia:  sol.codigo,
-      requisitos:  sol.requisitos || '—',
-      link_n2:     linkN2,
-    });
-    console.log('[EmailJS] E-mail enviado para', n2.email);
-    return true;
-  } catch(e){
-    console.warn('[EmailJS] Falha:', e);
-    return false;
-  }
-}
-
-
+// ════════════════════════════════════════════
+// ESTADO
+// ════════════════════════════════════════════
 var PERFIS_DEFAULT = [
   {id:'p1',nome:'OPERACIONAL',sla:10},{id:'p2',nome:'MOTORISTA',sla:25},
   {id:'p3',nome:'MANUTENCAO',sla:45},{id:'p4',nome:'GESTAO',sla:30},
   {id:'p5',nome:'ADMINISTRATIVO',sla:15},{id:'p6',nome:'PCD',sla:45},
   {id:'p7',nome:'AJUDANTE DE MOTORISTA',sla:15}
 ];
+var solAtual = null;
+var repModo  = 'rh';
 
-var solAtualId  = null;
-var repModo     = null; // 'rh' ou 'n2' — quem está reprovando
-
-// ── Utilitários ──
-async function getSols(){return await FDB.solicitacoes.getAll();}
-async function saveSols(d){await FDB.solicitacoes.saveAll(d);}
-async function getPerfis(){return await FDB.perfis.getAll();}
-async function getVagas(){return await FDB.vagas.getAll();}
-async function saveVagas(d){await FDB.vagas.saveAll(d);}
-async function getSetores(){return await FDB.sol_setores.getAll();}
-async function saveSetores(d){await FDB.sol_setores.saveAll(d);}
-async function getN2s(){return await FDB.sol_n2s.getAll();}
-async function saveN2s(d){await FDB.sol_n2s.saveAll(d);}
-
-function fmtDT(s){
-  if(!s)return'—';
-  var parts=s.split('T');
-  var ymd=parts[0].split('-');
-  return ymd[2]+'/'+ymd[1]+'/'+ymd[0]+' '+(parts[1]||'').slice(0,5);
-}
-
-function toast(msg,type){
-  var el=document.getElementById('toast');
-  el.textContent=msg;el.className='toast '+(type||'');
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+function toast(msg, tipo) {
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast ' + (tipo || '');
   el.classList.add('show');
-  setTimeout(function(){el.classList.remove('show');},2800);
+  setTimeout(function() { el.classList.remove('show'); }, 2800);
 }
-function closeModal(id){document.getElementById(id).classList.remove('open');}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
 
-function badgeStatus(s){
-  var map={
-    pendente:'<span class="badge badge-amber"><i class="ti ti-clock" style="font-size:9px"></i> Pendente</span>',
-    com_n2:'<span class="badge badge-blue"><i class="ti ti-user-check" style="font-size:9px"></i> Com N2</span>',
-    aprovado_n2:'<span class="badge badge-lime" style="background:#e8f8ef;color:#1a5c35;border-color:#a8d8b8"><i class="ti ti-check" style="font-size:9px"></i> N2 Aprovado</span>',
-    reprovado_n2:'<span class="badge badge-red"><i class="ti ti-x" style="font-size:9px"></i> N2 Reprovado</span>',
-    aprovado:'<span class="badge badge-lime"><i class="ti ti-check" style="font-size:9px"></i> Aprovado</span>',
-    reprovado:'<span class="badge badge-red"><i class="ti ti-x" style="font-size:9px"></i> Reprovado</span>',
+function fmtDT(s) {
+  if (!s) return '—';
+  var p = s.split('T'), d = p[0].split('-');
+  return d[2]+'/'+d[1]+'/'+d[0]+' '+(p[1]||'').slice(0,5);
+}
+
+function badgeStatus(s) {
+  var map = {
+    pendente:    '<span class="badge b-amber"><i class="ti ti-clock" style="font-size:9px"></i> Pendente</span>',
+    com_n2:      '<span class="badge b-blue"><i class="ti ti-user-check" style="font-size:9px"></i> Com N2</span>',
+    aprovado_n2: '<span class="badge b-green"><i class="ti ti-check" style="font-size:9px"></i> N2 Aprovado</span>',
+    reprovado_n2:'<span class="badge b-red"><i class="ti ti-x" style="font-size:9px"></i> N2 Reprovado</span>',
+    aprovado:    '<span class="badge b-lime"><i class="ti ti-check" style="font-size:9px"></i> Aprovado</span>',
+    reprovado:   '<span class="badge b-red"><i class="ti ti-x" style="font-size:9px"></i> Reprovado</span>',
   };
-  return map[s]||'<span class="badge badge-gray">'+s+'</span>';
+  return map[s] || '<span class="badge b-gray">'+s+'</span>';
 }
 
-// ── Link público ──
-function buildGestorUrl(){
-  // Quando dentro de iframe, usar referrer ou document.referrer
-  // para obter a URL base correta
+function gestorUrl() {
   var href = '';
-  try {
-    // Tentar pegar a URL do parent (shell)
-    href = window.parent.location.href;
-  } catch(e) {
-    href = window.location.href;
-  }
-  var base = href.replace(/\/[^\/]*(\?.*)?$/, '/');
-  return base + 'nova-gestor.html';
+  try { href = window.parent.location.href; } catch(e) { href = window.location.href; }
+  return href.replace(/\/[^\/]*(\?.*)?$/, '/') + 'nova-gestor.html';
 }
 
-function copyLink(){
-  var url=buildGestorUrl();
-  if(navigator.clipboard){
-    navigator.clipboard.writeText(url).then(function(){toast('Link copiado!','ok');}).catch(function(){fallbackCopy(url);});
+function copyLink() {
+  var url = gestorUrl();
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(function() { toast('Link copiado!', 'ok'); });
   } else {
-    fallbackCopy(url);
+    var i = document.createElement('input'); i.value = url;
+    document.body.appendChild(i); i.select(); document.execCommand('copy'); document.body.removeChild(i);
+    toast('Link copiado!', 'ok');
   }
 }
-function fallbackCopy(url){
-  var inp=document.createElement('input');inp.value=url;document.body.appendChild(inp);inp.select();document.execCommand('copy');document.body.removeChild(inp);
-  toast('Link copiado!','ok');
+
+// ════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════
+function showTab(t) {
+  document.getElementById('view-sol').style.display = t === 'sol' ? 'block' : 'none';
+  document.getElementById('view-cfg').style.display = t === 'cfg' ? 'block' : 'none';
+  document.getElementById('tab-sol').classList.toggle('active', t === 'sol');
+  document.getElementById('tab-cfg').classList.toggle('active', t === 'cfg');
+  if (t === 'cfg') renderCfg();
 }
 
-// ── Tabs ──
-async function showTab(t){
-  document.getElementById('view-sol').style.display=(t==='sol')?'block':'none';
-  document.getElementById('view-cfg').style.display=(t==='cfg')?'block':'none';
-  document.getElementById('tab-sol').classList.toggle('active',t==='sol');
-  document.getElementById('tab-cfg').classList.toggle('active',t==='cfg');
-  if(t==='cfg'){await renderConfig();}
+// ════════════════════════════════════════════
+// SOLICITAÇÕES — Firestore real-time
+// ════════════════════════════════════════════
+var solicitacoes = [];
+
+function escutarSolicitacoes() {
+  db.collection('solicitacoes').onSnapshot(function(snap) {
+    solicitacoes = snap.docs.map(function(d) { return Object.assign({id: d.id}, d.data()); });
+    solicitacoes.sort(function(a, b) { return (b.criadoEm || '').localeCompare(a.criadoEm || ''); });
+    renderLista();
+  }, function(err) {
+    console.error('[Sol] onSnapshot erro:', err);
+  });
 }
 
-// ── Stats ──
-async function updateStats(){
-  var sols=(await getSols());
-  document.getElementById('stat-pend').textContent=sols.filter(function(s){return s.status==='pendente';}).length;
-  document.getElementById('stat-n2').textContent=sols.filter(function(s){return s.status==='com_n2';}).length;
-  document.getElementById('stat-aprov').textContent=sols.filter(function(s){return s.status==='aprovado';}).length;
-  document.getElementById('stat-rep').textContent=sols.filter(function(s){return s.status==='reprovado'||s.status==='reprovado_n2';}).length;
-}
+function renderLista() {
+  var q   = (document.getElementById('busca').value || '').toLowerCase();
+  var fs  = document.getElementById('f-status').value;
+  var fe  = document.getElementById('f-emp').value;
 
-// ── Render Lista ──
-async function renderLista(){
-  var q=(document.getElementById('search').value||'').toLowerCase();
-  var fs=document.getElementById('f-status').value;
-  var fe=document.getElementById('f-empresa').value;
-  var sols=(await getSols());
-  if(q)sols=sols.filter(function(s){return (s.cargo||'').toLowerCase().includes(q)||(s.gestor||'').toLowerCase().includes(q)||(s.empresa||'').toLowerCase().includes(q)||(s.codigo||'').toLowerCase().includes(q);});
-  if(fs)sols=sols.filter(function(s){return s.status===fs;});
-  if(fe)sols=sols.filter(function(s){return s.empresa===fe;});
+  var lista = solicitacoes.filter(function(s) {
+    if (q  && !(s.cargo||'').toLowerCase().includes(q) && !(s.gestor||'').toLowerCase().includes(q) && !(s.empresa||'').toLowerCase().includes(q) && !(s.codigo||'').toLowerCase().includes(q)) return false;
+    if (fs && s.status !== fs) return false;
+    if (fe && s.empresa !== fe) return false;
+    return true;
+  });
 
-  await updateStats();
+  // Stats
+  document.getElementById('st-pend').textContent  = solicitacoes.filter(function(s){return s.status==='pendente';}).length;
+  document.getElementById('st-n2').textContent    = solicitacoes.filter(function(s){return s.status==='com_n2';}).length;
+  document.getElementById('st-aprov').textContent = solicitacoes.filter(function(s){return s.status==='aprovado';}).length;
+  document.getElementById('st-rep').textContent   = solicitacoes.filter(function(s){return s.status==='reprovado'||s.status==='reprovado_n2';}).length;
 
-  var el=document.getElementById('lista-sol');
-  if(!sols.length){
-    el.innerHTML='<div class="empty"><i class="ti ti-inbox"></i><p>Nenhuma solicitação encontrada.</p></div>';
+  var el = document.getElementById('lista-sol');
+  if (!lista.length) {
+    el.innerHTML = '<div class="empty"><i class="ti ti-inbox"></i><p>Nenhuma solicitação encontrada.</p></div>';
     return;
   }
 
-  el.innerHTML=sols.map(function(s){
-    var n2info=s.n2Nome?(' &middot; N2: '+s.n2Nome):'';
-    var acoes='';
+  el.innerHTML = lista.map(function(s) {
+    var n2info = s.n2Nome ? ' &middot; N2: ' + s.n2Nome : '';
+    var acoes = '<button class="btn btn-sm" onclick="verDet(\'' + s.id + '\')"><i class="ti ti-eye"></i> Ver</button>';
 
-    if(s.status==='pendente'){
-      acoes+='<button class="btn btn-warn btn-sm" onclick="openEnviarN2(\''+s.id+'\')"><i class="ti ti-user-check"></i> Encaminhar N2</button>';
-      acoes+='<button class="btn btn-danger btn-sm" onclick="openReprovar(\''+s.id+'\',\'rh\')"><i class="ti ti-x"></i> Reprovar</button>';
+    if (s.status === 'pendente') {
+      acoes += '<button class="btn btn-warn btn-sm" onclick="abrirN2(\'' + s.id + '\')"><i class="ti ti-user-check"></i> Encaminhar N2</button>';
+      acoes += '<button class="btn btn-danger btn-sm" onclick="abrirRep(\'' + s.id + '\',\'rh\')"><i class="ti ti-x"></i> Reprovar</button>';
     }
-    if(s.status==='com_n2'){
-      acoes+='<button class="btn btn-warn btn-sm" onclick="reenviarEmailN2(''+s.id+'')"><i class="ti ti-mail-forward"></i> Reenviar E-mail N2</button>';
-      acoes+='<span style="font-size:11px;color:var(--text3);font-weight:600;margin-left:4px">Aguardando N2</span>';
+    if (s.status === 'com_n2') {
+      acoes += '<button class="btn btn-warn btn-sm" onclick="reenviarN2(\'' + s.id + '\')"><i class="ti ti-mail-forward"></i> Reenviar E-mail</button>';
     }
-    if(s.status==='aprovado_n2'){
-      acoes+='<button class="btn btn-success btn-sm" onclick="openAprovar(\''+s.id+'\')"><i class="ti ti-check"></i> Criar Vaga</button>';
-      acoes+='<button class="btn btn-danger btn-sm" onclick="openReprovar(\''+s.id+'\',\'rh\')"><i class="ti ti-x"></i> Reprovar</button>';
+    if (s.status === 'aprovado_n2') {
+      acoes += '<button class="btn btn-success btn-sm" onclick="abrirAprov(\'' + s.id + '\')"><i class="ti ti-check"></i> Criar Vaga</button>';
+      acoes += '<button class="btn btn-danger btn-sm" onclick="abrirRep(\'' + s.id + '\',\'rh\')"><i class="ti ti-x"></i> Reprovar</button>';
     }
-    if(s.status==='reprovado_n2'){
-      acoes+='<button class="btn btn-warn btn-sm" onclick="openEnviarN2(\''+s.id+'\')"><i class="ti ti-refresh"></i> Reenviar N2</button>';
+    if (s.status === 'reprovado_n2') {
+      acoes += '<button class="btn btn-warn btn-sm" onclick="abrirN2(\'' + s.id + '\')"><i class="ti ti-refresh"></i> Reenviar N2</button>';
     }
-    if(s.vagaCodigo){
-      acoes+='<span style="font-size:11px;color:#1a5c35;font-weight:700">Vaga: '+s.vagaCodigo+'</span>';
+    if (s.vagaCodigo) {
+      acoes += '<span style="font-size:11px;color:#1a5c35;font-weight:700">Vaga: ' + s.vagaCodigo + '</span>';
     }
 
     return '<div class="sol-card">'
-      +'<div class="sol-top">'
-      +'<div>'
-      +'<div class="sol-cargo">'+s.cargo+'</div>'
-      +'<div class="sol-meta">'+s.gestor+' &middot; '+s.setor+' &middot; '+fmtDT(s.criadoEm)+n2info+'</div>'
-      +'</div>'
-      +'<div>'+badgeStatus(s.status)+'</div>'
-      +'</div>'
-      +'<div class="sol-footer">'
-      +'<span class="tag-empresa">'+s.empresa+'</span>'
-      +'<span class="badge badge-gray"><i class="ti ti-hash" style="font-size:9px"></i> '+s.codigo+'</span>'
-      +'<span class="badge badge-gray">'+s.motivo+'</span>'
-      +'<div style="flex:1"></div>'
-      +'<div class="sol-actions">'
-      +'<button class="btn btn-sm" onclick="verDetalhe(\''+s.id+'\')"><i class="ti ti-eye"></i> Ver</button>'
-      +acoes
-      +'</div>'
-      +'</div>'
-      +'</div>';
+      + '<div class="sol-top">'
+      + '<div><div class="sol-cargo">' + s.cargo + '</div>'
+      + '<div class="sol-meta">' + s.gestor + ' &middot; ' + s.setor + ' &middot; ' + fmtDT(s.criadoEm) + n2info + '</div></div>'
+      + '<div>' + badgeStatus(s.status) + '</div></div>'
+      + '<div class="sol-footer">'
+      + '<span class="tag-emp">' + s.empresa + '</span>'
+      + '<span class="badge b-gray"><i class="ti ti-hash" style="font-size:9px"></i> ' + s.codigo + '</span>'
+      + '<span class="badge b-gray">' + s.motivo + '</span>'
+      + '<div class="sol-actions">' + acoes + '</div>'
+      + '</div></div>';
   }).join('');
 }
 
-// ── Ver detalhe ──
-async function verDetalhe(id){
-  var s=(await getSols()).find(function(x){return x.id===id;});if(!s)return;
-  solAtualId=id;
-  document.getElementById('md-title').textContent='Solicitação '+s.codigo;
+// ════════════════════════════════════════════
+// VER DETALHE
+// ════════════════════════════════════════════
+function verDet(id) {
+  var s = solicitacoes.find(function(x) { return x.id === id; });
+  if (!s) return;
+  solAtual = s;
+  document.getElementById('det-title').textContent = 'Solicitação ' + s.codigo;
 
-  // Barra de fluxo
-  var steps=['pendente','com_n2','aprovado_n2','aprovado'];
-  var cur=steps.indexOf(s.status);
-  var flowBar='<div class="flow-bar">'
-    +'<div class="flow-step '+(cur>0?'done':cur===0?'active':'pending')+'">1. Aberta</div>'
-    +'<div class="flow-step '+(cur>1?'done':cur===1?'active':'pending')+'">2. Com N2</div>'
-    +'<div class="flow-step '+(cur>2?'done':cur===2?'active':'pending')+'">3. N2 Avaliou</div>'
-    +'<div class="flow-step '+(cur>3?'done':cur===3?'active':'pending')+'">4. Vaga Criada</div>'
-    +'</div>';
+  var steps = ['pendente','com_n2','aprovado_n2','aprovado'];
+  var cur = steps.indexOf(s.status);
+  var flow = '<div class="flow-bar">'
+    + '<div class="flow-step ' + (cur > 0 ? 'done' : cur === 0 ? 'active' : '') + '">1. Aberta</div>'
+    + '<div class="flow-step ' + (cur > 1 ? 'done' : cur === 1 ? 'active' : '') + '">2. Com N2</div>'
+    + '<div class="flow-step ' + (cur > 2 ? 'done' : cur === 2 ? 'active' : '') + '">3. N2 Avaliou</div>'
+    + '<div class="flow-step ' + (cur > 3 ? 'done' : cur === 3 ? 'active' : '') + '">4. Vaga Criada</div>'
+    + '</div>';
 
-  // Histórico
-  var hist=(s.historico||[]).map(function(h){
+  var hist = (s.historico || []).map(function(h) {
     return '<div class="hist-item"><div class="hist-dot"></div><div>'
-      +'<div class="hist-acao">'+h.acao.replace(/_/g,' ')+'</div>'
-      +'<div class="hist-meta">'+fmtDT(h.dt)+(h.por?' &middot; '+h.por:'')+(h.obs?' &middot; '+h.obs:'')+'</div>'
-      +'</div></div>';
+      + '<div class="hist-acao">' + h.acao.replace(/_/g,' ') + '</div>'
+      + '<div class="hist-meta">' + fmtDT(h.dt) + (h.por ? ' &middot; ' + h.por : '') + (h.obs ? ' &middot; ' + h.obs : '') + '</div>'
+      + '</div></div>';
   }).join('');
 
-  document.getElementById('md-body').innerHTML=flowBar
-    +'<div class="detail-row"><span class="detail-label">Status</span><span class="detail-value">'+badgeStatus(s.status)+'</span></div>'
-    +'<div class="detail-row"><span class="detail-label">Protocolo</span><span class="detail-value" style="font-weight:700">'+s.codigo+'</span></div>'
-    +'<div class="detail-row"><span class="detail-label">Data</span><span class="detail-value">'+fmtDT(s.criadoEm)+'</span></div>'
-    +'<hr class="detail-divider">'
-    +'<div class="detail-row"><span class="detail-label">Gestor</span><span class="detail-value">'+s.gestor+'</span></div>'
-    +'<div class="detail-row"><span class="detail-label">E-mail</span><span class="detail-value">'+s.email+'</span></div>'
-    +'<div class="detail-row"><span class="detail-label">Empresa</span><span class="detail-value">'+s.empresa+'</span></div>'
-    +'<div class="detail-row"><span class="detail-label">Setor</span><span class="detail-value">'+s.setor+'</span></div>'
-    +'<hr class="detail-divider">'
-    +'<div class="detail-row"><span class="detail-label">Cargo</span><span class="detail-value" style="font-weight:700">'+s.cargo+'</span></div>'
-    +'<div class="detail-row"><span class="detail-label">Motivo</span><span class="detail-value">'+s.motivo+'</span></div>'
-    +'<div class="detail-row"><span class="detail-label">Escala</span><span class="detail-value">'+s.escala+'</span></div>'
-    +(s.substituto?'<div class="detail-row"><span class="detail-label">Substituto</span><span class="detail-value">'+s.substituto+'</span></div>':'')
-    +(s.requisitos?'<div class="detail-row"><span class="detail-label">Requisitos</span><span class="detail-value">'+s.requisitos+'</span></div>':'')
-    +(s.obs?'<div class="detail-row"><span class="detail-label">Observações</span><span class="detail-value">'+s.obs+'</span></div>':'')
-    +(s.n2Nome?'<hr class="detail-divider"><div class="detail-row"><span class="detail-label">N2</span><span class="detail-value">'+s.n2Nome+' ('+s.n2Email+')</span></div>':'')
-    +(s.vagaCodigo?'<div class="detail-row"><span class="detail-label">Vaga criada</span><span class="detail-value" style="font-weight:700;color:#1a5c35">'+s.vagaCodigo+'</span></div>':'')
-    +(hist?'<hr class="detail-divider"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:10px">Histórico</div>'+hist:'');
+  document.getElementById('det-body').innerHTML = flow
+    + '<div class="dr"><span class="dl">Status</span><span class="dv">' + badgeStatus(s.status) + '</span></div>'
+    + '<div class="dr"><span class="dl">Protocolo</span><span class="dv" style="font-weight:800">' + s.codigo + '</span></div>'
+    + '<div class="dr"><span class="dl">Data</span><span class="dv">' + fmtDT(s.criadoEm) + '</span></div>'
+    + '<hr class="divider">'
+    + '<div class="dr"><span class="dl">Gestor</span><span class="dv">' + s.gestor + '</span></div>'
+    + '<div class="dr"><span class="dl">E-mail</span><span class="dv">' + s.email + '</span></div>'
+    + '<div class="dr"><span class="dl">Empresa</span><span class="dv">' + s.empresa + '</span></div>'
+    + '<div class="dr"><span class="dl">Setor</span><span class="dv">' + s.setor + '</span></div>'
+    + '<hr class="divider">'
+    + '<div class="dr"><span class="dl">Cargo</span><span class="dv" style="font-weight:800">' + s.cargo + '</span></div>'
+    + '<div class="dr"><span class="dl">Motivo</span><span class="dv">' + s.motivo + '</span></div>'
+    + '<div class="dr"><span class="dl">Escala</span><span class="dv">' + s.escala + '</span></div>'
+    + (s.substituto ? '<div class="dr"><span class="dl">Substituto</span><span class="dv">' + s.substituto + '</span></div>' : '')
+    + (s.requisitos  ? '<div class="dr"><span class="dl">Requisitos</span><span class="dv">' + s.requisitos + '</span></div>' : '')
+    + (s.obs         ? '<div class="dr"><span class="dl">Observações</span><span class="dv">' + s.obs + '</span></div>' : '')
+    + (s.n2Nome      ? '<hr class="divider"><div class="dr"><span class="dl">N2</span><span class="dv">' + s.n2Nome + ' (' + s.n2Email + ')</span></div>' : '')
+    + (s.vagaCodigo  ? '<div class="dr"><span class="dl">Vaga criada</span><span class="dv" style="color:#1a5c35;font-weight:800">' + s.vagaCodigo + '</span></div>' : '')
+    + (hist ? '<hr class="divider"><div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:10px">Histórico</div>' + hist : '');
 
-  var footer='<button class="btn" onclick="closeModal(\'modal-detalhe\')">Fechar</button>';
-  if(s.status==='pendente'){
-    footer+='<button class="btn btn-warn" onclick="closeModal(\'modal-detalhe\');openEnviarN2(\''+id+'\')"><i class="ti ti-user-check"></i> Encaminhar N2</button>';
-  }
-  if(s.status==='aprovado_n2'){
-    footer+='<button class="btn btn-success" onclick="closeModal(\'modal-detalhe\');openAprovar(\''+id+'\')"><i class="ti ti-check"></i> Criar Vaga</button>';
-  }
-  document.getElementById('md-footer').innerHTML=footer;
-  document.getElementById('modal-detalhe').classList.add('open');
+  var footer = '<button class="btn" onclick="closeModal(\'modal-det\')">Fechar</button>';
+  if (s.status === 'pendente') footer += '<button class="btn btn-warn" onclick="closeModal(\'modal-det\');abrirN2(\'' + id + '\')"><i class="ti ti-user-check"></i> Encaminhar N2</button>';
+  if (s.status === 'aprovado_n2') footer += '<button class="btn btn-success" onclick="closeModal(\'modal-det\');abrirAprov(\'' + id + '\')"><i class="ti ti-check"></i> Criar Vaga</button>';
+  document.getElementById('det-footer').innerHTML = footer;
+  openModal('modal-det');
 }
 
-// ── Encaminhar para N2 ──
-async function openEnviarN2(id){
-  var s=(await getSols()).find(function(x){return x.id===id;});if(!s)return;
-  solAtualId=id;
-
-  // Buscar N2 do setor
-  var n2s=(await getN2s());
-  var n2=n2s.find(function(n){return n.setor===s.setor;});
-
-  var info='';
-  if(n2){
-    info='<div style="background:#f0ffe0;border:1px solid #c0e840;border-radius:var(--r);padding:12px 14px;font-size:12px;color:#3a5c00;font-weight:500;">'
-      +'<i class="ti ti-user-check" style="margin-right:6px"></i>'
-      +'N2 encontrado para o setor <strong>'+s.setor+'</strong>: <strong>'+n2.nome+'</strong> ('+n2.email+')'
-      +'</div>';
-  } else {
-    info='<div style="background:#fef8ec;border:1px solid #f0d080;border-radius:var(--r);padding:12px 14px;font-size:12px;color:#7d4e00;font-weight:500;">'
-      +'<i class="ti ti-alert-triangle" style="margin-right:6px"></i>'
-      +'Nenhum N2 cadastrado para o setor <strong>'+(s.setor||'—')+'</strong>. '
-      +'Cadastre em <strong>Configurações &rsaquo; Responsáveis N2</strong>.'
-      +'</div>';
-  }
-  document.getElementById('n2-info').innerHTML=info;
-  document.getElementById('n2-obs').value='';
-  document.getElementById('modal-n2').classList.add('open');
-}
-
-async function confirmarEnvioN2(){
-  var sols=(await getSols());
-  var idx=sols.findIndex(function(x){return x.id===solAtualId;});if(idx<0)return;
-  var s=sols[idx];
-
-  var n2s=(await getN2s());
-  var n2=n2s.find(function(n){return n.setor===s.setor;});
-  if(!n2){toast('Cadastre um N2 para o setor "'+s.setor+'" antes de encaminhar.','err');return;}
-
-  var obs=(document.getElementById('n2-obs').value||'').trim();
-  sols[idx].status='com_n2';
-  sols[idx].n2Nome=n2.nome;
-  sols[idx].n2Email=n2.email;
-  sols[idx].historico=s.historico||[];
-  sols[idx].historico.push({dt:new Date().toISOString(),acao:'ENCAMINHADO_N2',por:'RH',obs:'N2: '+n2.nome+(obs?' | '+obs:'')});
-  await saveSols(sols);
-
-  // Enviar e-mail ao N2
-  var emailOk = await enviarEmailN2(s, n2);
-  closeModal('modal-n2');
-  toast(emailOk ? 'E-mail enviado para '+n2.nome+'!' : 'Encaminhado (e-mail pode ter falhado).', emailOk?'ok':'');
-  await renderLista();
-}
-
-// ── Reprovar ──
-async function openReprovar(id,modo){
-  solAtualId=id;
-  repModo=modo||'rh';
-  document.getElementById('rep-title').textContent=repModo==='n2'?'Reprovar (N2)':'Reprovar Solicitação';
-  document.getElementById('rep-justificativa').value='';
-  document.getElementById('modal-reprovar').classList.add('open');
-}
-
-async function confirmarReprovacao(){
-  var just=(document.getElementById('rep-justificativa').value||'').trim();
-  if(!just){toast('Informe a justificativa.','err');return;}
-  var sols=(await getSols());
-  var idx=sols.findIndex(function(x){return x.id===solAtualId;});if(idx<0)return;
-  var novoStatus=repModo==='n2'?'reprovado_n2':'reprovado';
-  sols[idx].status=novoStatus;
-  sols[idx].justReprovacao=just;
-  sols[idx].historico=sols[idx].historico||[];
-  sols[idx].historico.push({dt:new Date().toISOString(),acao:repModo==='n2'?'REPROVADO_N2':'REPROVADO_RH',por:repModo==='n2'?'N2':'RH',obs:just});
-  await saveSols(sols);
-  closeModal('modal-reprovar');
-  toast('Solicitação reprovada.','err');
-  await renderLista();
-}
-
-// ── Aprovar (criar vaga) ──
-async function openAprovar(id){
-  solAtualId=id;
-  var sel=document.getElementById('ap-perfil');
-  sel.innerHTML='<option value="">Selecione o perfil</option>';
-  (await getPerfis()).forEach(function(p){
-    var opt=document.createElement('option');
-    opt.value=p.id;opt.dataset.sla=p.sla;opt.textContent=p.nome+' ('+p.sla+'d)';
-    sel.appendChild(opt);
+// ════════════════════════════════════════════
+// ENCAMINHAR N2
+// ════════════════════════════════════════════
+function abrirN2(id) {
+  var s = solicitacoes.find(function(x) { return x.id === id; });
+  if (!s) return;
+  solAtual = s;
+  db.collection('sol_n2s').get().then(function(snap) {
+    var n2s = snap.docs.map(function(d) { return d.data(); });
+    var n2 = n2s.find(function(n) { return n.setor === s.setor; });
+    var info = n2
+      ? '<div class="notice notice-green"><i class="ti ti-user-check" style="font-size:14px;flex-shrink:0"></i><span>N2 para <strong>' + s.setor + '</strong>: <strong>' + n2.nome + '</strong> (' + n2.email + ')</span></div>'
+      : '<div class="notice notice-amber"><i class="ti ti-alert-triangle" style="font-size:14px;flex-shrink:0"></i><span>Nenhum N2 cadastrado para o setor <strong>' + (s.setor||'—') + '</strong>. Cadastre em Configurações.</span></div>';
+    document.getElementById('n2-info').innerHTML = info;
+    document.getElementById('n2-obs').value = '';
+    openModal('modal-n2');
   });
-  document.getElementById('ap-abertura').value=new Date().toISOString().split('T')[0];
-  document.getElementById('ap-obs').value='';
-  document.getElementById('modal-aprovar').classList.add('open');
 }
 
-async function gerarCodigoVaga(){
-  var vagas=(await getVagas()).filter(function(v){return !v.isBancoTalentos;});
-  var ano=new Date().getFullYear();
-  return 'RH-'+ano+'-'+(vagas.length+1).toString().padStart(3,'0');
-}
-
-async function confirmarAprovacao(){
-  var perfilId=document.getElementById('ap-perfil').value;
-  var abertura=document.getElementById('ap-abertura').value;
-  if(!perfilId){toast('Selecione o perfil de vaga.','err');return;}
-  if(!abertura){toast('Informe a data de abertura.','err');return;}
-
-  var sols=(await getSols());
-  var idx=sols.findIndex(function(x){return x.id===solAtualId;});if(idx<0)return;
-  var s=sols[idx];
-
-  var perfil=(await getPerfis()).find(function(p){return p.id===perfilId;});
-  var sla=perfil?perfil.sla:0;
-  var dtAb=new Date(abertura);
-  var prazo=new Date(dtAb.getTime()+sla*86400000).toISOString().split('T')[0];
-
-  var vagas=(await getVagas());
-  var vagaId='vg_'+Date.now();
-  var vagaCodigo=await gerarCodigoVaga();
-  var obsRH=(document.getElementById('ap-obs').value||'').trim();
-
-  vagas.push({
-    id:vagaId,codigo:vagaCodigo,criadoEm:new Date().toISOString(),
-    empresa:s.empresa,cargo:s.cargo,departamento:s.setor,
-    perfil:perfil?perfil.nome:'',sla:sla,abertura:abertura,prazo:prazo,
-    qtd:s.qtd||1,motivo:s.motivo,substituto:s.substituto||'',
-    obs:(s.obs?s.obs+' | ':'')+'VIA SOL. '+s.codigo+' ('+s.gestor+')',
-    status:'aberta',candidatos:[],solicitacaoId:s.id,solicitacaoCodigo:s.codigo,
+function confirmarN2() {
+  var s = solAtual;
+  if (!s) return;
+  db.collection('sol_n2s').get().then(function(snap) {
+    var n2s = snap.docs.map(function(d) { return d.data(); });
+    var n2 = n2s.find(function(n) { return n.setor === s.setor; });
+    if (!n2) { toast('Cadastre um N2 para o setor "' + s.setor + '" antes de encaminhar.', 'err'); return; }
+    var obs = document.getElementById('n2-obs').value.trim();
+    var hist = (s.historico || []).concat([{
+      dt: new Date().toISOString(), acao: 'ENCAMINHADO_N2', por: 'RH',
+      obs: 'N2: ' + n2.nome + (obs ? ' | ' + obs : '')
+    }]);
+    db.collection('solicitacoes').doc(s.id).update({
+      status: 'com_n2', n2Nome: n2.nome, n2Email: n2.email,
+      historico: hist, atualizadoEm: new Date().toISOString()
+    }).then(function() {
+      enviarEmailN2(s, n2).then(function(ok) {
+        closeModal('modal-n2');
+        toast(ok ? 'E-mail enviado para ' + n2.nome + '!' : 'Encaminhado (e-mail falhou, use Reenviar)', ok ? 'ok' : '');
+      });
+    }).catch(function(e) { toast('Erro: ' + e.message, 'err'); });
   });
-  await saveVagas(vagas);
-
-  sols[idx].status='aprovado';
-  sols[idx].vagaId=vagaId;
-  sols[idx].vagaCodigo=vagaCodigo;
-  sols[idx].historico=s.historico||[];
-  sols[idx].historico.push({dt:new Date().toISOString(),acao:'APROVADO_RH',por:'RH',obs:(obsRH||'Vaga '+vagaCodigo+' criada no R&S')});
-  await saveSols(sols);
-
-  closeModal('modal-aprovar');
-  toast('Aprovado! Vaga '+vagaCodigo+' criada no R&S.','ok');
-  await renderLista();
 }
 
-// ── Config: Setores ──
-async function addSetor(){
-  var nome=(document.getElementById('ns-nome').value||'').trim().toUpperCase();
-  if(!nome){toast('Informe o nome do setor.','err');return;}
-  var setores=(await getSetores());
-  if(setores.find(function(s){return s.nome===nome;})){toast('Setor já existe.','err');return;}
-  setores.push({id:'s_'+Date.now(),nome:nome});
-  await saveSetores(setores);
-  document.getElementById('ns-nome').value='';
-  await renderConfig();
-  sincSetoresNaGestora();
-  toast('Setor adicionado!','ok');
-}
-
-async function removerSetor(id){
-  if(!confirm('Remover este setor? Os N2s vinculados a ele também serão removidos.'))return;
-  var todosSetores=await getSetores();
-  var todosN2s=await getN2s();
-  var setorRemovido=todosSetores.find(function(s){return s.id===id;});
-  var setores=todosSetores.filter(function(s){return s.id!==id;});
-  var n2s=todosN2s.filter(function(n){
-    return !setorRemovido||n.setor!==setorRemovido.nome;
+function reenviarN2(id) {
+  var s = solicitacoes.find(function(x) { return x.id === id; });
+  if (!s) return;
+  db.collection('sol_n2s').get().then(function(snap) {
+    var n2s = snap.docs.map(function(d) { return d.data(); });
+    var n2 = n2s.find(function(n) { return n.setor === s.setor; });
+    if (!n2) { toast('Nenhum N2 para o setor "' + s.setor + '".', 'err'); return; }
+    enviarEmailN2(s, n2).then(function(ok) {
+      toast(ok ? 'E-mail reenviado para ' + n2.nome + '!' : 'Falha ao reenviar. Verifique o EmailJS.', ok ? 'ok' : 'err');
+    });
   });
-  await saveSetores(setores);
-  await saveN2s(n2s);
-  await renderConfig();
-  sincSetoresNaGestora();
-  toast('Setor removido.');
 }
 
-// ── Config: N2s ──
-async function addN2(){
-  var nome=(document.getElementById('nn-nome').value||'').trim();
-  var email=(document.getElementById('nn-email').value||'').trim();
-  var setor=document.getElementById('nn-setor').value;
-  if(!nome||!email||!setor){toast('Preencha nome, e-mail e setor.','err');return;}
-  if(!email.includes('@')){toast('E-mail inválido.','err');return;}
-  var n2s=(await getN2s());
-  n2s.push({id:'n2_'+Date.now(),nome:nome,email:email,setor:setor});
-  await saveN2s(n2s);
-  document.getElementById('nn-nome').value='';
-  document.getElementById('nn-email').value='';
-  document.getElementById('nn-setor').value='';
-  await renderConfig();
-  toast('N2 adicionado!','ok');
+function enviarEmailN2(sol, n2) {
+  var baseUrl = gestorUrl().replace('nova-gestor.html', '');
+  var link = baseUrl + 'nova-n2.html?sol=' + sol.id;
+  return emailjs.send(EJ_SVC, EJ_N2, {
+    to_email:     n2.email,
+    name:         n2.nome,
+    message:      'Nova solicitação de vaga aguardando sua aprovação.',
+    n2_nome:      n2.nome,
+    gestor:       sol.gestor,
+    cargo:        sol.cargo,
+    departamento: sol.setor,
+    motivo:       sol.motivo,
+    escala:       sol.escala,
+    referencia:   sol.codigo,
+    requisitos:   sol.requisitos || '—',
+    link_n2:      link,
+  }).then(function() { return true; }).catch(function(e) { console.warn('[EmailJS N2]', e); return false; });
 }
 
-async function removerN2(id){
-  if(!confirm('Remover este N2?'))return;
-  await saveN2s((await getN2s()).filter(function(n){return n.id!==id;}));
-  await renderConfig();
-  toast('N2 removido.');
+// ════════════════════════════════════════════
+// REPROVAR
+// ════════════════════════════════════════════
+function abrirRep(id, modo) {
+  solAtual = solicitacoes.find(function(x) { return x.id === id; });
+  repModo = modo || 'rh';
+  document.getElementById('rep-title').textContent = repModo === 'n2' ? 'Reprovar (N2)' : 'Reprovar Solicitação';
+  document.getElementById('rep-just').value = '';
+  openModal('modal-rep');
 }
 
-async function renderConfig(){
-  var setores=(await getSetores());
-  var n2s=(await getN2s());
+function confirmarRep() {
+  var just = document.getElementById('rep-just').value.trim();
+  if (!just) { toast('Informe a justificativa.', 'err'); return; }
+  var s = solAtual;
+  var novoStatus = repModo === 'n2' ? 'reprovado_n2' : 'reprovado';
+  var hist = (s.historico || []).concat([{
+    dt: new Date().toISOString(),
+    acao: repModo === 'n2' ? 'REPROVADO_N2' : 'REPROVADO_RH',
+    por: repModo === 'n2' ? 'N2' : 'RH', obs: just
+  }]);
+  db.collection('solicitacoes').doc(s.id).update({
+    status: novoStatus, justReprovacao: just,
+    historico: hist, atualizadoEm: new Date().toISOString()
+  }).then(function() {
+    closeModal('modal-rep');
+    toast('Reprovado.', 'err');
+  }).catch(function(e) { toast('Erro: ' + e.message, 'err'); });
+}
 
-  // Tabela setores
-  var tbody=document.getElementById('tabela-setores');
-  if(!setores.length){
-    tbody.innerHTML='<tr><td colspan="3" style="color:var(--text3);font-size:12px;padding:16px">Nenhum setor cadastrado.</td></tr>';
-  } else {
-    tbody.innerHTML=setores.map(function(s){
-      var vinculados=n2s.filter(function(n){return n.setor===s.nome;}).map(function(n){return n.nome;}).join(', ')||'<span style="color:var(--text3)">—</span>';
-      return '<tr>'
-        +'<td style="font-weight:700">'+s.nome+'</td>'
-        +'<td style="font-size:12px">'+vinculados+'</td>'
-        +'<td><button class="btn-icon" onclick="removerSetor(\''+s.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td>'
-        +'</tr>';
-    }).join('');
-  }
-
-  // Select de setores no form de N2
-  var selN2=document.getElementById('nn-setor');
-  var valAtual=selN2.value;
-  selN2.innerHTML='<option value="">Selecione</option>';
-  setores.forEach(function(s){
-    var opt=document.createElement('option');
-    opt.value=s.nome;opt.textContent=s.nome;
-    selN2.appendChild(opt);
+// ════════════════════════════════════════════
+// APROVAR → CRIAR VAGA
+// ════════════════════════════════════════════
+function abrirAprov(id) {
+  solAtual = solicitacoes.find(function(x) { return x.id === id; });
+  db.collection('perfis').get().then(function(snap) {
+    var perfis = snap.docs.map(function(d) { return d.data(); });
+    if (!perfis.length) perfis = PERFIS_DEFAULT;
+    var sel = document.getElementById('ap-perfil');
+    sel.innerHTML = '<option value="">Selecione</option>';
+    perfis.forEach(function(p) {
+      var o = document.createElement('option');
+      o.value = p.id; o.textContent = p.nome + ' (' + p.sla + 'd)'; o.dataset.sla = p.sla; o.dataset.nome = p.nome;
+      sel.appendChild(o);
+    });
   });
-  if(valAtual)selN2.value=valAtual;
-
-  // Tabela N2s
-  var tbody2=document.getElementById('tabela-n2s');
-  if(!n2s.length){
-    tbody2.innerHTML='<tr><td colspan="4" style="color:var(--text3);font-size:12px;padding:16px">Nenhum N2 cadastrado.</td></tr>';
-  } else {
-    tbody2.innerHTML=n2s.map(function(n){
-      return '<tr>'
-        +'<td style="font-weight:700">'+n.nome+'</td>'
-        +'<td style="font-size:12px">'+n.email+'</td>'
-        +'<td><span class="tag-empresa" style="background:var(--s2);color:var(--text2)">'+n.setor+'</span></td>'
-        +'<td><button class="btn-icon" onclick="removerN2(\''+n.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td>'
-        +'</tr>';
-    }).join('');
-  }
+  document.getElementById('ap-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('ap-obs').value = '';
+  openModal('modal-aprov');
 }
 
-// Sincroniza setores no localStorage para a página do gestor ler
-async function sincSetoresNaGestora(){
-  // nova-gestor.html lê nova_sol_setores_v1 — já está salvo acima
-  // nada extra necessário, mesmo domínio compartilha localStorage
+function confirmarAprov() {
+  var perfilId = document.getElementById('ap-perfil').value;
+  var data     = document.getElementById('ap-data').value;
+  if (!perfilId) { toast('Selecione o perfil.', 'err'); return; }
+  if (!data)     { toast('Informe a data de abertura.', 'err'); return; }
+
+  var sel = document.getElementById('ap-perfil');
+  var opt = sel.options[sel.selectedIndex];
+  var sla = parseInt(opt.dataset.sla) || 0;
+  var nomePerf = opt.dataset.nome || '';
+  var prazo = new Date(new Date(data).getTime() + sla * 86400000).toISOString().split('T')[0];
+  var s = solAtual;
+  var obsRH = document.getElementById('ap-obs').value.trim();
+
+  // Gerar código de vaga
+  db.collection('vagas').get().then(function(snap) {
+    var total = snap.docs.filter(function(d) { return !d.data().isBancoTalentos; }).length;
+    var codigo = 'RH-' + new Date().getFullYear() + '-' + String(total + 1).padStart(3, '0');
+    var vagaId = 'vg_' + Date.now();
+
+    var vagaData = {
+      id: vagaId, codigo: codigo, criadoEm: new Date().toISOString(),
+      empresa: s.empresa, cargo: s.cargo, departamento: s.setor,
+      perfil: nomePerf, sla: sla, abertura: data, prazo: prazo,
+      qtd: s.qtd || 1, motivo: s.motivo, substituto: s.substituto || '',
+      obs: (s.obs ? s.obs + ' | ' : '') + 'VIA SOL. ' + s.codigo + ' (' + s.gestor + ')',
+      status: 'aberta', candidatos: [],
+      solicitacaoId: s.id, solicitacaoCodigo: s.codigo,
+    };
+
+    db.collection('vagas').doc(vagaId).set(vagaData).then(function() {
+      var hist = (s.historico || []).concat([{
+        dt: new Date().toISOString(), acao: 'APROVADO_RH', por: 'RH',
+        obs: (obsRH || 'Vaga ' + codigo + ' criada no R&S')
+      }]);
+      return db.collection('solicitacoes').doc(s.id).update({
+        status: 'aprovado', vagaId: vagaId, vagaCodigo: codigo,
+        historico: hist, atualizadoEm: new Date().toISOString()
+      });
+    }).then(function() {
+      closeModal('modal-aprov');
+      toast('Aprovado! Vaga ' + codigo + ' criada no R&S.', 'ok');
+    }).catch(function(e) { toast('Erro: ' + e.message, 'err'); });
+  });
 }
 
-// ── Init ──
-async function init(){
-  // URL do gestor — detectar base corretamente mesmo dentro de iframe
-  var url=buildGestorUrl();
-  document.getElementById('link-url').textContent=url;
-  document.getElementById('btn-abrir-form').onclick=function(){window.open(url,'_blank');};
-  await renderLista();
+// ════════════════════════════════════════════
+// CONFIGURAÇÕES — SETORES
+// ════════════════════════════════════════════
+function addSetor() {
+  var nome = (document.getElementById('ns-nome').value || '').trim().toUpperCase();
+  if (!nome) { toast('Informe o nome do setor.', 'err'); return; }
+  db.collection('sol_setores').where('nome', '==', nome).get().then(function(snap) {
+    if (!snap.empty) { toast('Setor já existe.', 'err'); return; }
+    var id = 'set_' + Date.now();
+    db.collection('sol_setores').doc(id).set({id: id, nome: nome}).then(function() {
+      document.getElementById('ns-nome').value = '';
+      toast('Setor adicionado!', 'ok');
+      renderCfg();
+    });
+  });
 }
 
-(async()=>{await init();})();
+function removerSetor(id, nome) {
+  if (!confirm('Remover setor "' + nome + '"?')) return;
+  db.collection('sol_setores').doc(id).delete().then(function() {
+    toast('Setor removido.');
+    renderCfg();
+  });
+}
+
+// ════════════════════════════════════════════
+// CONFIGURAÇÕES — N2s
+// ════════════════════════════════════════════
+function addN2() {
+  var nome  = (document.getElementById('nn-nome').value  || '').trim();
+  var email = (document.getElementById('nn-email').value || '').trim();
+  var setor = document.getElementById('nn-setor').value;
+  if (!nome || !email || !setor) { toast('Preencha todos os campos.', 'err'); return; }
+  if (!email.includes('@'))      { toast('E-mail inválido.', 'err'); return; }
+  var id = 'n2_' + Date.now();
+  db.collection('sol_n2s').doc(id).set({id: id, nome: nome, email: email, setor: setor}).then(function() {
+    document.getElementById('nn-nome').value = '';
+    document.getElementById('nn-email').value = '';
+    document.getElementById('nn-setor').value = '';
+    toast('N2 adicionado!', 'ok');
+    renderCfg();
+  });
+}
+
+function removerN2(id, nome) {
+  if (!confirm('Remover N2 "' + nome + '"?')) return;
+  db.collection('sol_n2s').doc(id).delete().then(function() {
+    toast('N2 removido.');
+    renderCfg();
+  });
+}
+
+function renderCfg() {
+  Promise.all([
+    db.collection('sol_setores').get(),
+    db.collection('sol_n2s').get()
+  ]).then(function(results) {
+    var setores = results[0].docs.map(function(d) { return d.data(); });
+    var n2s     = results[1].docs.map(function(d) { return d.data(); });
+
+    // Tabela setores
+    var tbS = document.getElementById('tb-setores');
+    if (!setores.length) {
+      tbS.innerHTML = '<tr><td colspan="3" style="color:var(--text3);font-size:12px;padding:16px">Nenhum setor cadastrado.</td></tr>';
+    } else {
+      tbS.innerHTML = setores.map(function(s) {
+        var vin = n2s.filter(function(n) { return n.setor === s.nome; }).map(function(n) { return n.nome; }).join(', ') || '<span style="color:var(--text3)">—</span>';
+        return '<tr><td style="font-weight:700">' + s.nome + '</td><td style="font-size:12px">' + vin + '</td>'
+          + '<td><button class="btn-icon" onclick="removerSetor(\'' + s.id + '\',\'' + s.nome + '\')"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td></tr>';
+      }).join('');
+    }
+
+    // Select setores no form N2
+    var sel = document.getElementById('nn-setor');
+    var val = sel.value;
+    sel.innerHTML = '<option value="">Selecione</option>';
+    setores.forEach(function(s) {
+      var o = document.createElement('option'); o.value = s.nome; o.textContent = s.nome; sel.appendChild(o);
+    });
+    if (val) sel.value = val;
+
+    // Tabela N2s
+    var tbN = document.getElementById('tb-n2s');
+    if (!n2s.length) {
+      tbN.innerHTML = '<tr><td colspan="4" style="color:var(--text3);font-size:12px;padding:16px">Nenhum N2 cadastrado.</td></tr>';
+    } else {
+      tbN.innerHTML = n2s.map(function(n) {
+        return '<tr><td style="font-weight:700">' + n.nome + '</td><td style="font-size:12px">' + n.email + '</td>'
+          + '<td><span class="tag-emp" style="background:var(--s2);color:var(--text2)">' + n.setor + '</span></td>'
+          + '<td><button class="btn-icon" onclick="removerN2(\'' + n.id + '\',\'' + n.nome + '\')"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td></tr>';
+      }).join('');
+    }
+  });
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+function init() {
+  var url = gestorUrl();
+  document.getElementById('link-url').textContent = url;
+  document.getElementById('btn-form').onclick = function() { window.open(url, '_blank'); };
+  escutarSolicitacoes();
+}
+
+init();
 </script>
 </body>
 </html>

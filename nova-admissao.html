@@ -3,15 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nova. RH — Admissão</title>
+<title>Nova. RH — Admissão & Cadastro</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
 :root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;}
 .app{display:flex;min-height:100vh;}
+/* SIDEBAR */
 .sidebar{width:230px;background:var(--black);color:#fff;flex-shrink:0;display:flex;flex-direction:column;}
 .sidebar-logo{padding:28px 24px 22px;border-bottom:1px solid rgba(255,255,255,.08);}
 .logo-mark{display:flex;align-items:baseline;}
@@ -21,121 +24,133 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .sidebar-nav{padding:20px 0;flex:1;}
 .nav-s{padding:8px 24px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);}
 .nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.5);transition:all .15s;border-left:2px solid transparent;}
-.nav-item:hover{color:rgba(255,255,255,.85);background:rgba(255,255,255,.05);}
 .nav-item.active{color:var(--lime);border-left-color:var(--lime);background:rgba(215,255,61,.06);}
-.nav-item i{font-size:16px;}
 .nav-item.dis{opacity:.25;cursor:not-allowed;pointer-events:none;}
-.sidebar-footer{padding:18px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.25);font-weight:500;}
+.nav-item i{font-size:16px;}
+.sidebar-footer{padding:18px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.25);}
+/* MAIN */
 .main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.topbar-title{font-size:15px;font-weight:700;letter-spacing:-.2px;}
-.topbar-actions{display:flex;gap:8px;}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:58px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.topbar-tabs{display:flex;gap:2px;}
+.tab{padding:7px 14px;border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;color:var(--text2);border:none;background:transparent;font-family:'Inter',sans-serif;}
+.tab.active{background:var(--black);color:var(--lime);}
+.ml-auto{margin-left:auto;}
 .content{flex:1;padding:28px 32px;overflow-y:auto;}
-.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
 .btn:hover{background:var(--s2);}
 .btn-primary{background:var(--black);color:var(--lime);border-color:var(--black);}
 .btn-primary:hover{background:#1e2026;}
+.btn-success{background:#e8f8ef;color:#1a5c35;border-color:#a8d8b8;}
 .btn-danger{background:#fdeaea;color:#8b1c1c;border-color:#f5c6c6;}
+.btn-warn{background:#fef8ec;color:#7d4e00;border-color:#f0d080;}
 .btn-sm{padding:7px 12px;font-size:12px;}
-.btn i{font-size:15px;}
-.btn-icon{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r);border:none;background:transparent;cursor:pointer;color:var(--text2);transition:all .15s;}
-.btn-icon:hover{background:var(--s2);color:var(--text);}
-.card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:24px;margin-bottom:16px;}
-.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-.card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;}
-.card-title i{color:var(--gold);font-size:17px;}
-.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
-.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;position:relative;overflow:hidden;}
-.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--border);}
-.stat-card.s-lime::after{background:var(--lime);}
-.stat-card.s-gold::after{background:var(--gold);}
-.stat-card.s-red::after{background:#e05252;}
-.stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px;}
-.stat-value{font-size:30px;font-weight:900;color:var(--black);letter-spacing:-1px;line-height:1;}
-.stat-sub{font-size:11px;color:var(--text3);font-weight:500;margin-top:4px;}
+.btn-icon{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r);border:none;background:transparent;cursor:pointer;color:var(--text2);}
+.btn-icon:hover{background:var(--s2);}
+/* PROCESSO CARD */
+.proc-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;margin-bottom:10px;cursor:pointer;transition:all .15s;}
+.proc-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.06);}
+.proc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;}
+.proc-nome{font-size:15px;font-weight:800;}
+.proc-meta{font-size:12px;color:var(--text2);font-weight:500;margin-top:2px;}
+.proc-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;}
+.b-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
+.b-lime{background:#f0ffe0;color:#3a5c00;border:1px solid #c0e840;}
+.b-green{background:#e8f8ef;color:#1a5c35;border:1px solid #a8d8b8;}
+.b-red{background:#fdeaea;color:#8b1c1c;border:1px solid #f5c6c6;}
+.b-gray{background:#f0ede6;color:var(--text2);border:1px solid var(--border2);}
+.b-blue{background:#eef3fb;color:#1e3a6e;border:1px solid #b0c8e4;}
+.tag-emp{background:var(--black);color:var(--lime);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;}
+/* UPLOAD AREA */
+.upload-area{border:2px dashed var(--border2);border-radius:var(--rl);padding:40px;text-align:center;cursor:pointer;transition:all .15s;background:var(--white);}
+.upload-area:hover,.upload-area.drag{border-color:var(--black);background:var(--s2);}
+.upload-icon{font-size:40px;color:var(--text3);margin-bottom:12px;}
+.upload-title{font-size:14px;font-weight:700;margin-bottom:4px;}
+.upload-sub{font-size:12px;color:var(--text2);}
+/* PROGRESS BAR */
+.progress-bar{height:6px;background:var(--border);border-radius:3px;overflow:hidden;margin:8px 0;}
+.progress-fill{height:100%;background:var(--lime);border-radius:3px;transition:width .3s;}
+/* CHECKLIST */
+.checklist-section{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);margin-bottom:16px;overflow:hidden;}
+.checklist-section-header{padding:14px 18px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.checklist-section-title{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;}
+.checklist-section-count{font-size:11px;font-weight:700;color:var(--text2);}
+.checklist-body{padding:4px 0;}
+.check-item{display:flex;align-items:flex-start;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);transition:background .1s;}
+.check-item:last-child{border-bottom:none;}
+.check-item.ok{background:#f8fff4;}
+.check-item.alert{background:#fff8f8;}
+.check-item.ok .check-box{background:var(--lime);border-color:var(--lime);}
+.check-item.alert .check-box{background:#fdeaea;border-color:#f5c6c6;}
+.check-box{width:20px;height:20px;border-radius:4px;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:1px;transition:all .15s;}
+.check-box:hover{border-color:var(--black);}
+.check-box i{font-size:12px;}
+.check-text{flex:1;}
+.check-label{font-size:13px;font-weight:500;line-height:1.4;}
+.check-label.optional{color:var(--text2);}
+.check-value{font-size:11px;font-weight:700;margin-top:3px;}
+.check-value.ok{color:#1a5c35;}
+.check-value.alert{color:#8b1c1c;}
+.check-value.empty{color:var(--text3);}
+.check-alert-msg{font-size:11px;color:#8b1c1c;font-weight:600;margin-top:2px;display:flex;align-items:center;gap:4px;}
+/* FORM */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-grid-3{grid-template-columns:1fr 1fr 1fr;}
 .form-group{display:flex;flex-direction:column;gap:5px;}
 .form-group.full{grid-column:1/-1;}
 .form-label{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;}
-.form-label .req{color:#c0392b;margin-left:2px;}
-.form-input,.form-select{padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;transition:border-color .15s;}
+.form-input,.form-select,.form-textarea{padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;width:100%;}
 .form-input:focus,.form-select:focus{border-color:var(--black);}
-.form-hint{font-size:11px;color:var(--text3);}
-.form-divider{grid-column:1/-1;border:none;border-top:1px solid var(--border);margin:6px 0;}
-.form-section-title{grid-column:1/-1;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);padding-top:4px;}
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(14,15,18,.55);z-index:100;align-items:center;justify-content:center;}
-.modal-overlay.open{display:flex;}
-.modal{background:var(--white);border-radius:var(--rl);width:700px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;}
-.modal-header{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.modal-title{font-size:15px;font-weight:800;letter-spacing:-.2px;}
-.modal-body{padding:24px;overflow-y:auto;}
-.modal-footer{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;}
-.badge-lime{background:#f0ffe0;color:#3a5c00;border:1px solid #c0e840;}
-.badge-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
-.badge-gray{background:#f0ede6;color:var(--text2);border:1px solid var(--border2);}
-.badge-red{background:#fdeaea;color:#8b1c1c;border:1px solid #f5c6c6;}
-.badge-empresa{background:var(--black);color:var(--lime);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;}
-.notice{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:var(--r);font-size:12px;font-weight:500;margin-bottom:14px;}
-.notice i{font-size:15px;flex-shrink:0;margin-top:1px;}
-.notice-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
-.notice-blue{background:#eef3fb;color:#1e3a6e;border:1px solid #b0c8e4;}
-.notice-lime{background:#f6ffe0;color:#3a5000;border:1px solid #c8e840;}
-/* LISTA DE PROCESSOS */
-.proc-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:16px 20px;margin-bottom:10px;cursor:pointer;transition:all .15s;}
-.proc-card:hover{background:var(--s2);}
-.proc-card.concluido{opacity:.6;}
-.proc-top{display:flex;align-items:flex-start;justify-content:space-between;}
-.proc-nome{font-size:15px;font-weight:800;letter-spacing:-.2px;}
-.proc-meta{font-size:12px;color:var(--text2);font-weight:500;margin-top:2px;}
-.proc-footer{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;}
-/* PROGRESS BAR */
-.progress-wrap{height:6px;background:var(--border);border-radius:3px;overflow:hidden;flex:1;min-width:80px;}
-.progress-fill{height:100%;border-radius:3px;background:var(--lime);transition:width .3s;}
-/* CHECKLIST */
-.section-block{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);margin-bottom:12px;overflow:hidden;}
-.section-header{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;}
-.section-header:hover{background:var(--s2);}
-.section-title{font-size:13px;font-weight:800;display:flex;align-items:center;gap:8px;}
-.section-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
-.section-prog{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text2);}
-.section-body{padding:0 18px 14px;}
-.ck-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
-.ck-item:last-child{border-bottom:none;}
-.ck-item.done .ck-text{text-decoration:line-through;color:var(--text3);}
-.ck-check{width:18px;height:18px;accent-color:var(--black);cursor:pointer;flex-shrink:0;margin-top:1px;}
-.ck-text{flex:1;font-size:13px;font-weight:500;line-height:1.4;}
-.ck-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px;}
-.ck-date{font-size:11px;color:var(--text3);font-weight:500;}
-.ck-expand{margin-top:6px;display:none;gap:8px;flex-wrap:wrap;align-items:center;}
-.ck-expand.open{display:flex;}
-.ck-obs-input{flex:1;min-width:160px;padding:6px 9px;border:1px solid var(--border2);border-radius:var(--r);font-size:12px;font-family:'Inter',sans-serif;outline:none;}
-.ck-obs-input:focus{border-color:var(--black);}
-/* SEARCH */
-.search-bar{display:flex;gap:8px;margin-bottom:16px;align-items:center;flex-wrap:wrap;}
-.search-wrap{position:relative;flex:1;min-width:200px;}
-.search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;pointer-events:none;}
-.search-input{width:100%;padding:9px 11px 9px 32px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;}
-.search-input:focus{border-color:var(--black);}
+.form-input.alert-field{border-color:#e05252;background:#fff8f8;}
+.form-section{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);grid-column:1/-1;padding-top:8px;border-top:1px solid var(--border);margin-top:4px;}
+.form-section:first-child{border-top:none;margin-top:0;padding-top:0;}
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(14,15,18,.55);z-index:100;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--rl);width:780px;max-width:97vw;max-height:94vh;display:flex;flex-direction:column;}
+.modal.lg{width:900px;}
+.modal.sm{width:520px;}
+.modal-h{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.modal-title{font-size:15px;font-weight:800;}
+.modal-b{padding:24px;overflow-y:auto;flex:1;}
+.modal-f{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;}
+/* CONFIG */
+.cfg-section{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:16px;}
+.cfg-title{font-size:13px;font-weight:800;margin-bottom:4px;}
+.cfg-sub{font-size:12px;color:var(--text2);margin-bottom:16px;}
+.cfg-table{width:100%;border-collapse:collapse;}
+.cfg-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
+.cfg-table td{font-size:13px;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.cfg-table tr:last-child td{border-bottom:none;}
+.fi{padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;width:100%;}
+.fi:focus{border-color:var(--black);}
+/* EMPTY */
 .empty{text-align:center;padding:50px 20px;color:var(--text2);}
 .empty i{font-size:40px;color:var(--text3);display:block;margin-bottom:10px;}
-.empty p{font-size:13px;font-weight:500;}
-/* HEADER DO CHECKLIST ABERTO */
-.proc-header-bar{background:var(--black);color:var(--white);border-radius:var(--rl);padding:20px 24px;margin-bottom:20px;}
-.proc-header-nome{font-size:18px;font-weight:900;letter-spacing:-.3px;color:var(--cream);}
-.proc-header-meta{font-size:12px;color:rgba(242,238,229,.6);margin-top:4px;font-weight:500;}
-.proc-header-bottom{display:flex;align-items:center;gap:12px;margin-top:14px;}
-.proc-header-pct{font-size:28px;font-weight:900;color:var(--lime);letter-spacing:-1px;}
-/* ITEM MANAGEMENT */
-.item-row{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--s2);border-radius:var(--r);margin-bottom:6px;border:1px solid var(--border);}
-.item-row-text{flex:1;font-size:13px;font-weight:500;}
-.item-row-sec{font-size:10px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:4px;}
-.checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;}
-.checkbox-row input{width:15px;height:15px;cursor:pointer;accent-color:var(--black);}
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--black);color:var(--cream);padding:12px 18px;border-radius:var(--r);font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.err{background:#8b1c1c;}
+.toast.ok{background:#1a5c35;}
+.toast.warn{background:#7d4e00;}
+/* EXPORTAÇÕES */
+.export-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.export-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:20px;text-align:center;}
+.export-icon{font-size:32px;margin-bottom:10px;}
+.export-name{font-size:13px;font-weight:800;margin-bottom:4px;}
+.export-sub{font-size:11px;color:var(--text2);margin-bottom:14px;}
+/* STATS */
+.stats-row{display:flex;gap:12px;margin-bottom:24px;}
+.stat{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:14px 18px;flex:1;position:relative;overflow:hidden;}
+.stat::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.stat.amber::after{background:var(--gold);}
+.stat.lime::after{background:var(--lime);}
+.stat.red::after{background:#e05252;}
+.stat.black::after{background:var(--black);}
+.stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:6px;}
+.stat-value{font-size:26px;font-weight:900;letter-spacing:-1px;line-height:1;}
 </style>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-db.js"></script>
 </head>
 <body>
 <div class="app">
@@ -147,715 +162,989 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
     <nav class="sidebar-nav">
       <div class="nav-s">Módulos</div>
       <div class="nav-item dis"><i class="ti ti-user-search"></i> R&amp;S</div>
-      <div class="nav-item dis"><i class="ti ti-users"></i> Cadastro</div>
       <div class="nav-item active"><i class="ti ti-file-check"></i> Admissão</div>
       <div class="nav-item dis"><i class="ti ti-clock"></i> Experiência</div>
       <div class="nav-item dis"><i class="ti ti-notebook"></i> Dossiê</div>
       <div class="nav-item dis"><i class="ti ti-file-minus"></i> Rescisão</div>
+      <div class="nav-item dis"><i class="ti ti-send"></i> Solicitações</div>
     </nav>
     <div class="sidebar-footer">Módulo 3 · Admissão</div>
   </aside>
 
   <div class="main">
     <div class="topbar">
-      <span class="topbar-title" id="topbar-title">Processos de Admissão</span>
-      <div class="topbar-actions" id="topbar-actions">
-        <button class="btn btn-sm" onclick="openGerenciarItens()"><i class="ti ti-settings"></i> Gerenciar Itens</button>
-        <button class="btn btn-primary btn-sm" onclick="openNovoProcesso()"><i class="ti ti-plus"></i> Novo Processo</button>
+      <div class="topbar-tabs">
+        <button class="tab active" id="tab-proc" onclick="showTab('proc')">Processos</button>
+        <button class="tab" id="tab-cfg" onclick="showTab('cfg')">Configurações</button>
+      </div>
+      <div class="ml-auto" style="display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="openNovoProcesso()"><i class="ti ti-upload"></i> Upload FO1029</button>
       </div>
     </div>
-    <div class="content" id="content">
 
-      <!-- VIEW: LISTA -->
-      <div id="view-lista">
-        <div class="stats-grid">
-          <div class="stat-card s-lime"><div class="stat-label">Em andamento</div><div class="stat-value" id="stat-andamento">0</div><div class="stat-sub">processos</div></div>
-          <div class="stat-card s-gold"><div class="stat-label">Concluídos</div><div class="stat-value" id="stat-concluidos">0</div><div class="stat-sub">este mês</div></div>
-          <div class="stat-card s-black"><div class="stat-label">Total</div><div class="stat-value" id="stat-total">0</div><div class="stat-sub">processos abertos</div></div>
-          <div class="stat-card s-red" style="cursor:pointer" onclick="filtrarPendentes()" title="Clique para ver os pendentes">
-            <div class="stat-label">Aguardando admissão</div>
-            <div class="stat-value" id="stat-pendentes">0</div>
-            <div class="stat-sub">integração sem processo</div>
+    <!-- ABA PROCESSOS -->
+    <div class="content" id="view-proc">
+      <div class="stats-row">
+        <div class="stat amber"><div class="stat-label">Em andamento</div><div class="stat-value" id="st-andamento">0</div></div>
+        <div class="stat red"><div class="stat-label">Com alertas</div><div class="stat-value" id="st-alertas">0</div></div>
+        <div class="stat lime"><div class="stat-label">Concluídos</div><div class="stat-value" id="st-concluidos">0</div></div>
+        <div class="stat black"><div class="stat-label">Total</div><div class="stat-value" id="st-total">0</div></div>
+      </div>
+      <div id="lista-processos"></div>
+    </div>
+
+    <!-- ABA CONFIGURAÇÕES -->
+    <div class="content" id="view-cfg" style="display:none">
+
+      <!-- Perfis -->
+      <div class="cfg-section">
+        <div class="cfg-title">Perfis de Admissão</div>
+        <div class="cfg-sub">Defina os perfis. Os itens do checklist podem ser vinculados a perfis específicos.</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <input class="fi" style="max-width:250px" type="text" id="np-nome" placeholder="Nome do perfil (ex: MOTORISTA)">
+          <button class="btn btn-primary" onclick="addPerfil()"><i class="ti ti-plus"></i> Adicionar</button>
+        </div>
+        <table class="cfg-table"><thead><tr><th>Perfil</th><th style="width:50px"></th></tr></thead>
+        <tbody id="tb-perfis"></tbody></table>
+      </div>
+
+      <!-- Regras de validação -->
+      <div class="cfg-section">
+        <div class="cfg-title">Regras de Validação por Perfil</div>
+        <div class="cfg-sub">Define quais valores são esperados para cada campo do FO1029, por perfil. Se o valor vier diferente, aparece um alerta vermelho.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:14px;align-items:end;">
+          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Perfil</label>
+            <select class="fi" id="rv-perfil"><option value="">Selecione</option></select></div>
+          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Campo</label>
+            <select class="fi" id="rv-campo">
+              <option value="">Selecione</option>
+              <option value="sindicato">Sindicato</option>
+              <option value="cargo">Cargo</option>
+              <option value="empresa">Empresa</option>
+              <option value="filial">Filial</option>
+              <option value="estrutura">Estrutura</option>
+              <option value="tipo">Tipo</option>
+              <option value="grauInstrucao">Grau Instrução</option>
+            </select></div>
+          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Valor Esperado</label>
+            <input class="fi" type="text" id="rv-valor" placeholder="Ex: SIND. DOS MOTORISTAS"></div>
+          <button class="btn btn-primary" style="height:38px" onclick="addRegra()"><i class="ti ti-plus"></i> Adicionar</button>
+        </div>
+        <table class="cfg-table"><thead><tr><th>Perfil</th><th>Campo</th><th>Valor Esperado</th><th style="width:50px"></th></tr></thead>
+        <tbody id="tb-regras"></tbody></table>
+      </div>
+
+      <!-- Itens do checklist -->
+      <div class="cfg-section">
+        <div class="cfg-title">Itens do Checklist</div>
+        <div class="cfg-sub">Gerencie os itens do checklist de admissão. Itens podem ser vinculados a perfis específicos (deixe em branco para todos).</div>
+        <div style="display:grid;grid-template-columns:auto 1fr 1fr auto auto;gap:8px;margin-bottom:14px;align-items:end;">
+          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Seção</label>
+            <select class="fi" id="ni-secao" style="width:130px">
+              <option value="documentos">Documentos</option>
+              <option value="cadastro">Cadastro</option>
+              <option value="integracao">Integração</option>
+            </select></div>
+          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Descrição do Item</label>
+            <input class="fi" type="text" id="ni-texto" placeholder="Descrição do item do checklist"></div>
+          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Perfis (vírgula)</label>
+            <input class="fi" type="text" id="ni-perfis" placeholder="Todos (deixe vazio)"></div>
+          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Campo FO1029</label>
+            <select class="fi" id="ni-campo" style="width:160px">
+              <option value="">Nenhum (manual)</option>
+            </select></div>
+          <button class="btn btn-primary" style="height:38px" onclick="addItem()"><i class="ti ti-plus"></i> Adicionar</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px;">
+          <select class="fi" id="fi-secao-cfg" onchange="renderItensCfg()" style="width:160px">
+            <option value="">Todas as seções</option>
+            <option value="documentos">Documentos</option>
+            <option value="cadastro">Cadastro</option>
+            <option value="integracao">Integração</option>
+          </select>
+        </div>
+        <table class="cfg-table"><thead><tr><th>Seção</th><th>Descrição</th><th>Perfis</th><th>Campo Auto</th><th style="width:50px"></th></tr></thead>
+        <tbody id="tb-itens"></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NOVO PROCESSO (Upload FO1029) -->
+<div class="overlay" id="modal-upload">
+  <div class="modal sm">
+    <div class="modal-h"><span class="modal-title">Upload FO1029</span><button class="btn-icon" onclick="closeModal('modal-upload')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div class="upload-area" id="upload-area" onclick="document.getElementById('fi-xlsx').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="handleDrop(event)">
+        <div class="upload-icon"><i class="ti ti-file-spreadsheet"></i></div>
+        <div class="upload-title">Clique ou arraste o arquivo FO1029</div>
+        <div class="upload-sub">Planilha .xlsx gerada pelo MIX</div>
+      </div>
+      <input type="file" id="fi-xlsx" accept=".xlsx,.xls" style="display:none" onchange="processarFO1029(this.files[0])">
+      <div id="upload-status" style="margin-top:12px;font-size:13px;color:var(--text2);display:none"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-upload')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROCESSO (Cadastro + Checklist) -->
+<div class="overlay" id="modal-proc">
+  <div class="modal lg">
+    <div class="modal-h">
+      <div>
+        <div class="modal-title" id="mp-title">Processo de Admissão</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px" id="mp-sub"></div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-sm" id="btn-exportar-proc" onclick="abrirExportacoes()" style="display:none"><i class="ti ti-download"></i> Exportar</button>
+        <button class="btn-icon" onclick="closeModal('modal-proc')"><i class="ti ti-x"></i></button>
+      </div>
+    </div>
+    <div class="modal-b">
+      <!-- Tabs internas -->
+      <div style="display:flex;gap:2px;margin-bottom:20px;background:var(--s2);border-radius:var(--r);padding:3px;width:fit-content">
+        <button class="tab active" id="ptab-dados" onclick="showProcTab('dados')" style="font-size:12px">Dados do Funcionário</button>
+        <button class="tab" id="ptab-check" onclick="showProcTab('check')" style="font-size:12px">Checklist</button>
+        <button class="tab" id="ptab-export" onclick="showProcTab('export')" style="font-size:12px">Exportações</button>
+      </div>
+
+      <!-- TAB DADOS -->
+      <div id="ptab-view-dados">
+        <div style="background:#eef3fb;border:1px solid #b0c8e4;border-radius:var(--r);padding:10px 14px;margin-bottom:18px;font-size:12px;color:#1e3a6e;font-weight:500;">
+          <i class="ti ti-info-circle" style="margin-right:6px"></i>
+          Dados importados do FO1029. Confira campo a campo e edite se necessário. Campos em vermelho têm divergência com a regra do perfil.
+        </div>
+        <div class="form-grid" id="form-dados"></div>
+      </div>
+
+      <!-- TAB CHECKLIST -->
+      <div id="ptab-view-check" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <div>
+            <div style="font-size:13px;font-weight:700" id="ck-progress-label">0/0 concluídos</div>
+            <div class="progress-bar" style="width:300px"><div class="progress-fill" id="ck-progress-bar" style="width:0%"></div></div>
+          </div>
+          <div style="display:flex;gap:6px">
+            <span class="badge b-red" id="ck-alertas-badge" style="display:none">0 alertas</span>
+            <span class="badge b-amber" id="ck-pendentes-badge">0 pendentes</span>
           </div>
         </div>
-        <div class="search-bar">
-          <div class="search-wrap"><i class="ti ti-search"></i><input class="search-input" type="text" id="search" placeholder="Buscar por nome ou empresa..." oninput="renderLista()"></div>
-          <select class="form-select" id="filter-status" onchange="renderLista()" style="width:160px">
-            <option value="">Todos</option>
-            <option value="andamento">Em andamento</option>
-            <option value="concluido">Concluídos</option>
-          </select>
-          <select class="form-select" id="filter-empresa" onchange="renderLista()" style="width:190px">
-            <option value="">Todas as empresas</option>
-            <option>Raguife Matriz</option><option>Raguife Bom Despacho</option>
-            <option>Neves Queiroz</option><option>Distribuidora</option>
-            <option>Haras Ambar Amaral</option><option>Holding</option><option>Mb Proni</option>
-          </select>
-        </div>
-        <div id="lista-processos"></div>
+        <div id="checklist-container"></div>
       </div>
 
-      <!-- VIEW: CHECKLIST -->
-      <div id="view-checklist" style="display:none"></div>
-
+      <!-- TAB EXPORTAÇÕES -->
+      <div id="ptab-view-export" style="display:none">
+        <div class="export-grid">
+          <div class="export-card">
+            <div class="export-icon">🏦</div>
+            <div class="export-name">Sicredi</div>
+            <div class="export-sub">Planilha de cadastro bancário<br>Formato CSV (;)</div>
+            <button class="btn btn-primary" style="width:100%" onclick="gerarSicredi()"><i class="ti ti-download"></i> Gerar CSV</button>
+          </div>
+          <div class="export-card">
+            <div class="export-icon">💊</div>
+            <div class="export-name">EVA Benefícios</div>
+            <div class="export-sub">Cadastro no sistema de benefícios<br>Formato CSV</div>
+            <button class="btn btn-primary" style="width:100%" onclick="gerarEVA()"><i class="ti ti-download"></i> Gerar CSV</button>
+          </div>
+          <div class="export-card">
+            <div class="export-icon">💊</div>
+            <div class="export-name">EVA Farmácia</div>
+            <div class="export-sub">Solicitação de limite farmácia<br>Formato XLSX</div>
+            <button class="btn btn-primary" style="width:100%" onclick="gerarEVAFarmacia()"><i class="ti ti-download"></i> Gerar XLSX</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-danger btn-sm" onclick="excluirProcesso()" style="margin-right:auto"><i class="ti ti-trash"></i> Excluir</button>
+      <button class="btn" onclick="closeModal('modal-proc')">Fechar</button>
+      <button class="btn btn-primary" onclick="salvarProcesso()"><i class="ti ti-device-floppy"></i> Salvar</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: NOVO PROCESSO -->
-<div class="modal-overlay" id="modal-novo">
-  <div class="modal">
-    <div class="modal-header"><span class="modal-title">Novo Processo de Admissão</span><button class="btn-icon" onclick="closeModal('modal-novo')"><i class="ti ti-x"></i></button></div>
-    <div class="modal-body">
-      <div class="notice notice-blue"><i class="ti ti-info-circle"></i><span>Selecione o funcionário cadastrado ou preencha manualmente se ainda não estiver no sistema.</span></div>
-      <div class="form-grid">
-        <div class="form-section-title">Funcionário</div>
-        <div class="form-group full">
-          <label class="form-label">Buscar no Cadastro</label>
-          <select class="form-select" id="np-func" onchange="preencherFunc()">
-            <option value="">— Selecionar funcionário cadastrado —</option>
-          </select>
-        </div>
-        <div class="form-group full"><label class="form-label">Nome Completo <span class="req">*</span></label><input class="form-input" type="text" id="np-nome" placeholder="NOME DO FUNCIONÁRIO" style="text-transform:uppercase"></div>
-        <div class="form-group"><label class="form-label">Empresa <span class="req">*</span></label>
-          <select class="form-select" id="np-empresa">
-            <option value="">Selecione</option>
-            <option>Raguife Matriz</option><option>Raguife Bom Despacho</option>
-            <option>Neves Queiroz</option><option>Distribuidora</option>
-            <option>Haras Ambar Amaral</option><option>Holding</option><option>Mb Proni</option>
-          </select>
-        </div>
-        <div class="form-group"><label class="form-label">Data de Admissão <span class="req">*</span></label><input class="form-input" type="date" id="np-admissao"></div>
-        <div class="form-group"><label class="form-label">Cargo</label><input class="form-input" type="text" id="np-cargo" placeholder="CARGO" style="text-transform:uppercase"></div>
-        <div class="form-group"><label class="form-label">Departamento</label><input class="form-input" type="text" id="np-depto" placeholder="DEPARTAMENTO" style="text-transform:uppercase"></div>
-        <hr class="form-divider">
-        <div class="form-section-title">Perfil do Checklist</div>
-        <div class="form-group full">
-          <label class="form-label">Perfil <span class="req">*</span></label>
-          <select class="form-select" id="np-perfil">
-            <option value="">Selecione o perfil</option>
-          </select>
-          <span class="form-hint">Define quais itens aparecerão no checklist</span>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeModal('modal-novo')">Cancelar</button>
-      <button class="btn btn-primary" onclick="criarProcesso()"><i class="ti ti-check"></i> Abrir Processo</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL: GERENCIAR ITENS -->
-<div class="modal-overlay" id="modal-itens">
-  <div class="modal" style="width:780px;max-width:97vw">
-    <div class="modal-header"><span class="modal-title">Gerenciar Itens e Perfis</span><button class="btn-icon" onclick="closeModal('modal-itens')"><i class="ti ti-x"></i></button></div>
-    <div class="modal-body">
-      <!-- PERFIS -->
-      <div style="margin-bottom:20px">
-        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:10px">Perfis</div>
-        <div id="lista-perfis-adm" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input class="form-input" type="text" id="novo-perfil-nome" placeholder="Nome do novo perfil" style="width:200px;text-transform:uppercase">
-          <button class="btn btn-sm btn-primary" onclick="addPerfil()"><i class="ti ti-plus"></i> Adicionar</button>
-        </div>
-      </div>
-      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
-      <!-- ITENS -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-        <div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3)">Itens do Checklist</div>
-        <select class="form-select" id="filtro-secao-itens" onchange="renderItensGerenciar()" style="width:200px">
-          <option value="">Todas as seções</option>
-          <option value="documentos">Documentação Admissional</option>
-          <option value="cadastro">Cadastro do Colaborador</option>
-          <option value="integracao">Integração</option>
-          <option value="pos">Pós-Admissão</option>
-        </select>
-      </div>
-      <div id="lista-itens-gerenciar"></div>
-      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
-      <div class="form-grid">
-        <div class="form-section-title">Novo Item</div>
-        <div class="form-group full"><label class="form-label">Descrição <span class="req">*</span></label><input class="form-input" type="text" id="ni-texto" placeholder="Descrição do item"></div>
-        <div class="form-group"><label class="form-label">Seção <span class="req">*</span></label>
-          <select class="form-select" id="ni-secao">
-            <option value="documentos">Documentação Admissional</option>
-            <option value="cadastro">Cadastro do Colaborador</option>
-            <option value="integracao">Integração</option>
-            <option value="pos">Pós-Admissão</option>
-          </select>
-        </div>
-        <div class="form-group"><label class="form-label">Condicional (perfil)</label>
-          <select class="form-select" id="ni-condicional" multiple style="height:80px">
-          </select>
-          <span class="form-hint">Deixe em branco para aparecer em todos os perfis</span>
-        </div>
-        <div class="form-group full">
-          <label class="checkbox-row"><input type="checkbox" id="ni-opcional"> Item opcional (não bloqueia conclusão)</label>
-        </div>
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn" onclick="closeModal('modal-itens')">Fechar</button>
-      <button class="btn btn-primary" onclick="addItem()"><i class="ti ti-plus"></i> Adicionar Item</button>
-    </div>
-  </div>
-</div>
+<div class="toast" id="toast"></div>
 
 <script>
-// ======== DATA LAYER ========
-const DB={processos:FDB.adm_processos,itens:FDB.adm_itens,perfis:FDB.adm_perfis,funcs:FDB.funcionarios};
-
-// ======== PERFIS DEFAULT ========
-const PERFIS_DEFAULT = [
-  {id:'geral',nome:'GERAL'},
-  {id:'motorista',nome:'MOTORISTA'},
-  {id:'adm',nome:'ADMINISTRATIVO'},
-  {id:'lider',nome:'LIDERANÇA'},
-  {id:'pcd',nome:'PCD'},
-];
-
-// ======== ITENS DEFAULT ========
-const ITENS_DEFAULT = [
-  // DOCUMENTAÇÃO ADMISSIONAL
-  {id:'d01',secao:'documentos',texto:'Certidão civil (nascimento / casamento / divórcio / viuvez)',condicional:[],opcional:false},
-  {id:'d02',secao:'documentos',texto:'CPF',condicional:[],opcional:false},
-  {id:'d03',secao:'documentos',texto:'RG',condicional:[],opcional:false},
-  {id:'d04',secao:'documentos',texto:'CNH (obrigatório para motoristas e operadores de empilhadeira)',condicional:['motorista'],opcional:false},
-  {id:'d05',secao:'documentos',texto:'Título Eleitoral',condicional:[],opcional:false},
-  {id:'d06',secao:'documentos',texto:'Comprovante de residência com CEP',condicional:[],opcional:false},
-  {id:'d07',secao:'documentos',texto:'Comprovante de matrícula escolar ou certificado de conclusão',condicional:[],opcional:false},
-  {id:'d08',secao:'documentos',texto:'Cartão do SUS',condicional:[],opcional:false},
-  {id:'d09',secao:'documentos',texto:'Certificado de Reservista (somente sexo masculino)',condicional:[],opcional:true},
-  {id:'d10',secao:'documentos',texto:'Registro profissional do órgão de classe (CREA, CRM, etc.)',condicional:[],opcional:true},
-  {id:'d11',secao:'documentos',texto:'Laudo médico com CID (somente PCD)',condicional:['pcd'],opcional:false},
-  {id:'d12',secao:'documentos',texto:'ASO recebido com status APTO',condicional:[],opcional:false},
-  {id:'d13',secao:'documentos',texto:'Avaliação Psicossocial realizada',condicional:[],opcional:false},
-  // CADASTRO DO COLABORADOR
-  {id:'c01',secao:'cadastro',texto:'E-mail de integração enviado até 12h do dia anterior (CC lideranças, SESMT, Almoxarifado, CQ)',condicional:[],opcional:false},
-  {id:'c02',secao:'cadastro',texto:'Chapa FU conferida e registrada corretamente (MIX)',condicional:[],opcional:false},
-  {id:'c03',secao:'cadastro',texto:'DAF preenchido e salvo (MIX)',condicional:[],opcional:false},
-  {id:'c04',secao:'cadastro',texto:'Colaborador incluído no COLAB (MIX)',condicional:[],opcional:false},
-  {id:'c05',secao:'cadastro',texto:'USU criado e validado (grupo, senha, ponto)',condicional:[],opcional:false},
-  {id:'c06',secao:'cadastro',texto:'FU cargo de confiança / gratificação lançada (se houver)',condicional:['lider','adm'],opcional:true},
-  {id:'c07',secao:'cadastro',texto:'FU dependentes cadastrados (se houver)',condicional:[],opcional:true},
-  {id:'c08',secao:'cadastro',texto:'FU e PE PCD: cota e tipo de deficiência registrados (se aplicável)',condicional:['pcd'],opcional:false},
-  {id:'c09',secao:'cadastro',texto:'Envio de evento admissional para o e-Social conferido (MESO)',condicional:[],opcional:false},
-  {id:'c10',secao:'cadastro',texto:'Ficha de Registro impressa',condicional:[],opcional:false},
-  {id:'c11',secao:'cadastro',texto:'Contrato de Trabalho impresso',condicional:[],opcional:false},
-  {id:'c12',secao:'cadastro',texto:'Termo de Consentimento LGPD impresso',condicional:[],opcional:false},
-  {id:'c13',secao:'cadastro',texto:'Contrato de Experiência impresso',condicional:[],opcional:false},
-  {id:'c14',secao:'cadastro',texto:'Acordo para Banco de Horas impresso',condicional:[],opcional:false},
-  {id:'c15',secao:'cadastro',texto:'Termo de Confidencialidade impresso',condicional:[],opcional:false},
-  {id:'c16',secao:'cadastro',texto:'Termo Proibido Fumar impresso',condicional:[],opcional:false},
-  {id:'c17',secao:'cadastro',texto:'Autorização de Desconto impressa',condicional:[],opcional:false},
-  {id:'c18',secao:'cadastro',texto:'Termo de Uso de Internet impresso',condicional:[],opcional:false},
-  {id:'c19',secao:'cadastro',texto:'Opção Vale Transporte impressa',condicional:[],opcional:false},
-  {id:'c20',secao:'cadastro',texto:'Termo de Uso de Celular impresso',condicional:['adm','lider'],opcional:true},
-  {id:'c21',secao:'cadastro',texto:'Termo Proibido Carona impresso',condicional:[],opcional:true},
-  {id:'c22',secao:'cadastro',texto:'Declaração de Trabalho Externo impressa',condicional:['motorista','adm'],opcional:true},
-  {id:'c23',secao:'cadastro',texto:'Declaração de IRRF impressa',condicional:[],opcional:true},
-  {id:'c24',secao:'cadastro',texto:'Autorização de Uso de Imagem impressa',condicional:[],opcional:false},
-  {id:'c25',secao:'cadastro',texto:'Termo ciência Política de Deslocamento e Prevenção de Acidentes de Trajeto impresso',condicional:[],opcional:false},
-  {id:'c26',secao:'cadastro',texto:'Termo BemSaúde impresso',condicional:[],opcional:false},
-  {id:'c27',secao:'cadastro',texto:'Autodeclaração Étnico-Racial impressa',condicional:[],opcional:false},
-  {id:'c28',secao:'cadastro',texto:'Termo do Plano Odontológico impresso',condicional:[],opcional:false},
-  {id:'c29',secao:'cadastro',texto:'Manual de Integração impresso',condicional:[],opcional:false},
-  {id:'c30',secao:'cadastro',texto:'Colaborador incluído no Exata (relógio / barreira)',condicional:[],opcional:false},
-  {id:'c31',secao:'cadastro',texto:'Cadastro realizado no Secullum',condicional:[],opcional:false},
-  {id:'c32',secao:'cadastro',texto:'Código de catraca impresso',condicional:[],opcional:false},
-  {id:'c33',secao:'cadastro',texto:'Eva Benefícios cadastrado corretamente',condicional:[],opcional:false},
-  {id:'c34',secao:'cadastro',texto:'Mediquo vinculado',condicional:[],opcional:false},
-  // INTEGRAÇÃO
-  {id:'i01',secao:'integracao',texto:'Integração realizada pelo RH',condicional:[],opcional:false},
-  {id:'i02',secao:'integracao',texto:'Integração realizada pela psicóloga organizacional / Ambulatório',condicional:[],opcional:false},
-  {id:'i03',secao:'integracao',texto:'Integração realizada pelo Controle de Qualidade',condicional:[],opcional:false},
-  {id:'i04',secao:'integracao',texto:'Integração realizada pela Segurança',condicional:[],opcional:false},
-  {id:'i05',secao:'integracao',texto:'Manual de Integração entregue',condicional:[],opcional:false},
-  {id:'i06',secao:'integracao',texto:'Kit de boas-vindas entregue',condicional:[],opcional:false},
-  {id:'i07',secao:'integracao',texto:'Pesquisa de satisfação preenchida',condicional:[],opcional:false},
-  {id:'i08',secao:'integracao',texto:'Cadastro facial: Catraca de Entrada, Catraca do Restaurante e Ponto Facial',condicional:[],opcional:false},
-  {id:'i09',secao:'integracao',texto:'Uniformes e EPIs entregues',condicional:[],opcional:false},
-  {id:'i10',secao:'integracao',texto:'Colaborador recepcionado pelo Multiplicador do setor',condicional:[],opcional:false},
-  // PÓS-ADMISSÃO
-  {id:'p01',secao:'pos',texto:'Limite EVA Farmácia solicitado',condicional:[],opcional:false},
-  {id:'p02',secao:'pos',texto:'E-mail enviado ao Sicredi para conta salário',condicional:[],opcional:false},
-  {id:'p03',secao:'pos',texto:'Pasta do colaborador criada conforme padrão',condicional:[],opcional:false},
-  {id:'p04',secao:'pos',texto:'Colaborador incluído no Dossiê de Funcionários',condicional:[],opcional:false},
-  {id:'p05',secao:'pos',texto:'Lista de Presença salva no Dossiê',condicional:[],opcional:false},
-  {id:'p06',secao:'pos',texto:'Colaborador incluído nos grupos de WhatsApp',condicional:[],opcional:false},
-];
-
-const SECOES = {
-  documentos:{label:'Documentação Admissional',icon:'ti-file-text',color:'#b0c8e4'},
-  cadastro:{label:'Cadastro do Colaborador',icon:'ti-user-check',color:'#9b72cf'},
-  integracao:{label:'Integração',icon:'ti-users',color:'#4caf80'},
-  pos:{label:'Pós-Admissão',icon:'ti-circle-check',color:'#d4a020'},
-};
-
-// ======== STATE ========
-let processoAtivoId = null;
-let secoesAbertas = {documentos:true, cadastro:true, integracao:true, pos:true};
-
-// ======== UTILS ========
-function fmtDate(d){if(!d)return'—';const[y,m,day]=d.split('T')[0].split('-');return`${day}/${m}/${y}`;}
-function today(){return new Date().toISOString().split('T')[0];}
-function sanitize(s){if(!s)return'';return s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9\s\-\/\.]/g,'');}
-function initUpper(){
-  document.querySelectorAll('input[style*="text-transform:uppercase"], input[style*="text-transform: uppercase"]').forEach(el=>{
-    if(el._upperBound) return;
-    el._upperBound=true;
-    el.addEventListener('input',function(){
-      const p=this.selectionStart;
-      this.value=sanitize(this.value);
-      try{this.setSelectionRange(p,p);}catch{}
-    });
+// ════════════════════════════════════════════
+// FIREBASE
+// ════════════════════════════════════════════
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey: "AIzaSyAhoLSoe7bRdDakJ6apJcnWMBL5RHmQtDI",
+    authDomain: "novarh-4fbc6.firebaseapp.com",
+    projectId: "novarh-4fbc6",
+    storageBucket: "novarh-4fbc6.firebasestorage.app",
+    messagingSenderId: "805399291743",
+    appId: "1:805399291743:web:ac13f2572f875c0ec1b8ea"
   });
 }
-function toast(msg,type='ok'){const t=document.createElement('div');const bg=type==='ok'?'#1a3a28':type==='err'?'#8b1c1c':'#0e0f12';const cl=type==='ok'?'#6ee8a0':type==='err'?'#fbd8d8':'#d7ff3d';t.style.cssText=`position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;z-index:9999;color:${cl};background:${bg};box-shadow:0 4px 20px rgba(0,0,0,.25)`;t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);}
+var db = firebase.firestore();
 
-async function getItensParaPerfil(perfilId) {
-  const todos = await DB.itens.getAll();
-  return todos.filter(it => !it.condicional || it.condicional.length === 0 || it.condicional.includes(perfilId));
+// ════════════════════════════════════════════
+// MAPEAMENTO FO1029
+// ════════════════════════════════════════════
+var FO_MAP = {
+  'Cód. Empresa':'codEmpresa','Empresa':'empresa','CNPJ Empresa':'cnpjEmpresa',
+  'Cód. Filial':'codFilial','Filial':'filial','CNPJ Filial':'cnpjFilial',
+  'Cód. Estrutura':'codEstrutura','Estrutura':'estrutura','Cód. Pessoa':'codPessoa',
+  'Matrícula':'matricula','Chapa':'chapa','Nome':'nome','Status':'status','Tipo':'tipo',
+  'Dt. Admissão':'admissao','Dt. Demissão':'demissao','Tipo Demissão':'tipoDemissao',
+  'Cód. Cargo':'codCargo','Cargo':'cargo','CBO':'cbo','Função':'funcao','Salário':'salario',
+  'Banco CC':'bancoCC','Agência CC':'agenciaCC','Conta CC':'contaCC','Tipo Conta':'tipoConta',
+  'Dt. Nascimento':'nascimento','Sexo':'sexo','Est. Civil':'estCivil',
+  'Naturalidade':'naturalidade','Nacionalidade':'nacionalidade','Grau Instrução':'grauInstrucao',
+  'CPF':'cpf','Identidade':'rg','Emissor Identidade':'rgEmissor','Dt Emiss. Identidade':'rgEmissao',
+  'Nro CTPS':'ctpsNro','Série CTPS':'ctpsSerie','Data CTPS':'ctpsData','UF CTPS':'ctpsUF',
+  'Título Eleitor':'tituloEleitor','Zona':'zona','Seção':'secaoEleitor',
+  'PIS-PASEP':'pis','Data PIS-PASEP':'pisDt','Reservista':'reservista',
+  'Nome Pai':'nomePai','Nome Mãe':'nomeMae','Sindicato':'sindicato',
+  'Endereço':'endereco','Tel. Celular':'telefone','Tel. Residencial':'telResid','E-mail':'email',
+};
+
+var FO_LABELS = {
+  codEmpresa:'Cód. Empresa',empresa:'Empresa',cnpjEmpresa:'CNPJ Empresa',
+  codFilial:'Cód. Filial',filial:'Filial',cnpjFilial:'CNPJ Filial',
+  codEstrutura:'Cód. Estrutura',estrutura:'Estrutura',codPessoa:'Cód. Pessoa',
+  matricula:'Matrícula',chapa:'Chapa',nome:'Nome',status:'Status',tipo:'Tipo',
+  admissao:'Dt. Admissão',demissao:'Dt. Demissão',tipoDemissao:'Tipo Demissão',
+  codCargo:'Cód. Cargo',cargo:'Cargo',cbo:'CBO',funcao:'Função',salario:'Salário',
+  bancoCC:'Banco CC',agenciaCC:'Agência CC',contaCC:'Conta CC',tipoConta:'Tipo Conta',
+  nascimento:'Dt. Nascimento',sexo:'Sexo',estCivil:'Est. Civil',
+  naturalidade:'Naturalidade',nacionalidade:'Nacionalidade',grauInstrucao:'Grau Instrução',
+  cpf:'CPF',rg:'Identidade',rgEmissor:'Emissor Identidade',rgEmissao:'Dt. Emissão RG',
+  ctpsNro:'Nro CTPS',ctpsSerie:'Série CTPS',ctpsData:'Data CTPS',ctpsUF:'UF CTPS',
+  tituloEleitor:'Título Eleitor',zona:'Zona',secaoEleitor:'Seção',
+  pis:'PIS-PASEP',pisDt:'Data PIS-PASEP',reservista:'Reservista',
+  nomePai:'Nome Pai',nomeMae:'Nome Mãe',sindicato:'Sindicato',
+  endereco:'Endereço',telefone:'Tel. Celular',telResid:'Tel. Residencial',email:'E-mail',
+};
+
+// Campos por seção do formulário
+var FORM_SECTIONS = [
+  {label:'Identificação', fields:['nome','cpf','nascimento','sexo','estCivil','naturalidade','nacionalidade']},
+  {label:'Documentos', fields:['rg','rgEmissor','rgEmissao','ctpsNro','ctpsSerie','ctpsData','ctpsUF','tituloEleitor','zona','secaoEleitor','pis','pisDt','reservista']},
+  {label:'Empresa', fields:['empresa','filial','estrutura','cargo','funcao','cbo','tipo','admissao','salario','sindicato']},
+  {label:'Dados Bancários', fields:['bancoCC','agenciaCC','contaCC','tipoConta']},
+  {label:'Família', fields:['nomePai','nomeMae']},
+  {label:'Contato', fields:['telefone','telResid','email','endereco']},
+  {label:'Referências', fields:['matricula','chapa','codPessoa','codCargo','grauInstrucao']},
+];
+
+// ════════════════════════════════════════════
+// ITENS PADRÃO DO CHECKLIST
+// ════════════════════════════════════════════
+var ITENS_DEFAULT = [
+  // Documentos — auto (campo FO1029)
+  {id:'d01',secao:'documentos',texto:'CPF',condicional:[],opcional:false,campoAuto:'cpf'},
+  {id:'d02',secao:'documentos',texto:'Identidade (RG)',condicional:[],opcional:false,campoAuto:'rg'},
+  {id:'d03',secao:'documentos',texto:'PIS-PASEP',condicional:[],opcional:false,campoAuto:'pis'},
+  {id:'d04',secao:'documentos',texto:'CTPS',condicional:[],opcional:false,campoAuto:'ctpsNro'},
+  {id:'d05',secao:'documentos',texto:'Título de Eleitor',condicional:[],opcional:false,campoAuto:'tituloEleitor'},
+  {id:'d06',secao:'documentos',texto:'Data de Nascimento',condicional:[],opcional:false,campoAuto:'nascimento'},
+  {id:'d07',secao:'documentos',texto:'Endereço completo',condicional:[],opcional:false,campoAuto:'endereco'},
+  {id:'d08',secao:'documentos',texto:'Telefone celular',condicional:[],opcional:false,campoAuto:'telefone'},
+  {id:'d09',secao:'documentos',texto:'Dados bancários (banco/agência/conta)',condicional:[],opcional:false,campoAuto:'bancoCC'},
+  {id:'d10',secao:'documentos',texto:'CNH (obrigatório para motoristas)',condicional:['motorista'],opcional:false,campoAuto:''},
+  {id:'d11',secao:'documentos',texto:'Laudo médico com CID (somente PCD)',condicional:['pcd'],opcional:false,campoAuto:''},
+  {id:'d12',secao:'documentos',texto:'Certidão civil (nascimento/casamento/divórcio/viuvez)',condicional:[],opcional:false,campoAuto:''},
+  {id:'d13',secao:'documentos',texto:'Comprovante de residência com CEP',condicional:[],opcional:false,campoAuto:''},
+  {id:'d14',secao:'documentos',texto:'ASO recebido com status APTO',condicional:[],opcional:false,campoAuto:''},
+  {id:'d15',secao:'documentos',texto:'Avaliação Psicossocial realizada',condicional:[],opcional:false,campoAuto:''},
+  {id:'d16',secao:'documentos',texto:'Certificado de Reservista (sexo masculino)',condicional:[],opcional:true,campoAuto:'reservista'},
+  // Cadastro — manual
+  {id:'c01',secao:'cadastro',texto:'E-mail de integração enviado até 12h do dia anterior',condicional:[],opcional:false,campoAuto:''},
+  {id:'c02',secao:'cadastro',texto:'Chapa FU conferida e registrada corretamente (MIX)',condicional:[],opcional:false,campoAuto:'chapa'},
+  {id:'c03',secao:'cadastro',texto:'DAF preenchido e salvo (MIX)',condicional:[],opcional:false,campoAuto:''},
+  {id:'c04',secao:'cadastro',texto:'Colaborador incluído no COLAB (MIX)',condicional:[],opcional:false,campoAuto:''},
+  {id:'c05',secao:'cadastro',texto:'USU criado e validado (grupo, senha, ponto)',condicional:[],opcional:false,campoAuto:''},
+  {id:'c06',secao:'cadastro',texto:'Envio de evento admissional para o e-Social conferido (MESO)',condicional:[],opcional:false,campoAuto:''},
+  {id:'c07',secao:'cadastro',texto:'Ficha de Registro impressa',condicional:[],opcional:false,campoAuto:''},
+  {id:'c08',secao:'cadastro',texto:'Contrato de Trabalho impresso',condicional:[],opcional:false,campoAuto:''},
+  {id:'c09',secao:'cadastro',texto:'Contrato de Experiência impresso',condicional:[],opcional:false,campoAuto:''},
+  {id:'c10',secao:'cadastro',texto:'Colaborador incluído no Exata (relógio/barreira)',condicional:[],opcional:false,campoAuto:''},
+  {id:'c11',secao:'cadastro',texto:'Cadastro realizado no Secullum',condicional:[],opcional:false,campoAuto:''},
+  {id:'c12',secao:'cadastro',texto:'Eva Benefícios cadastrado corretamente',condicional:[],opcional:false,campoAuto:''},
+  {id:'c13',secao:'cadastro',texto:'Mediquo vinculado',condicional:[],opcional:false,campoAuto:''},
+  {id:'c14',secao:'cadastro',texto:'Termo de Consentimento LGPD impresso',condicional:[],opcional:false,campoAuto:''},
+  {id:'c15',secao:'cadastro',texto:'Autorização de Uso de Imagem impressa',condicional:[],opcional:false,campoAuto:''},
+  {id:'c16',secao:'cadastro',texto:'FU cargo de confiança/gratificação lançada',condicional:['lideranca','adm'],opcional:true,campoAuto:''},
+  {id:'c17',secao:'cadastro',texto:'Declaração de Trabalho Externo impressa',condicional:['motorista','adm'],opcional:true,campoAuto:''},
+  // Integração
+  {id:'i01',secao:'integracao',texto:'Integração realizada pelo RH',condicional:[],opcional:false,campoAuto:''},
+  {id:'i02',secao:'integracao',texto:'Integração realizada pela psicóloga organizacional',condicional:[],opcional:false,campoAuto:''},
+  {id:'i03',secao:'integracao',texto:'Integração realizada pelo Controle de Qualidade',condicional:[],opcional:false,campoAuto:''},
+  {id:'i04',secao:'integracao',texto:'Integração realizada pela Segurança',condicional:[],opcional:false,campoAuto:''},
+  {id:'i05',secao:'integracao',texto:'Kit de boas-vindas entregue',condicional:[],opcional:false,campoAuto:''},
+];
+
+var PERFIS_DEFAULT = [
+  {id:'geral',nome:'GERAL'},{id:'motorista',nome:'MOTORISTA'},
+  {id:'operacional',nome:'OPERACIONAL'},{id:'adm',nome:'ADMINISTRATIVO'},
+  {id:'lideranca',nome:'LIDERANÇA'},{id:'pcd',nome:'PCD'},
+];
+
+// ════════════════════════════════════════════
+// CACHE
+// ════════════════════════════════════════════
+var _processos = [];
+var _perfis    = [];
+var _itens     = [];
+var _regras    = [];
+var _procAtual = null;
+
+// ════════════════════════════════════════════
+// LISTENERS
+// ════════════════════════════════════════════
+function iniciarListeners() {
+  db.collection('adm_processos').onSnapshot(function(snap) {
+    _processos = snap.docs.map(function(d) { return Object.assign({id:d.id}, d.data()); });
+    _processos.sort(function(a,b) { return (b.criadoEm||'').localeCompare(a.criadoEm||''); });
+    renderProcessos();
+  });
+  db.collection('adm_perfis').onSnapshot(function(snap) {
+    _perfis = snap.docs.map(function(d) { return d.data(); });
+    if (!_perfis.length) {
+      _perfis = PERFIS_DEFAULT;
+      var batch = db.batch();
+      _perfis.forEach(function(p) { batch.set(db.collection('adm_perfis').doc(p.id), p); });
+      batch.commit();
+    }
+    if (document.getElementById('view-cfg').style.display !== 'none') renderCfg();
+    popularSelectPerfis();
+  });
+  db.collection('adm_itens').onSnapshot(function(snap) {
+    _itens = snap.docs.map(function(d) { return d.data(); });
+    if (!_itens.length) {
+      _itens = ITENS_DEFAULT;
+      var batch = db.batch();
+      _itens.forEach(function(it) { batch.set(db.collection('adm_itens').doc(it.id), it); });
+      batch.commit();
+    }
+    if (document.getElementById('view-cfg').style.display !== 'none') renderCfg();
+  });
+  db.collection('adm_regras').onSnapshot(function(snap) {
+    _regras = snap.docs.map(function(d) { return Object.assign({id:d.id}, d.data()); });
+    if (document.getElementById('view-cfg').style.display !== 'none') renderCfg();
+  });
+}
+
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+function toast(msg, tipo) {
+  var el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast '+(tipo||'');
+  el.classList.add('show');
+  setTimeout(function(){el.classList.remove('show');}, 2800);
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function fmtDate(s) {
+  if (!s) return '';
+  if (s instanceof Date) { var d=s; return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear(); }
+  var p = String(s).split('T')[0].split('-');
+  if (p.length === 3) return p[2]+'/'+p[1]+'/'+p[0];
+  return s;
+}
+
+function getItensParaPerfil(perfilId) {
+  var todos = _itens.length ? _itens : ITENS_DEFAULT;
+  return todos.filter(function(it) {
+    return !it.condicional || !it.condicional.length || it.condicional.indexOf(perfilId) !== -1 || it.condicional.indexOf('') !== -1;
+  });
 }
 
 function calcProgresso(proc) {
-  const itens = getItensParaPerfil(proc.perfil);
-  const obrigatorios = itens.filter(it => !it.opcional);
-  const feitos = obrigatorios.filter(it => proc.checks && proc.checks[it.id]?.done);
-  return {total: obrigatorios.length, done: feitos.length, pct: obrigatorios.length ? Math.round(feitos.length / obrigatorios.length * 100) : 0};
-}
-
-// ======== STATS ========
-async function getCandidatosPendentes(){
-  // Busca candidatos na etapa 6 (integração agendada) no módulo R&S
-  const vagas = JSON.parse(localStorage.getItem('nova_vagas_v3') || '[]');
-  const procs = await DB.processos.getAll();
-  const pendentes = [];
-  vagas.forEach(v => {
-    if(v.isBancoTalentos) return;
-    (v.candidatos||[]).filter(c => c.etapa === 6).forEach(c => {
-      // verifica se já tem processo de admissão aberto para este candidato (por nome)
-      const jaTemProcesso = procs.find(p =>
-        p.nome && c.nome && p.nome.toUpperCase() === c.nome.toUpperCase()
-      );
-      if(!jaTemProcesso){
-        pendentes.push({
-          nome: c.nome,
-          empresa: v.empresa,
-          cargo: v.cargo,
-          dtIntegracao: c.dtIntegracao,
-          vagaId: v.id,
-          candId: c.id,
-        });
-      }
-    });
+  var itens = getItensParaPerfil(proc.perfil||'geral');
+  var obrig = itens.filter(function(it){return !it.opcional;});
+  var feitos = obrig.filter(function(it){
+    return proc.checks && proc.checks[it.id] === true;
   });
-  return pendentes;
+  return {done: feitos.length, total: obrig.length, pct: obrig.length ? Math.round(feitos.length/obrig.length*100) : 0};
 }
 
-async function updateStats(){
-  const procs = await DB.processos.getAll();
-  const andamento = procs.filter(p => !p.concluido).length;
-  const mes = new Date().getMonth();
-  const concluidos = procs.filter(p => p.concluido && new Date(p.concluidoEm||p.criadoEm).getMonth()===mes).length;
-  const pendentes = getCandidatosPendentes().length;
-  document.getElementById('stat-andamento').textContent=andamento;
-  document.getElementById('stat-concluidos').textContent=concluidos;
-  document.getElementById('stat-total').textContent=procs.length;
-  document.getElementById('stat-pendentes').textContent=pendentes;
-  // destaque visual se houver pendentes
-  const card=document.querySelector('.stat-card.s-red');
-  if(card) card.style.outline=pendentes>0?'2px solid #e05252':'none';
+function calcAlertas(proc) {
+  if (!proc.dados) return 0;
+  var regras = _regras.filter(function(r){ return r.perfil === proc.perfil; });
+  return regras.filter(function(r){
+    var val = String(proc.dados[r.campo]||'').trim().toUpperCase();
+    var esp = String(r.valor||'').trim().toUpperCase();
+    return esp && val !== esp;
+  }).length;
 }
 
-function filtrarPendentes(){
-  const pendentes = getCandidatosPendentes();
-  if(!pendentes.length){toast('Nenhum candidato aguardando admissão.');return;}
+// ════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════
+function showTab(t) {
+  document.getElementById('view-proc').style.display = t==='proc' ? 'block' : 'none';
+  document.getElementById('view-cfg').style.display  = t==='cfg'  ? 'block' : 'none';
+  document.getElementById('tab-proc').classList.toggle('active', t==='proc');
+  document.getElementById('tab-cfg').classList.toggle('active', t==='cfg');
+  if (t==='cfg') renderCfg();
+}
+function showProcTab(t) {
+  ['dados','check','export'].forEach(function(tab) {
+    document.getElementById('ptab-view-'+tab).style.display = t===tab ? 'block' : 'none';
+    document.getElementById('ptab-'+tab).classList.toggle('active', t===tab);
+  });
+  if (t==='check') renderChecklist();
+  if (t==='export') {}
+}
 
-  // monta modal de listagem
-  const lista = pendentes.map(p=>`
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
-      <div>
-        <div style="font-size:13px;font-weight:700">${p.nome}</div>
-        <div style="font-size:11px;color:var(--text2);font-weight:500;margin-top:2px">${p.cargo} · ${p.empresa}${p.dtIntegracao?' · Integração: '+fmtDT(p.dtIntegracao):''}</div>
-      </div>
-      <button class="btn btn-primary btn-sm" onclick="abrirNovoParaCandidato('${encodeURIComponent(JSON.stringify(p))}')">
-        <i class="ti ti-plus"></i> Abrir processo
-      </button>
-    </div>`).join('');
+// ════════════════════════════════════════════
+// LISTA DE PROCESSOS
+// ════════════════════════════════════════════
+function renderProcessos() {
+  var el = document.getElementById('lista-processos');
+  var andamento=0, alertas=0, concluidos=0;
+  _processos.forEach(function(p) {
+    var pg = calcProgresso(p);
+    var al = calcAlertas(p);
+    if (pg.pct === 100) concluidos++;
+    else andamento++;
+    if (al > 0) alertas++;
+  });
+  document.getElementById('st-andamento').textContent = andamento;
+  document.getElementById('st-alertas').textContent   = alertas;
+  document.getElementById('st-concluidos').textContent= concluidos;
+  document.getElementById('st-total').textContent     = _processos.length;
 
-  // reutiliza um modal temporário
-  let m = document.getElementById('modal-pendentes');
-  if(!m){
-    m = document.createElement('div');
-    m.id='modal-pendentes';
-    m.className='modal-overlay';
-    m.innerHTML=`<div class="modal" style="width:640px">
-      <div class="modal-header">
-        <span class="modal-title">Candidatos aguardando admissão</span>
-        <button class="btn-icon" onclick="this.closest('.modal-overlay').classList.remove('open')"><i class="ti ti-x"></i></button>
-      </div>
-      <div class="modal-body" id="modal-pendentes-body"></div>
-      <div class="modal-footer"><button class="btn" onclick="this.closest('.modal-overlay').classList.remove('open')">Fechar</button></div>
-    </div>`;
-    document.body.appendChild(m);
-    m.addEventListener('click', function(e){if(e.target===this)this.classList.remove('open');});
+  if (!_processos.length) {
+    el.innerHTML = '<div class="empty"><i class="ti ti-file-check"></i><p>Nenhum processo de admissão. Faça upload do FO1029 para começar.</p></div>';
+    return;
   }
-  document.getElementById('modal-pendentes-body').innerHTML=lista;
-  m.classList.add('open');
-}
-
-function fmtDT(d){if(!d)return'';const[date,time]=d.split('T');const[y,m,day]=date.split('-');return`${day}/${m}/${y} ${(time||'').slice(0,5)}`;}
-
-function abrirNovoParaCandidato(encoded){
-  const p = JSON.parse(decodeURIComponent(encoded));
-  document.getElementById('modal-pendentes')?.classList.remove('open');
-  // pré-preenche o modal de novo processo
-  openNovoProcesso();
-  setTimeout(()=>{
-    document.getElementById('np-nome').value=p.nome||'';
-    document.getElementById('np-empresa').value=p.empresa||'';
-    document.getElementById('np-cargo').value=p.cargo||'';
-    // tenta encontrar data de integração como admissão
-    if(p.dtIntegracao) document.getElementById('np-admissao').value=p.dtIntegracao.split('T')[0];
-  },100);
-}
-
-// ======== LISTA ========
-async function renderLista(){
-  const q=(document.getElementById('search').value||'').toLowerCase();
-  const fs=document.getElementById('filter-status').value;
-  const fe=document.getElementById('filter-empresa').value;
-  let procs = await DB.processos.getAll().sort((a,b)=>new Date(b.criadoEm)-new Date(a.criadoEm));
-  if(q)procs=procs.filter(p=>(p.nome||'').toLowerCase().includes(q)||(p.empresa||'').toLowerCase().includes(q));
-  if(fs==='andamento')procs=procs.filter(p=>!p.concluido);
-  if(fs==='concluido')procs=procs.filter(p=>p.concluido);
-  if(fe)procs=procs.filter(p=>p.empresa===fe);
-  const el=document.getElementById('lista-processos');
-  if(!procs.length){el.innerHTML=`<div class="empty"><i class="ti ti-file-check"></i><p>Nenhum processo encontrado.</p></div>`;updateStats();return;}
-  el.innerHTML=procs.map(p=>{
-    const pg=calcProgresso(p);
-    return`<div class="proc-card ${p.concluido?'concluido':''}" onclick="abrirProcesso('${p.id}')">
-      <div class="proc-top">
-        <div>
-          <div class="proc-nome">${p.nome}</div>
-          <div class="proc-meta">${p.cargo||'—'} · ${p.departamento||'—'} · Admissão: ${fmtDate(p.admissao)}</div>
-        </div>
-        <div style="display:flex;gap:6px;align-items:center">
-          ${p.concluido?'<span class="badge badge-lime"><i class="ti ti-check"></i> Concluído</span>':'<span class="badge badge-amber"><i class="ti ti-clock"></i> Em andamento</span>'}
-          <span class="badge-empresa">${p.empresa}</span>
-        </div>
-      </div>
-      <div class="proc-footer">
-        <span style="font-size:12px;font-weight:700;color:var(--text2)">${pg.done}/${pg.total} itens obrigatórios</span>
-        <div class="progress-wrap"><div class="progress-fill" style="width:${pg.pct}%"></div></div>
-        <span style="font-size:12px;font-weight:800;color:var(--black)">${pg.pct}%</span>
-        <span class="badge badge-gray" style="font-size:10px">${p.perfil||'—'}</span>
-      </div>
-    </div>`;
+  el.innerHTML = _processos.map(function(p) {
+    var pg = calcProgresso(p);
+    var al = calcAlertas(p);
+    var statusBadge = pg.pct===100
+      ? '<span class="badge b-green"><i class="ti ti-check" style="font-size:9px"></i> Concluído</span>'
+      : '<span class="badge b-amber"><i class="ti ti-clock" style="font-size:9px"></i> Em andamento</span>';
+    return '<div class="proc-card" onclick="abrirProcesso(\''+p.id+'\')">'+
+      '<div class="proc-top">'+
+      '<div><div class="proc-nome">'+(p.dados&&p.dados.nome?p.dados.nome:'Sem nome')+'</div>'+
+      '<div class="proc-meta">'+(p.dados&&p.dados.empresa?p.dados.empresa:'')+
+      (p.dados&&p.dados.cargo?' · '+p.dados.cargo:'')+
+      (p.dados&&p.dados.admissao?' · Admissão: '+fmtDate(p.dados.admissao):'')+
+      '</div></div>'+statusBadge+'</div>'+
+      '<div class="proc-footer">'+
+      '<span class="tag-emp">'+(p.perfil||'—')+'</span>'+
+      (al?'<span class="badge b-red"><i class="ti ti-alert-triangle" style="font-size:9px"></i> '+al+' alerta'+(al>1?'s':'')+'</span>':'')+
+      '<div style="flex:1"></div>'+
+      '<div style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--text2)">'+
+      pg.done+'/'+pg.total+' itens'+
+      '<div style="width:100px"><div class="progress-bar" style="margin:0"><div class="progress-fill" style="width:'+pg.pct+'%"></div></div></div>'+
+      pg.pct+'%</div>'+
+      '</div></div>';
   }).join('');
-  updateStats();
 }
 
-// ======== NOVO PROCESSO ========
-async function openNovoProcesso(){
-  // popular select de funcionários
-  const funcs = await DB.funcs.getAll();
-  const sel=document.getElementById('np-func');
-  sel.innerHTML='<option value="">— Selecionar funcionário cadastrado —</option>'+
-    funcs.map(f=>`<option value="${f.id}">${f.nome} — ${f.empresa} (${fmtDate(f.admissao)})</option>`).join('');
-  // popular perfis
-  const psel=document.getElementById('np-perfil');
-  psel.innerHTML='<option value="">Selecione o perfil</option>'+
-    (await DB.perfis.getAll()).map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
-  ['np-nome','np-cargo','np-depto'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('np-empresa').value='';
-  document.getElementById('np-admissao').value='';
-  document.getElementById('np-perfil').value='';
-  openModal('modal-novo');
-  setTimeout(initUpper, 50);
+// ════════════════════════════════════════════
+// UPLOAD FO1029
+// ════════════════════════════════════════════
+function openNovoProcesso() {
+  document.getElementById('upload-status').style.display = 'none';
+  document.getElementById('fi-xlsx').value = '';
+  openModal('modal-upload');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-area').classList.remove('drag');
+  var f = e.dataTransfer.files[0];
+  if (f) processarFO1029(f);
 }
 
-async function preencherFunc(){
-  const id=document.getElementById('np-func').value;
-  if(!id)return;
-  const f = await DB.funcs.getAll().find(x=>x.id===id);
-  if(!f)return;
-  document.getElementById('np-nome').value=f.nome||'';
-  document.getElementById('np-empresa').value=f.empresa||'';
-  document.getElementById('np-admissao').value=f.admissao||'';
-  document.getElementById('np-cargo').value=f.cargo||f.cargoAdmissional||'';
-  document.getElementById('np-depto').value=f.departamento||'';
-}
+function processarFO1029(file) {
+  if (!file) return;
+  var status = document.getElementById('upload-status');
+  status.style.display = 'block';
+  status.textContent = 'Lendo arquivo...';
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, {type:'binary', cellDates:true});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
 
-function criarProcesso(){
-  const nome=sanitize((document.getElementById('np-nome').value||'').trim());
-  const empresa=document.getElementById('np-empresa').value;
-  const admissao=document.getElementById('np-admissao').value;
-  const perfil=document.getElementById('np-perfil').value;
-  if(!nome||!empresa||!admissao||!perfil){toast('Preencha os campos obrigatórios.','err');return;}
-  const proc={
-    nome,empresa,admissao,perfil,
-    cargo:sanitize((document.getElementById('np-cargo').value||'').trim()),
-    departamento:sanitize((document.getElementById('np-depto').value||'').trim()),
-    checks:{},concluido:false,
-    funcId:document.getElementById('np-func').value||null,
-  };
-  await DB.processos.add(proc);
-  toast('Processo aberto!');
-  closeModal('modal-novo');
-  renderLista();
-}
+      // O FO1029 tem cabeçalho na linha 2 (linha 1 é metadados)
+      // Tentar encontrar a linha com os campos conhecidos
+      var headerRow = -1;
+      var dataRows = [];
 
-// ======== ABRIR CHECKLIST ========
-function abrirProcesso(id){
-  processoAtivoId=id;
-  document.getElementById('view-lista').style.display='none';
-  document.getElementById('view-checklist').style.display='block';
-  document.getElementById('topbar-title').textContent='Checklist de Admissão';
-  document.getElementById('topbar-actions').innerHTML=`
-    <button class="btn btn-sm" onclick="voltarLista()"><i class="ti ti-arrow-left"></i> Voltar</button>
-    <button class="btn btn-sm" onclick="exportarPDF('${id}')"><i class="ti ti-file-export"></i> Exportar</button>
-    <button class="btn btn-primary btn-sm" id="btn-concluir" onclick="concluirProcesso()"><i class="ti ti-check"></i> Concluir</button>
-  `;
-  renderChecklist();
-}
+      // Verificar se rows[0] tem os campos conhecidos
+      if (rows.length && rows[0]['Nome'] !== undefined) {
+        dataRows = rows;
+      } else if (rows.length > 1) {
+        // Pode ter linha de cabeçalho extra — usar sheet_to_json com header
+        var raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+        // Encontrar linha do header
+        for (var i = 0; i < raw.length; i++) {
+          if (raw[i].indexOf('Nome') !== -1 && raw[i].indexOf('CPF') !== -1) {
+            headerRow = i; break;
+          }
+        }
+        if (headerRow !== -1) {
+          var headers = raw[headerRow];
+          for (var j = headerRow+1; j < raw.length; j++) {
+            if (!raw[j][0] && !raw[j][1]) continue;
+            var obj = {};
+            headers.forEach(function(h, idx) { if (h) obj[h] = raw[j][idx] || ''; });
+            dataRows.push(obj);
+          }
+        }
+      }
 
-function voltarLista(){
-  processoAtivoId=null;
-  document.getElementById('view-lista').style.display='block';
-  document.getElementById('view-checklist').style.display='none';
-  document.getElementById('topbar-title').textContent='Processos de Admissão';
-  document.getElementById('topbar-actions').innerHTML=`
-    <button class="btn btn-sm" onclick="openGerenciarItens()"><i class="ti ti-settings"></i> Gerenciar Itens</button>
-    <button class="btn btn-primary btn-sm" onclick="openNovoProcesso()"><i class="ti ti-plus"></i> Novo Processo</button>
-  `;
-  renderLista();
-}
+      if (!dataRows.length) {
+        status.textContent = 'Nenhum dado encontrado. Verifique se o arquivo é o FO1029 correto.';
+        status.style.color = '#8b1c1c';
+        return;
+      }
 
-async function renderChecklist(){
-  const proc = await DB.processos.getAll().find(x=>x.id===processoAtivoId);
-  if(!proc)return;
-  const pg=calcProgresso(proc);
-  const itens=getItensParaPerfil(proc.perfil);
+      // Processar cada funcionário (normalmente 1 por arquivo, mas pode ter mais)
+      var criados = 0;
+      var batch = db.batch();
+      dataRows.forEach(function(row) {
+        var dados = {};
+        Object.keys(FO_MAP).forEach(function(label) {
+          var val = row[label];
+          if (val !== undefined && val !== '') {
+            // Formatar datas
+            if (val instanceof Date) {
+              dados[FO_MAP[label]] = val.toISOString().split('T')[0];
+            } else {
+              dados[FO_MAP[label]] = String(val).trim();
+            }
+          }
+        });
 
-  let html=`<div class="proc-header-bar">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between">
-      <div>
-        <div class="proc-header-nome">${proc.nome}</div>
-        <div class="proc-header-meta">${proc.cargo||'—'} · ${proc.departamento||'—'} · ${proc.empresa} · Admissão: ${fmtDate(proc.admissao)}</div>
-        <div style="margin-top:6px"><span style="background:rgba(255,255,255,.15);color:var(--lime);font-size:10px;padding:2px 8px;border-radius:4px;font-weight:700">${proc.perfil}</span></div>
-      </div>
-      <div style="text-align:right">
-        <div class="proc-header-pct">${pg.pct}%</div>
-        <div style="font-size:11px;color:rgba(242,238,229,.6);font-weight:500">${pg.done} / ${pg.total} obrigatórios</div>
-      </div>
-    </div>
-    <div class="proc-header-bottom">
-      <div class="progress-wrap" style="height:8px"><div class="progress-fill" style="width:${pg.pct}%"></div></div>
-    </div>
-  </div>`;
+        if (!dados.nome) return; // linha vazia
 
-  Object.keys(SECOES).forEach(sec=>{
-    const secInfo=SECOES[sec];
-    const secItens=itens.filter(it=>it.secao===sec);
-    if(!secItens.length)return;
-    const done=secItens.filter(it=>(it.opcional||proc.checks?.[it.id]?.done)&&proc.checks?.[it.id]?.done).length;
-    const total=secItens.length;
-    const open=secoesAbertas[sec]!==false;
-    html+=`<div class="section-block">
-      <div class="section-header" onclick="toggleSecao('${sec}')">
-        <div class="section-title">
-          <div class="section-icon" style="background:${secInfo.color}22"><i class="ti ${secInfo.icon}" style="color:${secInfo.color}"></i></div>
-          ${secInfo.label}
-        </div>
-        <div class="section-prog">
-          <span>${done}/${total}</span>
-          <div class="progress-wrap" style="width:80px"><div class="progress-fill" style="width:${Math.round(done/total*100)}%;background:${secInfo.color}"></div></div>
-          <i class="ti ti-chevron-${open?'up':'down'}" style="font-size:14px"></i>
-        </div>
-      </div>`;
-    if(open){
-      html+=`<div class="section-body">`;
-      secItens.forEach(it=>{
-        const ck=proc.checks?.[it.id]||{done:false,date:'',obs:''};
-        html+=`<div class="ck-item ${ck.done?'done':''}" id="ck-${it.id}">
-          <input type="checkbox" class="ck-check" ${ck.done?'checked':''} onchange="toggleItem('${it.id}',this.checked)" ${proc.concluido?'disabled':''}>
-          <div style="flex:1">
-            <div class="ck-text">${it.texto} ${it.opcional?'<span style="font-size:10px;color:var(--text3);font-weight:600">(opcional)</span>':''}</div>
-            ${ck.done?`<div class="ck-meta"><span class="ck-date"><i class="ti ti-calendar" style="font-size:11px;vertical-align:-1px"></i> ${fmtDate(ck.date)}</span>${ck.obs?`<span class="ck-date"><i class="ti ti-message" style="font-size:11px;vertical-align:-1px"></i> ${ck.obs}</span>`:''}</div>`:''}
-            ${!proc.concluido?`<div class="ck-expand ${ck.done?'open':''}" id="exp-${it.id}">
-              <input type="date" class="form-input ck-obs-input" style="width:160px" value="${ck.date||''}" onchange="salvarData('${it.id}',this.value)" placeholder="Data">
-              <input type="text" class="form-input ck-obs-input" value="${ck.obs||''}" onchange="salvarObs('${it.id}',this.value)" placeholder="Observação (opcional)">
-            </div>`:''}
-          </div>
-        </div>`;
+        var docRef = db.collection('adm_processos').doc();
+        batch.set(docRef, {
+          id: docRef.id,
+          criadoEm: new Date().toISOString(),
+          status: 'em_andamento',
+          perfil: 'geral',
+          dados: dados,
+          checks: {},
+          obs: '',
+        });
+        criados++;
       });
-      html+=`</div>`;
+
+      batch.commit().then(function() {
+        status.textContent = criados + ' processo(s) criado(s) com sucesso!';
+        status.style.color = '#1a5c35';
+        toast(criados+' processo(s) criado(s)!', 'ok');
+        setTimeout(function() { closeModal('modal-upload'); }, 1500);
+      }).catch(function(err) {
+        status.textContent = 'Erro ao salvar: ' + err.message;
+        status.style.color = '#8b1c1c';
+      });
+
+    } catch(err) {
+      status.textContent = 'Erro ao ler o arquivo: ' + err.message;
+      status.style.color = '#8b1c1c';
     }
-    html+=`</div>`;
-  });
-
-  document.getElementById('view-checklist').innerHTML=html;
+  };
+  reader.readAsBinaryString(file);
 }
 
-async function toggleSecao(sec){
-  secoesAbertas[sec]=secoesAbertas[sec]===false?true:false;
-  renderChecklist();
+// ════════════════════════════════════════════
+// ABRIR PROCESSO
+// ════════════════════════════════════════════
+function abrirProcesso(id) {
+  _procAtual = _processos.find(function(p){ return p.id===id; });
+  if (!_procAtual) return;
+  var d = _procAtual.dados||{};
+  document.getElementById('mp-title').textContent = d.nome||'Processo';
+  document.getElementById('mp-sub').textContent   = (d.empresa||'')+(d.cargo?' · '+d.cargo:'')+(d.admissao?' · Admissão: '+fmtDate(d.admissao):'');
+
+  // Renderizar form de dados
+  renderFormDados();
+  showProcTab('dados');
+  openModal('modal-proc');
 }
 
-async function toggleItem(itemId, checked){
-  const procs = await DB.processos.getAll();
-  const proc=procs.find(x=>x.id===processoAtivoId);if(!proc)return;
-  if(!proc.checks)proc.checks={};
-  if(!proc.checks[itemId])proc.checks[itemId]={done:false,date:'',obs:''};
-  proc.checks[itemId].done=checked;
-  if(checked&&!proc.checks[itemId].date)proc.checks[itemId].date=today();
-  await DB.processos.saveAll(procs);
-  renderChecklist();
-}
+function renderFormDados() {
+  if (!_procAtual) return;
+  var d = _procAtual.dados||{};
+  var regras = _regras.filter(function(r){ return r.perfil===_procAtual.perfil; });
 
-async function salvarData(itemId, val){
-  const procs = await DB.processos.getAll();
-  const proc=procs.find(x=>x.id===processoAtivoId);if(!proc)return;
-  if(!proc.checks)proc.checks={};
-  if(!proc.checks[itemId])proc.checks[itemId]={done:false,date:'',obs:''};
-  proc.checks[itemId].date=val;
-  await DB.processos.saveAll(procs);
-}
+  // Select de perfil no topo
+  var perfilSel = '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;padding:12px 14px;background:var(--s2);border-radius:var(--r)">'
+    +'<label style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;white-space:nowrap">Perfil do funcionário</label>'
+    +'<select class="form-select" style="max-width:200px" onchange="mudarPerfil(this.value)" id="proc-perfil-sel">'
+    +_perfis.map(function(p){ return '<option value="'+p.id+'"'+(p.id===_procAtual.perfil?' selected':'')+'>'+p.nome+'</option>'; }).join('')
+    +'</select>'
+    +'</div>';
 
-async function salvarObs(itemId, val){
-  const procs = await DB.processos.getAll();
-  const proc=procs.find(x=>x.id===processoAtivoId);if(!proc)return;
-  if(!proc.checks)proc.checks={};
-  if(!proc.checks[itemId])proc.checks[itemId]={done:false,date:'',obs:''};
-  proc.checks[itemId].obs=val;
-  await DB.processos.saveAll(procs);
-}
-
-async function concluirProcesso(){
-  const proc = await DB.processos.getAll().find(x=>x.id===processoAtivoId);if(!proc)return;
-  const pg=calcProgresso(proc);
-  if(pg.pct<100){
-    if(!confirm(`Ainda há ${pg.total-pg.done} item(ns) obrigatório(s) pendente(s). Deseja concluir mesmo assim?`))return;
-  }
-  await DB.processos.update(processoAtivoId,{concluido:true,concluidoEm:new Date().toISOString()});
-  toast('Processo concluído!');
-  voltarLista();
-}
-
-// ======== EXPORTAR ========
-async function exportarPDF(id){
-  const proc = await DB.processos.getAll().find(x=>x.id===id||x.id===processoAtivoId);if(!proc)return;
-  const itens=getItensParaPerfil(proc.perfil);
-  const rows=[
-    ['CHECKLIST DE ADMISSÃO — NOVA. RH'],
-    [],
-    ['Funcionário',proc.nome],['Empresa',proc.empresa],['Cargo',proc.cargo||'—'],
-    ['Departamento',proc.departamento||'—'],['Admissão',fmtDate(proc.admissao)],['Perfil',proc.perfil],
-    [],
-  ];
-  Object.keys(SECOES).forEach(sec=>{
-    const si=SECOES[sec];
-    const si_itens=itens.filter(it=>it.secao===sec);
-    if(!si_itens.length)return;
-    rows.push([si.label.toUpperCase()]);
-    rows.push(['Item','Opcional','Concluído','Data','Observação']);
-    si_itens.forEach(it=>{
-      const ck=proc.checks?.[it.id]||{done:false,date:'',obs:''};
-      rows.push([it.texto,it.opcional?'Sim':'Não',ck.done?'✓':'—',fmtDate(ck.date),ck.obs||'']);
+  var html = perfilSel + '<div class="form-grid">';
+  FORM_SECTIONS.forEach(function(sec) {
+    html += '<div class="form-section">'+sec.label+'</div>';
+    sec.fields.forEach(function(key) {
+      var val = d[key]||'';
+      var label = FO_LABELS[key]||key;
+      // Verificar alerta
+      var regra = regras.find(function(r){ return r.campo===key; });
+      var isAlert = regra && val && String(val).trim().toUpperCase() !== String(regra.valor).trim().toUpperCase();
+      html += '<div class="form-group">'
+        +'<label class="form-label">'+label+(isAlert?' <i class="ti ti-alert-triangle" style="color:#e05252;font-size:11px"></i>':'')+'</label>'
+        +'<input class="form-input'+(isAlert?' alert-field':'')+'" type="text" '
+        +'data-key="'+key+'" value="'+escHtml(val)+'" '
+        +'oninput="updateDados(this)"'
+        +(isAlert?' title="Esperado: '+escHtml(regra.valor)+'"':'')+'/>'
+        +(isAlert?'<span style="font-size:10px;color:#e05252;font-weight:600">Esperado: '+escHtml(regra.valor)+'</span>':'')
+        +'</div>';
     });
-    rows.push([]);
   });
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[50,8,10,12,30].map(w=>({wch:w}));
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Admissão');
-  XLSX.writeFile(wb,`admissao_${proc.nome.replace(/\s/g,'_')}_${proc.admissao}.xlsx`);
-  toast('Exportado!');
+  html += '</div>';
+  document.getElementById('form-dados').outerHTML = '<div class="form-grid" id="form-dados">'+html+'</div>';
+  // Na verdade vamos colocar o HTML no container externo
+  document.getElementById('ptab-view-dados').innerHTML = '<div style="background:#eef3fb;border:1px solid #b0c8e4;border-radius:var(--r);padding:10px 14px;margin-bottom:18px;font-size:12px;color:#1e3a6e;font-weight:500;"><i class="ti ti-info-circle" style="margin-right:6px"></i>Dados importados do FO1029. Confira campo a campo e edite se necessário. Campos em vermelho têm divergência com a regra do perfil.</div>'+html;
 }
 
-// ======== GERENCIAR ITENS ========
-async function openGerenciarItens(){
-  renderPerfisAdm();
-  renderItensGerenciar();
-  // popular condicional select
-  const csel=document.getElementById('ni-condicional');
-  csel.innerHTML=(await DB.perfis.getAll()).map(p=>`<option value="${p.id}">${p.nome}</option>`).join('');
-  openModal('modal-itens');
-  setTimeout(initUpper, 50);
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-async function renderPerfisAdm(){
-  document.getElementById('lista-perfis-adm').innerHTML=(await DB.perfis.getAll()).map(p=>`
-    <div style="display:inline-flex;align-items:center;gap:6px;padding:5px 10px;background:var(--s2);border:1px solid var(--border2);border-radius:var(--r);font-size:12px;font-weight:700">
-      ${p.nome}
-      <button class="btn-icon" style="width:20px;height:20px" onclick="removerPerfil('${p.id}')"><i class="ti ti-x" style="font-size:11px"></i></button>
-    </div>`).join('');
+function updateDados(el) {
+  if (!_procAtual) return;
+  var key = el.dataset.key;
+  if (!_procAtual.dados) _procAtual.dados = {};
+  _procAtual.dados[key] = el.value;
 }
 
-async function addPerfil(){
-  const nome=(document.getElementById('novo-perfil-nome').value||'').trim().toUpperCase();
-  if(!nome){toast('Nome obrigatório.','err');return;}
-  const perfis = await DB.perfis.getAll();
-  if(perfis.find(p=>p.nome===nome)){toast('Perfil já existe.','err');return;}
-  perfis.push({id:'p_'+Date.now(),nome});
-  await DB.perfis.saveAll(perfis);
-  document.getElementById('novo-perfil-nome').value='';
-  renderPerfisAdm();
-  toast('Perfil adicionado!');
+function mudarPerfil(val) {
+  if (!_procAtual) return;
+  _procAtual.perfil = val;
+  renderFormDados();
+  renderChecklist();
 }
 
-async function removerPerfil(id){
-  if(!confirm('Remover perfil?'))return;
-  await DB.perfis.saveAll((await DB.perfis.getAll()).filter(p=>p.id!==id));
-  renderPerfisAdm();
+// ════════════════════════════════════════════
+// CHECKLIST
+// ════════════════════════════════════════════
+function renderChecklist() {
+  if (!_procAtual) return;
+  var itens = getItensParaPerfil(_procAtual.perfil||'geral');
+  var d = _procAtual.dados||{};
+  var checks = _procAtual.checks||{};
+  var regras = _regras.filter(function(r){ return r.perfil===_procAtual.perfil; });
+
+  // Calcular status de cada item
+  function itemStatus(it) {
+    // Item com campoAuto: verificar se o campo está preenchido
+    if (it.campoAuto && d[it.campoAuto]) {
+      // Verificar se há regra de validação para este campo
+      var regra = regras.find(function(r){ return r.campo===it.campoAuto; });
+      if (regra) {
+        var val = String(d[it.campoAuto]||'').trim().toUpperCase();
+        var esp = String(regra.valor||'').trim().toUpperCase();
+        if (val !== esp) return {status:'alert', valor: d[it.campoAuto], esperado: regra.valor};
+      }
+      return {status:'auto_ok', valor: d[it.campoAuto]};
+    }
+    if (checks[it.id]) return {status:'ok'};
+    return {status:'pending'};
+  }
+
+  var secoes = {
+    documentos: {label:'Documentos', icon:'ti-files', items:[]},
+    cadastro:   {label:'Cadastro',   icon:'ti-user-check', items:[]},
+    integracao: {label:'Integração', icon:'ti-users', items:[]},
+  };
+  itens.forEach(function(it) {
+    var sec = secoes[it.secao];
+    if (sec) sec.items.push({item:it, st:itemStatus(it)});
+  });
+
+  var totalObrig = itens.filter(function(it){return !it.opcional;}).length;
+  var doneObrig  = itens.filter(function(it){
+    if (it.opcional) return false;
+    var st = itemStatus(it);
+    return st.status === 'ok' || st.status === 'auto_ok';
+  }).length;
+  var alertCount = itens.filter(function(it){ return itemStatus(it).status==='alert'; }).length;
+  var pendCount  = itens.filter(function(it){
+    var st = itemStatus(it).status;
+    return st==='pending' && !it.opcional;
+  }).length;
+
+  document.getElementById('ck-progress-label').textContent = doneObrig+'/'+totalObrig+' obrigatórios concluídos';
+  document.getElementById('ck-progress-bar').style.width = (totalObrig?Math.round(doneObrig/totalObrig*100):0)+'%';
+  var abadge = document.getElementById('ck-alertas-badge');
+  abadge.textContent = alertCount+' alerta'+(alertCount!==1?'s':'');
+  abadge.style.display = alertCount ? 'flex' : 'none';
+  document.getElementById('ck-pendentes-badge').textContent = pendCount+' pendente'+(pendCount!==1?'s':'');
+
+  var html = '';
+  Object.values(secoes).forEach(function(sec) {
+    if (!sec.items.length) return;
+    var doneCount = sec.items.filter(function(x){ return x.st.status==='ok'||x.st.status==='auto_ok'; }).length;
+    html += '<div class="checklist-section">'
+      +'<div class="checklist-section-header" onclick="toggleSecao(this)">'
+      +'<span class="checklist-section-title"><i class="ti '+sec.icon+'" style="margin-right:6px"></i>'+sec.label+'</span>'
+      +'<span class="checklist-section-count">'+doneCount+'/'+sec.items.length+'</span>'
+      +'</div><div class="checklist-body">';
+
+    sec.items.forEach(function(entry) {
+      var it = entry.item, st = entry.st;
+      var isOk    = st.status==='ok'||st.status==='auto_ok';
+      var isAlert = st.status==='alert';
+      var cls = isOk?'check-item ok':(isAlert?'check-item alert':'check-item');
+      var boxIcon = isOk ? '<i class="ti ti-check" style="color:var(--black)"></i>' : (isAlert?'<i class="ti ti-alert-triangle" style="color:#e05252"></i>':'');
+      var canToggle = st.status==='pending'||st.status==='ok'; // auto_ok e alert não toggleam manualmente
+      html += '<div class="'+cls+'" id="ck-'+it.id+'">'
+        +'<div class="check-box" onclick="'+(canToggle?'toggleCheck(\''+it.id+'\')':'')+'">'
+        +boxIcon+'</div>'
+        +'<div class="check-text">'
+        +'<div class="check-label'+(it.opcional?' optional':'')+'">'+it.texto+(it.opcional?' <span style="color:var(--text3);font-size:10px">(opcional)</span>':'')+'</div>'
+        +(st.status==='auto_ok'?'<div class="check-value ok"><i class="ti ti-check" style="font-size:10px"></i> '+escHtml(st.valor)+'</div>':'')
+        +(st.status==='alert'?'<div class="check-value alert">'+escHtml(st.valor)+'</div>'
+          +'<div class="check-alert-msg"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Esperado: '+escHtml(st.esperado)+'</div>':'')
+        +(st.status==='pending'&&!it.campoAuto?'<div class="check-value empty">Aguardando confirmação manual</div>':'')
+        +(st.status==='pending'&&it.campoAuto?'<div class="check-value empty">Campo não preenchido no FO1029</div>':'')
+        +'</div></div>';
+    });
+    html += '</div></div>';
+  });
+  document.getElementById('checklist-container').innerHTML = html;
 }
 
-async function renderItensGerenciar(){
-  const filtroSec=document.getElementById('filtro-secao-itens').value;
-  let itens = await DB.itens.getAll();
-  if(filtroSec)itens=itens.filter(it=>it.secao===filtroSec);
-  document.getElementById('lista-itens-gerenciar').innerHTML=itens.map(it=>`
-    <div class="item-row">
-      <span class="item-row-sec" style="background:${SECOES[it.secao]?.color||'#ccc'}22;color:${SECOES[it.secao]?.color||'#666'}">${SECOES[it.secao]?.label||it.secao}</span>
-      <span class="item-row-text">${it.texto} ${it.opcional?'<span style="font-size:10px;color:var(--text3)">(opcional)</span>':''}</span>
-      ${it.condicional?.length?`<span style="font-size:10px;color:var(--text2);font-weight:600">${it.condicional.join(', ')}</span>`:''}
-      <button class="btn-icon" onclick="removerItem('${it.id}')"><i class="ti ti-trash" style="font-size:14px"></i></button>
-    </div>`).join('') || '<div style="color:var(--text3);font-size:13px;padding:10px">Nenhum item.</div>';
+function toggleSecao(header) {
+  var body = header.nextElementSibling;
+  body.style.display = body.style.display==='none' ? 'block' : 'none';
 }
 
-function addItem(){
-  const texto=(document.getElementById('ni-texto').value||'').trim();
-  const secao=document.getElementById('ni-secao').value;
-  if(!texto){toast('Descrição obrigatória.','err');return;}
-  const csel=document.getElementById('ni-condicional');
-  const condicional=Array.from(csel.selectedOptions).map(o=>o.value);
-  const opcional=document.getElementById('ni-opcional').checked;
-  const itens = await DB.itens.getAll();
-  itens.push({id:'i_'+Date.now(),secao,texto,condicional,opcional});
-  await DB.itens.saveAll(itens);
-  document.getElementById('ni-texto').value='';
-  renderItensGerenciar();
-  toast('Item adicionado!');
+function toggleCheck(itemId) {
+  if (!_procAtual) return;
+  if (!_procAtual.checks) _procAtual.checks = {};
+  _procAtual.checks[itemId] = !_procAtual.checks[itemId];
+  renderChecklist();
 }
 
-async function removerItem(id){
-  if(!confirm('Remover este item?'))return;
-  await DB.itens.saveAll((await DB.itens.getAll()).filter(it=>it.id!==id));
-  renderItensGerenciar();
-  toast('Item removido.');
+// ════════════════════════════════════════════
+// SALVAR / EXCLUIR
+// ════════════════════════════════════════════
+function salvarProcesso() {
+  if (!_procAtual) return;
+  // Coletar dados do form
+  document.querySelectorAll('#ptab-view-dados input[data-key]').forEach(function(el) {
+    if (!_procAtual.dados) _procAtual.dados = {};
+    _procAtual.dados[el.dataset.key] = el.value;
+  });
+  var selPerfil = document.getElementById('proc-perfil-sel');
+  if (selPerfil) _procAtual.perfil = selPerfil.value;
+
+  var pg = calcProgresso(_procAtual);
+  _procAtual.status = pg.pct===100 ? 'concluido' : 'em_andamento';
+
+  db.collection('adm_processos').doc(_procAtual.id).update({
+    dados:   _procAtual.dados,
+    checks:  _procAtual.checks,
+    perfil:  _procAtual.perfil,
+    status:  _procAtual.status,
+    atualizadoEm: new Date().toISOString(),
+  }).then(function() {
+    toast('Processo salvo!', 'ok');
+  }).catch(function(e) { toast('Erro: '+e.message,'err'); });
 }
 
-// ======== MODAL HELPERS ========
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
+function excluirProcesso() {
+  if (!_procAtual) return;
+  if (!confirm('Excluir este processo? Esta ação não pode ser desfeita.')) return;
+  db.collection('adm_processos').doc(_procAtual.id).delete().then(function() {
+    toast('Processo excluído.','warn');
+    closeModal('modal-proc');
+  });
+}
 
-// ======== INIT ========
-renderLista();
-initUpper();
+// ════════════════════════════════════════════
+// EXPORTAÇÕES
+// ════════════════════════════════════════════
+function abrirExportacoes() { showProcTab('export'); }
+
+function gerarSicredi() {
+  if (!_procAtual||!_procAtual.dados) return;
+  var d = _procAtual.dados;
+  var csv = 'COD_CONVENIO;COOPERATIVA;QUANTIDADE;;;;;;;;;;;;;;;;;;;;\r\n';
+  csv += 'AAA;123;1;;;;;;;;;;;;;;;;;;;;\r\n';
+  csv += 'NOME TITULAR;DAT_NASCIMENTO;SEXO;NUM_CEP;NOME_BAIRRO;TP_LOGRADOURO;LOGRADOURO;NUMERO;COMPLEMENTO;MUNICIPIO;UF ENDERECO;NUM_CPF;IDENTIDADE;DAT_EMISSAO;ORG. EXPEDIDOR;UF IDENTIDADE;UA;NOM_REPRESENTANTE;CPF_REPRESENTANTE;COD_BANCO_DEST;NUM_AGENCIA_DEST;NUM_CONTA_DEST;Tipo de Conta\r\n';
+  var cpf = String(d.cpf||'').replace(/\D/g,'');
+  var nasc = fmtDate(d.nascimento);
+  csv += (d.nome||'')+';'+nasc+';;;;;;;;;;'+cpf+';;;;;;;'+(d.nome||'')+';'+cpf+';'+(d.bancoCC||'')+';'+(d.agenciaCC||'')+';'+(d.contaCC||'')+';'+(d.tipoConta||'')+'\r\n';
+  download(csv, 'banco_sicredi_'+(d.nome||'func').replace(/ /g,'_')+'.csv', 'text/csv');
+  toast('Planilha Sicredi gerada!','ok');
+}
+
+function gerarEVA() {
+  if (!_procAtual||!_procAtual.dados) return;
+  var d = _procAtual.dados;
+  var csv = 'Nome;E-mail;Telefone;Cargo;Documento (CPF);Data de nascimento\n';
+  csv += (d.nome||'')+';'+(d.email||'')+';'+(d.telefone||'')+';'+(d.cargo||'')+';'+(d.cpf||'')+';'+fmtDate(d.nascimento)+'\n';
+  download(csv, 'eva_cadastro_'+(d.nome||'func').replace(/ /g,'_')+'.csv', 'text/csv');
+  toast('Planilha EVA gerada!','ok');
+}
+
+function gerarEVAFarmacia() {
+  if (!_procAtual||!_procAtual.dados) return;
+  var d = _procAtual.dados;
+  var cpf = String(d.cpf||'').replace(/\D/g,'');
+  var rows = [
+    ['PÓS PAGO - FARMÁCIA'],
+    ['Nome','Documento','Tipo','Valor','Observação (se houver)'],
+    [d.nome||'',cpf,'INCLUSÃO',200,''],
+    [],
+    ['','','','Tipo','Inclusão ou Atualização de Valor'],
+  ];
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [35,16,12,8,25].map(function(w){return{wch:w};});
+  XLSX.utils.book_append_sheet(wb, ws, 'Solicitações');
+  XLSX.writeFile(wb, 'eva_farmacia_'+(d.nome||'func').replace(/ /g,'_')+'.xlsx');
+  toast('Planilha EVA Farmácia gerada!','ok');
+}
+
+function download(content, filename, mime) {
+  var a = document.createElement('a');
+  a.href = 'data:'+mime+';charset=utf-8,'+encodeURIComponent(content);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+}
+
+// ════════════════════════════════════════════
+// CONFIGURAÇÕES
+// ════════════════════════════════════════════
+function popularSelectPerfis() {
+  ['rv-perfil','proc-perfil-sel'].forEach(function(id) {
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var val = sel.value;
+    sel.innerHTML = _perfis.map(function(p){ return '<option value="'+p.id+'">'+p.nome+'</option>'; }).join('');
+    if (val) sel.value = val;
+  });
+}
+
+function addPerfil() {
+  var nome = (document.getElementById('np-nome').value||'').trim().toUpperCase();
+  if (!nome) { toast('Informe o nome do perfil.','err'); return; }
+  var id = nome.toLowerCase().replace(/[^a-z0-9]/g,'_');
+  if (_perfis.find(function(p){return p.id===id;})) { toast('Perfil já existe.','err'); return; }
+  db.collection('adm_perfis').doc(id).set({id:id, nome:nome}).then(function(){
+    document.getElementById('np-nome').value='';
+    toast('Perfil adicionado!','ok');
+  });
+}
+
+function removerPerfil(id) {
+  if (id==='geral') { toast('Perfil GERAL não pode ser removido.','err'); return; }
+  if (!confirm('Remover perfil?')) return;
+  db.collection('adm_perfis').doc(id).delete().then(function(){ toast('Perfil removido.'); });
+}
+
+function addRegra() {
+  var perfil = document.getElementById('rv-perfil').value;
+  var campo  = document.getElementById('rv-campo').value;
+  var valor  = (document.getElementById('rv-valor').value||'').trim();
+  if (!perfil||!campo||!valor) { toast('Preencha todos os campos.','err'); return; }
+  var docRef = db.collection('adm_regras').doc();
+  docRef.set({id:docRef.id, perfil, campo, valor}).then(function(){
+    document.getElementById('rv-valor').value='';
+    toast('Regra adicionada!','ok');
+  });
+}
+
+function removerRegra(id) {
+  if (!confirm('Remover regra?')) return;
+  db.collection('adm_regras').doc(id).delete().then(function(){ toast('Regra removida.'); });
+}
+
+function addItem() {
+  var secao  = document.getElementById('ni-secao').value;
+  var texto  = (document.getElementById('ni-texto').value||'').trim();
+  var perfisStr = (document.getElementById('ni-perfis').value||'').trim();
+  var campo  = document.getElementById('ni-campo').value;
+  if (!texto) { toast('Informe a descrição.','err'); return; }
+  var condicional = perfisStr ? perfisStr.split(',').map(function(s){return s.trim().toLowerCase().replace(/[^a-z0-9]/g,'_');}) : [];
+  var id = 'custom_'+Date.now();
+  db.collection('adm_itens').doc(id).set({id, secao, texto, condicional, opcional:false, campoAuto:campo||''}).then(function(){
+    document.getElementById('ni-texto').value='';
+    document.getElementById('ni-perfis').value='';
+    document.getElementById('ni-campo').value='';
+    toast('Item adicionado!','ok');
+  });
+}
+
+function removerItem(id) {
+  if (!confirm('Remover item do checklist?')) return;
+  db.collection('adm_itens').doc(id).delete().then(function(){ toast('Item removido.'); });
+}
+
+function renderCfg() {
+  // Perfis
+  var tbP = document.getElementById('tb-perfis');
+  tbP.innerHTML = _perfis.map(function(p){
+    return '<tr><td style="font-weight:700">'+p.nome+'</td>'
+      +'<td><button class="btn-icon" onclick="removerPerfil(\''+p.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td></tr>';
+  }).join('') || '<tr><td colspan="2" style="color:var(--text3);font-size:12px;padding:16px">Nenhum perfil.</td></tr>';
+
+  // Regras
+  var tbR = document.getElementById('tb-regras');
+  var campLabels = {sindicato:'Sindicato',cargo:'Cargo',empresa:'Empresa',filial:'Filial',estrutura:'Estrutura',tipo:'Tipo',grauInstrucao:'Grau Instrução'};
+  tbR.innerHTML = _regras.map(function(r){
+    var pNome = (_perfis.find(function(p){return p.id===r.perfil;})||{}).nome||r.perfil;
+    return '<tr><td>'+pNome+'</td><td>'+(campLabels[r.campo]||r.campo)+'</td><td style="font-weight:600">'+r.valor+'</td>'
+      +'<td><button class="btn-icon" onclick="removerRegra(\''+r.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td></tr>';
+  }).join('') || '<tr><td colspan="4" style="color:var(--text3);font-size:12px;padding:16px">Nenhuma regra cadastrada.</td></tr>';
+
+  // Select de perfil no form de regras
+  var rvSel = document.getElementById('rv-perfil');
+  var rvVal = rvSel.value;
+  rvSel.innerHTML = '<option value="">Selecione</option>'+_perfis.map(function(p){return '<option value="'+p.id+'">'+p.nome+'</option>';}).join('');
+  if (rvVal) rvSel.value = rvVal;
+
+  // Itens
+  renderItensCfg();
+
+  // Popular select de campo auto no form de item
+  var niCampo = document.getElementById('ni-campo');
+  niCampo.innerHTML = '<option value="">Nenhum (manual)</option>';
+  Object.entries(FO_LABELS).forEach(function(entry){
+    var o = document.createElement('option'); o.value=entry[0]; o.textContent=entry[1]; niCampo.appendChild(o);
+  });
+}
+
+function renderItensCfg() {
+  var filtro = document.getElementById('fi-secao-cfg').value;
+  var lista  = _itens.filter(function(it){ return !filtro||it.secao===filtro; });
+  var secNames = {documentos:'Documentos',cadastro:'Cadastro',integracao:'Integração'};
+  var tbI = document.getElementById('tb-itens');
+  tbI.innerHTML = lista.map(function(it){
+    var perfsNomes = (it.condicional||[]).map(function(cid){
+      return (_perfis.find(function(p){return p.id===cid;})||{}).nome||cid;
+    }).join(', ') || 'Todos';
+    return '<tr><td>'+(secNames[it.secao]||it.secao)+'</td><td>'+it.texto+'</td>'
+      +'<td style="font-size:11px">'+perfsNomes+'</td>'
+      +'<td style="font-size:11px;color:var(--text2)">'+(it.campoAuto?FO_LABELS[it.campoAuto]||it.campoAuto:'Manual')+'</td>'
+      +'<td><button class="btn-icon" onclick="removerItem(\''+it.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td></tr>';
+  }).join('') || '<tr><td colspan="5" style="color:var(--text3);font-size:12px;padding:16px">Nenhum item.</td></tr>';
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+document.querySelectorAll('.overlay').forEach(function(el){
+  el.addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
+});
+iniciarListeners();
 </script>
 </body>
 </html>

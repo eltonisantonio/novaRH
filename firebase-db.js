@@ -53,21 +53,26 @@ function _col(name, defaults) {
 
     // Salvar array inteiro (substitui tudo — usar com cuidado)
     async saveAll(arr) {
+      if (!arr || !arr.length) return;
       const batch = _db.batch();
       // Deletar todos existentes
       const snap = await ref.get();
       snap.docs.forEach(d => batch.delete(d.ref));
       // Inserir novos
       arr.forEach((item, i) => {
-        const id = item.id || (name.slice(0,3) + '_' + Date.now() + '_' + i);
-        batch.set(ref.doc(id), { ...item, id, _ordem: i });
+        // Garantir ID válido: só letras, números, _ e -
+        const rawId = String(item.id || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+        const id = rawId || (name.slice(0,3) + '_' + Date.now() + '_' + i);
+        const clean = { ...item, id, _ordem: i };
+        batch.set(ref.doc(id), clean);
       });
       await batch.commit();
     },
 
     // Adicionar documento
     async add(data) {
-      const id = data.id || (name.slice(0,3) + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,6));
+      const rawId = String(data.id || '').replace(/[^a-zA-Z0-9_-]/g, '_');
+      const id = rawId || (name.slice(0,3) + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,6));
       const all = await this.getAll();
       const doc = { ...data, id, _ordem: all.length, criadoEm: data.criadoEm || new Date().toISOString() };
       await ref.doc(id).set(doc);

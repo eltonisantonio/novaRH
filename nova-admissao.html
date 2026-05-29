@@ -1209,7 +1209,56 @@ function salvarProcesso() {
     atualizadoEm: new Date().toISOString(),
   }).then(function() {
     toast('Processo salvo!', 'ok');
+    // Atualizar/criar evento no Dossiê com o checklist
+    criarEventoAdmissaoDossie(_procAtual);
   }).catch(function(e) { toast('Erro: '+e.message,'err'); });
+}
+
+function criarEventoAdmissaoDossie(proc) {
+  var d = proc.dados||{};
+  var nome = (d.nome||'').toUpperCase();
+  if (!nome) return;
+  var funcId = 'adm_'+proc.id;
+  var todos = _itens.length ? _itens : ITENS_DEFAULT;
+  var secNames = {documentos:'Documentos',cadastro:'Cadastro',integracao:'Integração'};
+  var checks = proc.checks||{};
+  var linhas = [];
+  var pg = calcProgresso(proc);
+
+  Object.keys(secNames).forEach(function(sec){
+    todos.filter(function(it){return it.secao===sec;}).forEach(function(it){
+      var ck = checks[it.id];
+      if (ck && (ck===true || ck.done)) {
+        var data = typeof ck==='object'&&ck.data ? fmtDate(ck.data) : '—';
+        var resp2 = typeof ck==='object'&&ck.resp ? ck.resp : 'auto';
+        var obs2  = typeof ck==='object'&&ck.obs ? ' ('+ck.obs+')' : '';
+        linhas.push('['+secNames[sec]+'] '+it.texto+' — '+data+' por '+resp2+obs2);
+      }
+    });
+  });
+
+  var obsTexto = 'Progresso: '+pg.done+'/'+pg.total+' itens ('+pg.pct+'%)'
+    + (d.admissao ? ' | Admissão: '+fmtDate(d.admissao) : '')
+    + (proc.perfil ? ' | Perfil: '+proc.perfil.toUpperCase() : '')
+    + (linhas.length ? '\n\n' + linhas.join('\n') : '');
+
+  // Verificar se já existe evento de admissão para este processo
+  db.collection('dossie_eventos')
+    .where('funcId','==',funcId)
+    .where('tipoId','==','integ')
+    .get().then(function(snap){
+      var evId = snap.docs.length ? snap.docs[0].id : null;
+      var evRef = evId ? db.collection('dossie_eventos').doc(evId) : db.collection('dossie_eventos').doc();
+      evRef.set({
+        id: evRef.id, funcId: funcId, tipoId: 'integ',
+        titulo: 'Checklist de Admissão — '+pg.pct+'% concluído',
+        data: (d.admissao||new Date().toISOString().split('T')[0]),
+        obs: obsTexto,
+        resp: proc.lancadoPor||'RH',
+        criadoEm: new Date().toISOString(),
+        origemAdmissao: proc.id,
+      }, {merge: true});
+    });
 }
 
 function excluirProcesso() {

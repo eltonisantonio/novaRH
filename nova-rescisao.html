@@ -750,32 +750,63 @@ function finalizarProcesso(){
           toast('Processo finalizado! (Funcionário não encontrado no Dossiê — evento não criado)','warn');
           mostrarLista(); return;
         }
-        // Criar evento de desligamento no Dossiê
-        var evRef=db.collection('dossie_eventos').doc();
-        var obsTexto='Desligamento: '+p.deslig
-          +(p.tipo?' | Tipo: '+p.tipo.replace(/_/g,' '):'')
-          +(hom.data?' | Homologação: '+fmtDate(hom.data):'')
+
+        var batch = db.batch();
+
+        // ── Evento 1: Desligamento ──
+        var ev1 = db.collection('dossie_eventos').doc();
+        var obsDeslig = 'Tipo: '+(p.tipo||'—').replace(/_/g,' ')
+          +' | Data desligamento: '+fmtDate(p.deslig)
+          +(hom.data?' | Data homologação: '+fmtDate(hom.data):'')
           +(hom.local?' | Local: '+hom.local:'')
-          +(hom.obs?' | Obs: '+hom.obs:'');
-        evRef.set({
-          id:evRef.id, funcId:funcId, tipoId:'deslig',
-          titulo:'Desligamento — '+p.tipo.replace(/_/g,' '),
+          +(hom.obs?' | Obs: '+hom.obs:'')
+          +(p.obs?' | '+p.obs:'');
+        batch.set(ev1, {
+          id:ev1.id, funcId:funcId, tipoId:'deslig',
+          titulo:'Desligamento — '+(p.tipo||'outro').replace(/_/g,' '),
           data:p.deslig||now.split('T')[0],
-          obs:obsTexto,
+          obs:obsDeslig, resp:p.criadoPor||'RH',
+          criadoEm:now, origemRescisao:p.id,
+        });
+
+        // ── Evento 2: Checklist da Rescisão ──
+        var itensAll = _itens.length ? _itens : ITENS_DEFAULT;
+        var secNames = {rh:'RH/DP',sesmt:'SESMT',amb:'Ambulatório',ti:'TI',log:'Logística',alm:'Almoxarifado'};
+        var checks = p.checks||{};
+        var linhasCheck = [];
+        Object.keys(secNames).forEach(function(sec){
+          var itensSec = itensAll.filter(function(it){return it.sector===sec;});
+          itensSec.forEach(function(it){
+            var ck = checks[it.id];
+            if(ck){
+              var data = typeof ck==='object'?fmtDate(ck.data):'—';
+              var resp = typeof ck==='object'?(ck.resp||'—'):'RH';
+              var obs  = typeof ck==='object'&&ck.obs?(' ('+ck.obs+')'):'';
+              linhasCheck.push('['+secNames[sec]+'] '+it.text+' — '+data+' por '+resp+obs);
+            }
+          });
+        });
+
+        var ev2 = db.collection('dossie_eventos').doc();
+        batch.set(ev2, {
+          id:ev2.id, funcId:funcId, tipoId:'deslig',
+          titulo:'Checklist de Rescisão — '+(linhasCheck.length)+' itens concluídos',
+          data:p.deslig||now.split('T')[0],
+          obs:linhasCheck.join('\n'),
           resp:p.criadoPor||'RH',
           criadoEm:now, origemRescisao:p.id,
-        }).then(function(){
+        });
+
+        batch.commit().then(function(){
           // Marcar como desligado
           if(funcId.startsWith('adm_') && admDocId){
-            // Funcionário da Admissão — marcar desligado no processo
             db.collection('adm_processos').doc(admDocId).update({
               desligado:true, desligadoEm:now, desligadoPor:p.criadoPor||'RH'
             });
           } else {
-            // Cadastro manual no Dossiê
             db.collection('dossie_funcs').doc(funcId).update({desligado:true,atualizadoEm:now});
           }
-          toast('Processo finalizado! Evento criado no Dossiê.','ok');
+          toast('Processo finalizado! Dossiê atualizado com checklist.','ok');
           mostrarLista();
         });
       });

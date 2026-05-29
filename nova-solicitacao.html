@@ -372,12 +372,25 @@ const EMAILJS_TEMPLATE_N2 = 'template_1vafvh8';
 const EMAILJS_PUBLIC    = 'AtHQdnGVUyUK30fSt';
 emailjs.init(EMAILJS_PUBLIC);
 
+async function reenviarEmailN2(id){
+  var sols = await getSols();
+  var s = sols.find(function(x){return x.id===id;});
+  if(!s) return;
+  var n2s = await getN2s();
+  var n2 = n2s.find(function(n){return n.setor===s.setor;});
+  if(!n2){toast('Nenhum N2 cadastrado para o setor "'+s.setor+'".','err');return;}
+  var ok = await enviarEmailN2(s, n2);
+  toast(ok ? 'E-mail reenviado para '+n2.nome+'!' : 'Falha ao reenviar. Verifique o EmailJS.', ok?'ok':'err');
+}
+
 async function enviarEmailN2(sol, n2){
   try {
     var baseUrl = window.location.href.replace(/\/[^\/]*(\?.*)?$/, '/');
     var linkN2 = baseUrl + 'nova-n2.html?sol=' + sol.id;
     await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_N2, {
       to_email:    n2.email,
+      name:        n2.nome,
+      message:     'Nova solicitação de vaga aguardando sua aprovação.',
       n2_nome:     n2.nome,
       gestor:      sol.gestor,
       cargo:       sol.cargo,
@@ -519,7 +532,8 @@ async function renderLista(){
       acoes+='<button class="btn btn-danger btn-sm" onclick="openReprovar(\''+s.id+'\',\'rh\')"><i class="ti ti-x"></i> Reprovar</button>';
     }
     if(s.status==='com_n2'){
-      acoes+='<span style="font-size:11px;color:var(--text3);font-weight:600">Aguardando N2</span>';
+      acoes+='<button class="btn btn-warn btn-sm" onclick="reenviarEmailN2(''+s.id+'')"><i class="ti ti-mail-forward"></i> Reenviar E-mail N2</button>';
+      acoes+='<span style="font-size:11px;color:var(--text3);font-weight:600;margin-left:4px">Aguardando N2</span>';
     }
     if(s.status==='aprovado_n2'){
       acoes+='<button class="btn btn-success btn-sm" onclick="openAprovar(\''+s.id+'\')"><i class="ti ti-check"></i> Criar Vaga</button>';

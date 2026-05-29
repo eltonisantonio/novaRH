@@ -363,13 +363,11 @@ async function notificarRH(decisao, justificativa){
   try {
     await emailjs.send(EMAILJS_SERVICE, EMAILJS_TEMPLATE_RH, {
       to_email: 'rh@raguife.com.br',
-      gestor: solData.gestor,
-      cargo: solData.cargo,
-      setor: solData.setor,
-      empresa: solData.empresa,
-      codigo: solData.codigo,
-      n2_nome: solData.n2Nome || 'N2',
-      decisao: decisao,
+      name:     solData.n2Nome || 'N2',
+      message:  'O N2 ' + (solData.n2Nome||'N2') + ' ' + (decisao==='APROVADO'?'aprovou':'reprovou') + ' a solicitação ' + solData.codigo + '.',
+      gestor:   solData.gestor,
+      cargo:    solData.cargo,
+      decisao:  decisao,
       justificativa: justificativa || '—',
     });
     console.log('[EmailJS] Notificação enviada ao RH');

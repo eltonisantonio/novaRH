@@ -189,17 +189,6 @@ function toggleSubstituto(){
   document.getElementById('bloco-substituto').style.display=(m==='SUBSTITUICAO')?'block':'none';
 }
 
-async function gerarId(){
-  return 'sol_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
-}
-
-async function gerarCodigo(){
-  var ano=new Date().getFullYear();
-  var sols=await FDB.solicitacoes.getAll();
-  var n=(sols.length+1).toString().padStart(3,'0');
-  return 'SOL-'+ano+'-'+n;
-}
-
 async function enviarSolicitacao(){
   var nome=(document.getElementById('g-nome').value||'').trim();
   var email=(document.getElementById('g-email').value||'').trim();
@@ -221,38 +210,47 @@ async function enviarSolicitacao(){
   if(!escala){alert('Selecione a escala de trabalho.');return;}
   if(motivo==='SUBSTITUICAO'&&!substituto){alert('Informe o colaborador a ser substituído.');return;}
 
-  var sols=[];
-  try{sols=JSON.parse(localStorage.getItem(SOL_KEY)||'[]');}catch{}
+  // Gerar ID único garantido pelo Firestore
+  var docRef = firebase.firestore().collection('solicitacoes').doc();
+  var solId = docRef.id;
+
+  // Gerar código sequencial baseado no total atual
+  var snap = await firebase.firestore().collection('solicitacoes').get();
+  var total = snap.size;
+  var ano = new Date().getFullYear();
+  var codigo = 'SOL-'+ano+'-'+String(total+1).padStart(3,'0');
 
   var sol={
-    id:gerarId(),
-    codigo:(await gerarCodigo()),
-    criadoEm:new Date().toISOString(),
-    status:'pendente', // pendente → aprovado / reprovado
-    gestor:sanitize(nome),
-    email:sanitize(email),
-    empresa:empresa,
-    setor:sanitize(setor),
-    cargo:sanitize(cargo).toUpperCase(),
-    qtd:1,
-    motivo:motivo,
-    escala:escala,
-    substituto:sanitize(substituto),
-    requisitos:sanitize(requisitos),
-    obs:sanitize(obs),
-    // histórico de ações do RH
+    id: solId,
+    codigo: codigo,
+    criadoEm: new Date().toISOString(),
+    status: 'pendente',
+    gestor: sanitize(nome),
+    email: sanitize(email),
+    empresa: empresa,
+    setor: sanitize(setor),
+    cargo: sanitize(cargo).toUpperCase(),
+    qtd: 1,
+    motivo: motivo,
+    escala: escala,
+    substituto: sanitize(substituto),
+    requisitos: sanitize(requisitos),
+    obs: sanitize(obs),
     historico:[{
-      dt:new Date().toISOString(),
-      acao:'SOLICITACAO_CRIADA',
-      por:sanitize(nome),
+      dt: new Date().toISOString(),
+      acao: 'SOLICITACAO_CRIADA',
+      por: sanitize(nome),
     }],
   };
 
-  await FDB.solicitacoes.add(sol);
-
-  document.getElementById('sol-codigo').textContent='Protocolo: '+sol.codigo;
-  document.getElementById('view-form').style.display='none';
-  document.getElementById('view-sucesso').style.display='flex';
+  try {
+    await docRef.set(sol);
+    document.getElementById('sol-codigo').textContent='Protocolo: '+sol.codigo;
+    document.getElementById('view-form').style.display='none';
+    document.getElementById('view-sucesso').style.display='flex';
+  } catch(e) {
+    alert('Erro ao salvar: '+e.message);
+  }
 }
 </script>
 </body>

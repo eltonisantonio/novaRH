@@ -80,7 +80,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .check-item{display:flex;align-items:flex-start;gap:12px;padding:10px 18px;border-bottom:1px solid var(--border);transition:background .1s;}
 .check-item:last-child{border-bottom:none;}
 .check-item.ok{background:#f8fff4;}
-.check-item.alert{background:#fff8f8;}
+.check-item.alert{background:#fff0f0;border-left:3px solid #e05252;}
 .check-item.ok .check-box{background:var(--lime);border-color:var(--lime);}
 .check-item.alert .check-box{background:#fdeaea;border-color:#f5c6c6;}
 .check-box{width:20px;height:20px;border-radius:4px;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:1px;transition:all .15s;}
@@ -177,7 +177,9 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         <button class="tab active" id="tab-proc" onclick="showTab('proc')">Processos</button>
         <button class="tab" id="tab-cfg" onclick="showTab('cfg')">Configurações</button>
       </div>
-      <div class="ml-auto" style="display:flex;gap:8px;">
+      <div class="ml-auto" style="display:flex;gap:8px;align-items:center;">
+        <span style="font-size:11px;color:var(--text2);font-weight:600">Responsável:</span>
+        <input type="text" id="inp-responsavel" placeholder="Seu nome" style="padding:6px 10px;border:1px solid var(--border2);border-radius:var(--r);font-size:12px;font-family:Inter,sans-serif;outline:none;width:160px">
         <button class="btn btn-primary btn-sm" onclick="openNovoProcesso()"><i class="ti ti-upload"></i> Upload FO1029</button>
       </div>
     </div>
@@ -544,7 +546,7 @@ function toast(msg, tipo) {
   el.classList.add('show');
   setTimeout(function(){el.classList.remove('show');}, 2800);
 }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); if(id==='modal-proc') _procAtual=null; }
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function fmtDate(s) {
   if (!s) return '';
@@ -565,7 +567,18 @@ function calcProgresso(proc) {
   var itens = getItensParaPerfil(proc.perfil||'geral');
   var obrig = itens.filter(function(it){return !it.opcional;});
   var feitos = obrig.filter(function(it){
-    return proc.checks && proc.checks[it.id] === true;
+    // Considerar feito se: marcado manualmente OU campo auto preenchido E sem alerta
+    if (proc.checks && proc.checks[it.id] === true) return true;
+    if (it.campoAuto && proc.dados && proc.dados[it.campoAuto]) {
+      var regra = _regras.find(function(r){ return r.perfil===proc.perfil && r.campo===it.campoAuto; });
+      if (regra) {
+        var val = String(proc.dados[it.campoAuto]||'').trim().toUpperCase();
+        var esp = String(regra.valor||'').trim().toUpperCase();
+        return val === esp; // só conta se valor correto
+      }
+      return true; // campo preenchido sem regra = ok
+    }
+    return false;
   });
   return {done: feitos.length, total: obrig.length, pct: obrig.length ? Math.round(feitos.length/obrig.length*100) : 0};
 }
@@ -633,6 +646,7 @@ function renderProcessos() {
       '<div class="proc-meta">'+(p.dados&&p.dados.empresa?p.dados.empresa:'')+
       (p.dados&&p.dados.cargo?' · '+p.dados.cargo:'')+
       (p.dados&&p.dados.admissao?' · Admissão: '+fmtDate(p.dados.admissao):'')+
+      (p.lancadoPor?' · Por: '+p.lancadoPor:'')+
       '</div></div>'+statusBadge+'</div>'+
       '<div class="proc-footer">'+
       '<span class="tag-emp">'+(p.perfil||'—')+'</span>'+
@@ -671,33 +685,27 @@ function processarFO1029(file) {
     try {
       var wb = XLSX.read(e.target.result, {type:'binary', cellDates:true});
       var ws = wb.Sheets[wb.SheetNames[0]];
-      var rows = XLSX.utils.sheet_to_json(ws, {defval:'', raw:false});
-
-      // O FO1029 tem cabeçalho na linha 2 (linha 1 é metadados)
-      // Tentar encontrar a linha com os campos conhecidos
-      var headerRow = -1;
+      // FO1029: linha 1 = metadados, linha 2 = cabeçalho, linha 3+ = dados
+      var raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
       var dataRows = [];
+      var headerRow = -1;
 
-      // Verificar se rows[0] tem os campos conhecidos
-      if (rows.length && rows[0]['Nome'] !== undefined) {
-        dataRows = rows;
-      } else if (rows.length > 1) {
-        // Pode ter linha de cabeçalho extra — usar sheet_to_json com header
-        var raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
-        // Encontrar linha do header
-        for (var i = 0; i < raw.length; i++) {
-          if (raw[i].indexOf('Nome') !== -1 && raw[i].indexOf('CPF') !== -1) {
-            headerRow = i; break;
-          }
+      // Encontrar linha do header (tem "Nome" e "CPF")
+      for (var i = 0; i < raw.length; i++) {
+        if (raw[i].indexOf('Nome') !== -1 && raw[i].indexOf('CPF') !== -1) {
+          headerRow = i; break;
         }
-        if (headerRow !== -1) {
-          var headers = raw[headerRow];
-          for (var j = headerRow+1; j < raw.length; j++) {
-            if (!raw[j][0] && !raw[j][1]) continue;
-            var obj = {};
-            headers.forEach(function(h, idx) { if (h) obj[h] = raw[j][idx] || ''; });
-            dataRows.push(obj);
-          }
+      }
+
+      if (headerRow !== -1) {
+        var headers = raw[headerRow];
+        for (var j = headerRow+1; j < raw.length; j++) {
+          // Pular linhas completamente vazias
+          var hasData = raw[j].some(function(v){ return v !== '' && v !== null && v !== undefined; });
+          if (!hasData) continue;
+          var obj = {};
+          headers.forEach(function(h, idx) { if (h) obj[String(h).trim()] = raw[j][idx] !== undefined ? String(raw[j][idx]).trim() : ''; });
+          dataRows.push(obj);
         }
       }
 
@@ -727,6 +735,7 @@ function processarFO1029(file) {
         if (!dados.nome) return; // linha vazia
 
         var docRef = db.collection('adm_processos').doc();
+        var resp = (document.getElementById('inp-responsavel')||{}).value||'RH';
         batch.set(docRef, {
           id: docRef.id,
           criadoEm: new Date().toISOString(),
@@ -735,6 +744,8 @@ function processarFO1029(file) {
           dados: dados,
           checks: {},
           obs: '',
+          lancadoPor: resp.trim()||'RH',
+          historico: [{dt: new Date().toISOString(), acao: 'PROCESSO_CRIADO', por: resp.trim()||'RH'}],
         });
         criados++;
       });
@@ -908,8 +919,14 @@ function renderChecklist() {
         +'<div class="check-text">'
         +'<div class="check-label'+(it.opcional?' optional':'')+'">'+it.texto+(it.opcional?' <span style="color:var(--text3);font-size:10px">(opcional)</span>':'')+'</div>'
         +(st.status==='auto_ok'?'<div class="check-value ok"><i class="ti ti-check" style="font-size:10px"></i> '+escHtml(st.valor)+'</div>':'')
-        +(st.status==='alert'?'<div class="check-value alert">'+escHtml(st.valor)+'</div>'
-          +'<div class="check-alert-msg"><i class="ti ti-alert-triangle" style="font-size:11px"></i> Esperado: '+escHtml(st.esperado)+'</div>':'')
+        +(st.status==='alert'?
+            '<div style="display:flex;flex-direction:column;gap:3px;margin-top:4px">'
+            +'<div style="background:#fdeaea;border:1px solid #f5c6c6;border-radius:4px;padding:5px 8px;font-size:11px;font-weight:700;color:#8b1c1c;display:flex;align-items:center;gap:5px">'
+            +'<i class="ti ti-alert-triangle"></i> SISTEMA: '+escHtml(st.valor)+'</div>'
+            +'<div style="background:#e8f8ef;border:1px solid #a8d8b8;border-radius:4px;padding:5px 8px;font-size:11px;font-weight:700;color:#1a5c35;display:flex;align-items:center;gap:5px">'
+            +'<i class="ti ti-check"></i> ESPERADO ('+(_procAtual&&_procAtual.perfil||'perfil').toUpperCase()+'): '+escHtml(st.esperado)+'</div>'
+            +'<div style="font-size:10px;color:#8b1c1c;font-weight:600">Campo: '+FO_LABELS[it.campoAuto||'']+'</div>'
+            +'</div>':'')
         +(st.status==='pending'&&!it.campoAuto?'<div class="check-value empty">Aguardando confirmação manual</div>':'')
         +(st.status==='pending'&&it.campoAuto?'<div class="check-value empty">Campo não preenchido no FO1029</div>':'')
         +'</div></div>';
@@ -947,11 +964,16 @@ function salvarProcesso() {
   var pg = calcProgresso(_procAtual);
   _procAtual.status = pg.pct===100 ? 'concluido' : 'em_andamento';
 
+  var resp = (document.getElementById('inp-responsavel')||{}).value||_procAtual.lancadoPor||'RH';
+  if (!_procAtual.historico) _procAtual.historico = [];
+  _procAtual.historico.push({dt: new Date().toISOString(), acao: 'SALVO', por: resp.trim()||'RH'});
   db.collection('adm_processos').doc(_procAtual.id).update({
     dados:   _procAtual.dados,
     checks:  _procAtual.checks,
     perfil:  _procAtual.perfil,
     status:  _procAtual.status,
+    lancadoPor: resp.trim()||_procAtual.lancadoPor||'RH',
+    historico: _procAtual.historico,
     atualizadoEm: new Date().toISOString(),
   }).then(function() {
     toast('Processo salvo!', 'ok');

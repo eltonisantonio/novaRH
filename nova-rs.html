@@ -912,6 +912,7 @@ var POPUP_CONFIG = {
     {id:'pp-solicitacao',label:'Solicitação de Emprego',type:'select',options:['recebida','pendente'],required:true,hint:'Obrigatório'},
     {id:'pp-dt-entrevista',label:'Data/Hora da Entrevista',type:'datetime-local'},
     {id:'pp-resultado-entrevista',label:'Resultado',type:'select',options:['aprovado','reprovado']},
+    {id:'pp-motivo-rep',label:'Motivo (se reprovado)',type:'select',options:['COMPETENCIA TECNICA','COMPETENCIA COMPORTAMENTAL','INDISPONIBILIDADE DE HORARIO','FALTOU NA ENTREVISTA/TESTE'],requiredIf:'pp-resultado-entrevista:reprovado'},
   ]},
   3:{title:'Teste prático agendado',icon:'ti-calendar-event',fields:[
     {id:'pp-dt-teste',label:'Data/Hora do Teste',type:'datetime-local',required:true},
@@ -919,6 +920,7 @@ var POPUP_CONFIG = {
   4:{title:'Teste prático realizado',icon:'ti-clipboard-list',fields:[
     {id:'pp-termo',label:'Termo de Regras',type:'select',options:['assinado','pendente'],required:true},
     {id:'pp-avaliacao',label:'Avaliação do Gestor',type:'select',options:['aprovado','reprovado','pendente'],required:true},
+    {id:'pp-motivo-rep',label:'Motivo (se reprovado)',type:'select',options:['COMPETENCIA TECNICA','COMPETENCIA COMPORTAMENTAL','INDISPONIBILIDADE DE HORARIO','FALTOU NA ENTREVISTA/TESTE'],requiredIf:'pp-avaliacao:reprovado'},
     {id:'pp-dt-teste-real',label:'Data/Hora do Teste',type:'datetime-local'},
   ]},
   5:{title:'Docs / Exame médico',icon:'ti-file-text',fields:[
@@ -974,6 +976,15 @@ function confirmarTransicao() {
         var el = document.getElementById(f.id);
         if (!el || !el.value.trim()) { toast('Campo obrigatório: '+f.label,'err'); return; }
       }
+      // requiredIf: "outro_campo:valor"
+      if (f.requiredIf) {
+        var parts = f.requiredIf.split(':');
+        var depEl = document.getElementById(parts[0]);
+        if (depEl && depEl.value === parts[1]) {
+          var thisEl = document.getElementById(f.id);
+          if (!thisEl || !thisEl.value.trim()) { toast('Campo obrigatório quando reprovado: '+f.label,'err'); return; }
+        }
+      }
     }
   }
   var vagas = DB.vagas.getAll();
@@ -1009,7 +1020,8 @@ function confirmarTransicao() {
     // Redirecionamentos automáticos
     if (pendingTransition.toEtapa===2&&c.resultadoEntrevista==='reprovado') {
       c.etapa=8; c.historicoEtapas.push(8);
-      if (!c.motivoRep) c.motivoRep='REPROVADO NA ENTREVISTA';
+      var motRep2 = document.getElementById('pp-motivo-rep');
+      c.motivoRep = (motRep2&&motRep2.value) ? motRep2.value : 'REPROVADO NA ENTREVISTA';
       DB.vagas.save(vagas);
       document.getElementById('popup-transicao').classList.remove('open');
       pendingTransition={candId:null,toEtapa:null,vagaId:null};
@@ -1018,7 +1030,8 @@ function confirmarTransicao() {
     }
     if (pendingTransition.toEtapa===4&&c.avaliacao==='reprovado') {
       c.etapa=8; c.historicoEtapas.push(8);
-      if (!c.motivoRep) c.motivoRep='REPROVADO NO TESTE';
+      var motRep4 = document.getElementById('pp-motivo-rep');
+      c.motivoRep = (motRep4&&motRep4.value) ? motRep4.value : 'REPROVADO NO TESTE';
       DB.vagas.save(vagas);
       document.getElementById('popup-transicao').classList.remove('open');
       pendingTransition={candId:null,toEtapa:null,vagaId:null};

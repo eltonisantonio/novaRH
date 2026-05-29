@@ -7,6 +7,8 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <style>
 :root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -149,12 +151,6 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .perfil-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);border-radius:var(--r);margin-bottom:6px;border:1px solid var(--border);}
 .perfil-nome{flex:1;font-weight:700;font-size:13px;}
 </style>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-db.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="firebase-db.js"></script>
 </head>
 <body>
 <div class="app">
@@ -399,592 +395,745 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 </div>
 
 <script>
-// ======== DATA LAYER ========
-const DB={vagas:FDB.vagas,eventos:FDB.eventos,perfis:FDB.perfis};
+// ════════════════════════════════════════════
+// FIREBASE — inicialização única
+// ════════════════════════════════════════════
+if (!firebase.apps.length) {
+  firebase.initializeApp({
+    apiKey: "AIzaSyAhoLSoe7bRdDakJ6apJcnWMBL5RHmQtDI",
+    authDomain: "novarh-4fbc6.firebaseapp.com",
+    projectId: "novarh-4fbc6",
+    storageBucket: "novarh-4fbc6.firebasestorage.app",
+    messagingSenderId: "805399291743",
+    appId: "1:805399291743:web:ac13f2572f875c0ec1b8ea"
+  });
+}
+var db = firebase.firestore();
 
-// ======== STATE ========
-let vagaAtivaId=null,candEditId=null,dragId=null;
-let pendingTransition={candId:null,toEtapa:null};
-
-const ETAPAS=[
-  {label:'Entrevista\nAgendada',color:'#b0c8e4'},
-  {label:'Entrevista\nRealizada',color:'#d4a020'},
-  {label:'Teste\nAgendado',color:'#c07830'},
-  {label:'Teste\nRealizado',color:'#9b72cf'},
-  {label:'Docs /\nExame',color:'#4caf80'},
-  {label:'Exame\nRecebido',color:'#2196a0'},
-  {label:'Integração\nAgendada',color:'#8ab800'},
-  {label:'Reprovado /\nDesistiu',color:'#e05252'},
+// ════════════════════════════════════════════
+// CACHE LOCAL — para operações síncronas (kanban, drag, popup)
+// O Firestore escuta mudanças e mantém o cache atualizado
+// ════════════════════════════════════════════
+var _vagas   = [];
+var _eventos = [];
+var _perfis  = [];
+var PERFIS_DEFAULT = [
+  {id:'p1',nome:'OPERACIONAL',sla:10},{id:'p2',nome:'MOTORISTA',sla:25},
+  {id:'p3',nome:'MANUTENCAO',sla:45},{id:'p4',nome:'GESTAO',sla:30},
+  {id:'p5',nome:'ADMINISTRATIVO',sla:15},{id:'p6',nome:'PCD',sla:45},
+  {id:'p7',nome:'AJUDANTE DE MOTORISTA',sla:15}
 ];
 
-// ======== UTILS ========
-function sanitize(s){if(!s)return'';return s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9\s\-\/\.]/g,'');}
-function fmtDate(d){if(!d)return'—';const[y,m,day]=d.split('T')[0].split('-');return`${day}/${m}/${y}`;}
-function fmtDT(d){if(!d)return'—';const[date,time]=d.split('T');const[y,m,day]=date.split('-');return`${day}/${m}/${y} ${(time||'').slice(0,5)}`;}
-function today(){return new Date().toISOString().split('T')[0];}
-function addDaysFrom(base,n){const d=new Date(base+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
-function prazoInfo(vaga){
-  if(vaga.isBancoTalentos)return{cls:'',label:'Banco de Talentos'};
-  if(!vaga.prazo)return{cls:'',label:''};
-  if(vaga.aceiteData)return{cls:'prazo-aceite',label:`Aceite: ${fmtDate(vaga.aceiteData)}`};
-  const diff=(new Date(vaga.prazo)-new Date())/(864e5);
-  if(diff<0)return{cls:'prazo-venc',label:`Vencido há ${Math.abs(Math.ceil(diff))}d`};
-  if(diff<=5)return{cls:'prazo-warn',label:`${Math.ceil(diff)}d restantes`};
-  return{cls:'prazo-ok',label:`Prazo: ${fmtDate(vaga.prazo)} · SLA ${vaga.sla}d`};
-}
-function toast(msg,type='ok'){
-  const t=document.createElement('div');
-  const bg=type==='ok'?'#1a3a28':type==='err'?'#8b1c1c':type==='warn'?'#7d4e00':'#0e0f12';
-  const cl=type==='ok'?'#6ee8a0':type==='err'?'#fbd8d8':type==='warn'?'#fef8ec':'#d7ff3d';
-  t.style.cssText=`position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:8px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;z-index:9999;color:${cl};background:${bg};box-shadow:0 4px 20px rgba(0,0,0,.25)`;
-  t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),3000);
-}
-function initUpper(){
-  document.querySelectorAll('input.upper,textarea.upper').forEach(el=>{
-    el.addEventListener('input',function(){const p=this.selectionStart;this.value=sanitize(this.value);try{this.setSelectionRange(p,p);}catch{}});
+// ════════════════════════════════════════════
+// LISTENERS FIRESTORE — atualizam o cache
+// ════════════════════════════════════════════
+function iniciarListeners() {
+  db.collection('vagas').onSnapshot(function(snap) {
+    _vagas = snap.docs.map(function(d) { return Object.assign({id: d.id}, d.data()); });
+    ensureBancoTalentos();
+    renderVagas();
+    updateStats();
+  });
+  db.collection('eventos').onSnapshot(function(snap) {
+    _eventos = snap.docs.map(function(d) { return Object.assign({id: d.id}, d.data()); });
+    if (document.getElementById('view-agenda').style.display !== 'none') renderAgenda();
+  });
+  db.collection('perfis').onSnapshot(function(snap) {
+    _perfis = snap.docs.map(function(d) { return Object.assign({id: d.id}, d.data()); });
+    if (!_perfis.length) _perfis = PERFIS_DEFAULT;
   });
 }
 
-// ======== STATS ========
-async function updateStats(){
-  const vagas = await DB.vagas.getAll().filter(v=>!v.isBancoTalentos&&v.status!=='cancelada');
-  const abertas=vagas.filter(v=>v.status==='aberta');
-  // ativos: apenas candidatos em vagas abertas ou pausadas, excluindo reprovados (etapa 7)
-  const vagasAtivas=vagas.filter(v=>v.status==='aberta'||v.status==='pausada');
-  const cands=vagasAtivas.reduce((s,v)=>s+(v.candidatos||[]).filter(c=>c.etapa<7).length,0);
-  // integrações: todas as vagas (inclusive encerradas), etapa 6
-  const integ=vagas.reduce((s,v)=>s+(v.candidatos||[]).filter(c=>c.etapa===6).length,0);
-  const venc=abertas.filter(v=>v.prazo&&!v.aceiteData&&new Date(v.prazo)<new Date()).length;
-  document.getElementById('stat-abertas').textContent=abertas.length;
-  document.getElementById('stat-cands').textContent=cands;
-  document.getElementById('stat-integ').textContent=integ;
-  document.getElementById('stat-venc').textContent=venc;
+// ════════════════════════════════════════════
+// DB — wrapper Firestore síncrono via cache
+// ════════════════════════════════════════════
+var DB = {
+  vagas: {
+    getAll: function() { return _vagas; },
+    save: function(arr) {
+      // Salvar todas as vagas do array (operação em batch)
+      var batch = db.batch();
+      arr.forEach(function(v) {
+        var id = String(v.id || ('vg_' + Date.now())).replace(/[^a-zA-Z0-9_-]/g,'_');
+        batch.set(db.collection('vagas').doc(id), Object.assign({}, v, {id: id}));
+      });
+      // Deletar vagas que não estão mais no array
+      var idsNovos = arr.map(function(v) { return String(v.id); });
+      _vagas.forEach(function(v) {
+        if (idsNovos.indexOf(String(v.id)) === -1) {
+          batch.delete(db.collection('vagas').doc(String(v.id)));
+        }
+      });
+      batch.commit().catch(function(e) { console.error('[DB.vagas.save]', e); });
+      _vagas = arr; // atualiza cache imediatamente
+    },
+    add: function(v) {
+      v.id = 'vg_' + Date.now();
+      v.criadoEm = new Date().toISOString();
+      v.candidatos = v.candidatos || [];
+      v.status = v.status || 'aberta';
+      db.collection('vagas').doc(v.id).set(v).catch(function(e) { console.error('[DB.vagas.add]', e); });
+      _vagas.push(v);
+      return v;
+    },
+    update: function(id, data) {
+      data.atualizadoEm = new Date().toISOString();
+      db.collection('vagas').doc(String(id)).update(data).catch(function(e) { console.error('[DB.vagas.update]', e); });
+      var idx = _vagas.findIndex(function(x) { return x.id === id; });
+      if (idx >= 0) Object.assign(_vagas[idx], data);
+    },
+    remove: function(id) {
+      db.collection('vagas').doc(String(id)).delete().catch(function(e) { console.error('[DB.vagas.remove]', e); });
+      _vagas = _vagas.filter(function(x) { return x.id !== id; });
+    }
+  },
+  eventos: {
+    getAll: function() { return _eventos; },
+    add: function(e) {
+      e.id = 'ev_' + Date.now() + '_' + Math.random().toString(36).slice(2,5);
+      db.collection('eventos').doc(e.id).set(e).catch(function(err) { console.error('[DB.eventos.add]', err); });
+      _eventos.push(e);
+      return e;
+    },
+    remove: function(id) {
+      db.collection('eventos').doc(String(id)).delete().catch(function(e) { console.error('[DB.eventos.remove]', e); });
+      _eventos = _eventos.filter(function(x) { return x.id !== id; });
+    }
+  },
+  perfis: {
+    getAll: function() { return _perfis.length ? _perfis : PERFIS_DEFAULT; },
+    save: function(arr) {
+      var batch = db.batch();
+      arr.forEach(function(p) {
+        batch.set(db.collection('perfis').doc(String(p.id)), p);
+      });
+      batch.commit().catch(function(e) { console.error('[DB.perfis.save]', e); });
+      _perfis = arr;
+    }
+  }
+};
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+var vagaAtivaId = null;
+var candEditId  = null;
+var dragId      = null;
+var pendingTransition = {candId:null, toEtapa:null, vagaId:null};
+
+var ETAPAS = [
+  {label:'Entrevista\nAgendada',   color:'#b0c8e4'},
+  {label:'Entrevista\nRealizada',  color:'#d4a020'},
+  {label:'Teste\nAgendado',        color:'#c07830'},
+  {label:'Teste\nRealizado',       color:'#9b72cf'},
+  {label:'Docs /\nExame',          color:'#4caf80'},
+  {label:'Exame\nRecebido',        color:'#2196a0'},
+  {label:'Integração\nAgendada',   color:'#8ab800'},
+  {label:'Reprovado /\nDesistiu',  color:'#e05252'},
+];
+
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+function sanitize(s) {
+  if (!s) return '';
+  return s.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9\s\-\/\.]/g,'');
+}
+function fmtDate(d) {
+  if (!d) return '—';
+  var p = d.split('T')[0].split('-');
+  return p[2]+'/'+p[1]+'/'+p[0];
+}
+function fmtDT(d) {
+  if (!d) return '—';
+  var p = d.split('T'), dt = p[0].split('-');
+  return dt[2]+'/'+dt[1]+'/'+dt[0]+' '+(p[1]||'').slice(0,5);
+}
+function today() { return new Date().toISOString().split('T')[0]; }
+function addDaysFrom(base, n) {
+  var d = new Date(base+'T12:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+function prazoInfo(vaga) {
+  if (!vaga.prazo) return {label:'', cls:''};
+  if (vaga.aceiteData) return {label:'Aceite: '+fmtDate(vaga.aceiteData), cls:'prazo-aceite'};
+  var diff = Math.ceil((new Date(vaga.prazo+'T12:00:00') - new Date()) / 86400000);
+  if (diff < 0)  return {label:'Vencido ('+Math.abs(diff)+'d)', cls:'prazo-venc'};
+  if (diff <= 5) return {label:diff+'d restantes', cls:'prazo-warn'};
+  return {label:'Prazo: '+fmtDate(vaga.prazo), cls:'prazo-ok'};
+}
+function toast(msg, type) {
+  var el = document.getElementById('toast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'toast';
+    el.style.cssText = 'position:fixed;bottom:24px;right:24px;background:var(--black);color:var(--cream);padding:12px 18px;border-radius:6px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;font-family:Inter,sans-serif;';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  el.style.background = type === 'err' ? '#8b1c1c' : type === 'warn' ? '#7d4e00' : 'var(--black)';
+  el.style.opacity = '1';
+  el.style.transform = 'translateY(0)';
+  clearTimeout(el._t);
+  el._t = setTimeout(function() { el.style.opacity='0'; el.style.transform='translateY(8px)'; }, 2800);
+}
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function initUpper() {
+  document.querySelectorAll('.upper').forEach(function(el) {
+    el.addEventListener('input', function() { this.value = this.value.toUpperCase(); });
+  });
 }
 
-// ======== TABS ========
-function setTab(tab,el){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));el.classList.add('active');
-  document.getElementById('view-vagas').style.display=tab==='vagas'?'block':'none';
-  document.getElementById('view-agenda').style.display=tab==='agenda'?'block':'none';
-  if(tab==='agenda')renderAgenda();
+// ════════════════════════════════════════════
+// STATS
+// ════════════════════════════════════════════
+function updateStats() {
+  var vagas = DB.vagas.getAll().filter(function(v) { return !v.isBancoTalentos; });
+  var abertas = vagas.filter(function(v) { return v.status === 'aberta'; });
+  var cands = abertas.reduce(function(s, v) {
+    return s + (v.candidatos||[]).filter(function(c) { return c.etapa < 7; }).length;
+  }, 0);
+  var integ = abertas.reduce(function(s, v) {
+    return s + (v.candidatos||[]).filter(function(c) { return c.etapa === 6; }).length;
+  }, 0);
+  var venc = abertas.filter(function(v) {
+    return v.prazo && !v.aceiteData && new Date(v.prazo+'T12:00:00') < new Date();
+  }).length;
+  document.getElementById('stat-abertas').textContent = abertas.length;
+  document.getElementById('stat-cands').textContent   = cands;
+  document.getElementById('stat-integ').textContent   = integ;
+  document.getElementById('stat-venc').textContent    = venc;
 }
 
-// ======== VAGAS ========
-async function renderVagas(){
-  const q=(document.getElementById('search-vaga').value||'').toLowerCase();
-  const fe=document.getElementById('fe-vaga').value;
-  const fs=document.getElementById('fs-vaga').value;
-  let vagas = await DB.vagas.getAll();
-
-  // banco de talentos always pinned at top
-  const banco=vagas.find(v=>v.isBancoTalentos);
-  const normais=vagas.filter(v=>!v.isBancoTalentos);
-
-  let filtered=normais;
-  if(q)filtered=filtered.filter(v=>(v.cargo||'').toLowerCase().includes(q)||(v.empresa||'').toLowerCase().includes(q)||(v.departamento||'').toLowerCase().includes(q)||(v.codigo||'').toLowerCase().includes(q));
-  if(fe)filtered=filtered.filter(v=>v.empresa===fe);
-  if(fs)filtered=filtered.filter(v=>v.status===fs);
-  filtered=filtered.sort((a,b)=>new Date(b.criadoEm)-new Date(a.criadoEm));
-
-  const el=document.getElementById('lista-vagas');
-  const cards=[...(banco?[banco]:[]),...filtered];
-  if(!cards.length){el.innerHTML=`<div class="empty"><i class="ti ti-briefcase"></i><p>Nenhuma vaga encontrada.</p></div>`;updateStats();return;}
-
-  el.innerHTML=cards.map(v=>vagaCard(v)).join('');
-  updateStats();
+// ════════════════════════════════════════════
+// TABS
+// ════════════════════════════════════════════
+function setTab(tab, el) {
+  document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+  el.classList.add('active');
+  document.getElementById('view-vagas').style.display  = tab === 'vagas'  ? 'block' : 'none';
+  document.getElementById('view-agenda').style.display = tab === 'agenda' ? 'block' : 'none';
+  if (tab === 'agenda') renderAgenda();
 }
 
-function vagaCard(v){
-  const nC=(v.candidatos||[]).length,nA=(v.candidatos||[]).filter(c=>c.etapa<7).length;
-  const pi=prazoInfo(v);
-  let sb='';
-  if(v.isBancoTalentos) sb='<span class="badge badge-talent"><i class="ti ti-star"></i> Banco de Talentos</span>';
-  else if(v.status==='encerrada') sb='<span class="badge badge-gray"><i class="ti ti-lock"></i> Encerrada</span>';
-  else if(v.status==='pausada') sb='<span class="badge badge-amber"><i class="ti ti-player-pause"></i> Pausada</span>';
-  else if(v.status==='cancelada') sb='<span class="badge badge-cancel"><i class="ti ti-ban"></i> Cancelada</span>';
-  else sb='<span class="badge badge-lime"><i class="ti ti-circle-check"></i> Aberta</span>';
+// ════════════════════════════════════════════
+// LISTA DE VAGAS
+// ════════════════════════════════════════════
+function renderVagas() {
+  var q  = (document.getElementById('search-vaga').value||'').toLowerCase();
+  var fe = document.getElementById('fe-vaga').value;
+  var fs = document.getElementById('fs-vaga').value;
+  var vagas = DB.vagas.getAll().filter(function(v) {
+    if (v.isBancoTalentos) return false;
+    if (q && !(v.cargo||'').toLowerCase().includes(q) && !(v.empresa||'').toLowerCase().includes(q) && !(v.departamento||'').toLowerCase().includes(q)) return false;
+    if (fe && v.empresa !== fe) return false;
+    if (fs && v.status !== fs) return false;
+    return true;
+  });
+  vagas.sort(function(a, b) { return (b.criadoEm||'').localeCompare(a.criadoEm||''); });
 
-  const isActive=v.isBancoTalentos||v.status==='aberta'||v.status==='pausada';
-  return`<div class="vaga-card ${v.status==='encerrada'||v.status==='cancelada'?'encerrada':''} ${v.status==='pausada'?'pausada':''} ${v.isBancoTalentos?'banco-talentos-card':''}" onclick="abrirDetalhe('${v.id}')">
-    <div class="vaga-top">
-      <div>
-        <div class="vaga-cargo">${v.cargo} <span style="font-size:11px;font-weight:600;color:var(--text3);font-family:'Inter',sans-serif">${v.codigo||''}</span></div>
-        <div class="vaga-meta">${v.isBancoTalentos?'Sem prazo · ':''} ${v.departamento||'—'} · ${v.perfil||'—'}${v.qtd>1?` · ${v.qtd} vagas`:''}${v.substituto?` · Subst.: ${v.substituto}`:''}</div>
-      </div>
-      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-        ${sb}
-        ${!v.isBancoTalentos?`<span class="tag-empresa">${v.empresa}</span>`:''}
-        <button class="btn btn-sm" style="padding:4px 8px;font-size:11px" onclick="event.stopPropagation();exportarVagaExcel('${v.id}')"><i class="ti ti-file-spreadsheet"></i></button>
-        ${isActive&&!v.isBancoTalentos?`<button class="btn btn-sm btn-danger" style="padding:4px 8px;font-size:11px" onclick="event.stopPropagation();cancelarVaga('${v.id}')"><i class="ti ti-ban"></i></button>`:''}
-      </div>
-    </div>
-    <div class="vaga-footer">
-      <span style="font-size:12px;font-weight:600;color:var(--text2)"><i class="ti ti-users" style="font-size:13px;vertical-align:-2px"></i> ${nC} candidato${nC!==1?'s':''} (${nA} ativo${nA!==1?'s':''})</span>
-      ${!v.isBancoTalentos&&(v.prazo||v.aceiteData)?`<span class="badge badge-gray ${pi.cls}" style="font-size:11px"><i class="ti ti-calendar" style="font-size:12px;vertical-align:-2px"></i> ${pi.label}</span>`:''}
-      ${!v.isBancoTalentos&&v.motivo?`<span class="badge badge-gray" style="font-size:11px">${v.motivo}</span>`:''}
-      ${!v.isBancoTalentos?`<span style="font-size:11px;color:var(--text3);font-weight:500">Abertura: ${fmtDate(v.abertura)}</span>`:''}
-    </div>
-  </div>`;
+  var bt = DB.vagas.getAll().find(function(v) { return v.isBancoTalentos; });
+  var el = document.getElementById('lista-vagas');
+  var html = '';
+  if (bt && !q && !fe && !fs) html += vagaCard(bt);
+  if (!vagas.length && !html) {
+    el.innerHTML = '<div class="empty"><i class="ti ti-briefcase"></i><p>Nenhuma vaga encontrada.</p></div>';
+    return;
+  }
+  html += vagas.map(vagaCard).join('');
+  el.innerHTML = html;
 }
 
-// ======== NOVA VAGA ========
-async function calcPrazo(){
-  const sel=document.getElementById('v-perfil').value;
-  const ab=document.getElementById('v-abertura').value;
-  const p = await DB.perfis.getAll().find(x=>x.nome===sel);
-  if(p){document.getElementById('v-sla').value=p.sla;if(ab)document.getElementById('v-prazo').value=addDaysFrom(ab,p.sla);}
-  else{document.getElementById('v-sla').value='';document.getElementById('v-prazo').value='';}
-}
-document.getElementById('v-abertura').addEventListener('input',calcPrazo);
-
-function toggleSubstituto(){
-  const m=document.getElementById('v-motivo').value;
-  document.getElementById('bloco-substituto').style.display=m==='SUBSTITUICAO'?'block':'none';
-}
-async function openNovaVaga(){
-  document.getElementById('mv-title').textContent='Nova Vaga';
-  ['v-cargo','v-depto','v-obs','v-substituto'].forEach(id=>document.getElementById(id).value='');
-  ['v-empresa','v-perfil','v-motivo'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('v-qtd').value='1';document.getElementById('v-sla').value='';
-  document.getElementById('v-prazo').value='';document.getElementById('v-abertura').value=today();
-  document.getElementById('bloco-substituto').style.display='none';
-  const sel=document.getElementById('v-perfil');
-  sel.innerHTML='<option value="">Selecione</option>'+(await DB.perfis.getAll()).map(p=>`<option value="${p.nome}">${p.nome} (${p.sla}d)</option>`).join('');
-  openModal('modal-vaga');setTimeout(initUpper,50);
-}
-async function gerarCodigo(){
-  const ano=new Date().getFullYear();
-  const vagas = await DB.vagas.getAll().filter(v=>!v.isBancoTalentos);
-  const seq=String(vagas.length+1).padStart(3,'0');
-  return`RH-${ano}-${seq}`;
-}
-function salvarVaga(){
-  const empresa=document.getElementById('v-empresa').value;
-  const cargo=sanitize(document.getElementById('v-cargo').value.trim());
-  const depto=sanitize(document.getElementById('v-depto').value.trim());
-  const perfil=document.getElementById('v-perfil').value;
-  const abertura=document.getElementById('v-abertura').value;
-  const motivo=document.getElementById('v-motivo').value;
-  const substituto=sanitize(document.getElementById('v-substituto').value.trim());
-  if(!empresa||!cargo||!depto||!perfil||!abertura){toast('Preencha os campos obrigatórios.','err');return;}
-  if(motivo==='SUBSTITUICAO'&&!substituto){toast('Informe o colaborador a ser substituído.','err');return;}
-  await DB.vagas.add({codigo:gerarCodigo(),empresa,cargo,departamento:depto,perfil,sla:parseInt(document.getElementById('v-sla').value)||0,abertura,prazo:document.getElementById('v-prazo').value,qtd:parseInt(document.getElementById('v-qtd').value)||1,motivo,substituto:substituto||'',obs:sanitize(document.getElementById('v-obs').value)});
-  toast('Vaga aberta!');closeModal('modal-vaga');renderVagas();
+function vagaCard(v) {
+  var pi = prazoInfo(v);
+  var nAtivos = (v.candidatos||[]).filter(function(c) { return c.etapa < 7; }).length;
+  var nInteg  = (v.candidatos||[]).filter(function(c) { return c.etapa === 6; }).length;
+  var statusBadge = {
+    aberta:    '<span class="badge badge-lime"><i class="ti ti-point-filled" style="font-size:8px"></i> Aberta</span>',
+    encerrada: '<span class="badge badge-gray">Encerrada</span>',
+    pausada:   '<span class="badge badge-amber">Pausada</span>',
+    cancelada: '<span class="badge badge-cancel">Cancelada</span>',
+  };
+  var cls = 'vaga-card'+(v.status!=='aberta'?' '+v.status:'')+(v.isBancoTalentos?' banco-talentos-card':'');
+  return '<div class="'+cls+'" onclick="abrirDetalhe(\''+v.id+\')">'
+    +'<div class="vaga-top">'
+    +'<div><div class="vaga-cargo">'+(v.isBancoTalentos?'<i class="ti ti-star" style="color:var(--lime);margin-right:4px"></i>':'')+v.cargo+'</div>'
+    +'<div class="vaga-meta">'+(v.empresa||'')+(v.departamento?' · '+v.departamento:'')+(v.perfil?' · '+v.perfil:'')+'</div></div>'
+    +(statusBadge[v.status]||'')
+    +'</div>'
+    +'<div class="vaga-footer">'
+    +(v.codigo?'<span class="badge badge-gray"><i class="ti ti-hash" style="font-size:9px"></i> '+v.codigo+'</span>':'')
+    +'<span class="badge badge-gray"><i class="ti ti-users" style="font-size:9px"></i> '+nAtivos+' ativos</span>'
+    +(nInteg?'<span class="badge badge-lime"><i class="ti ti-check" style="font-size:9px"></i> '+nInteg+' integração</span>':'')
+    +(pi.label?'<span class="'+pi.cls+'" style="font-size:11px;font-weight:700">'+pi.label+'</span>':'')
+    +'<div style="flex:1"></div>'
+    +'<button class="btn btn-sm" onclick="event.stopPropagation();exportarVagaExcel(\''+v.id+'\')"><i class="ti ti-file-spreadsheet"></i></button>'
+    +'</div></div>';
 }
 
-// ======== DETALHE / KANBAN ========
-async function abrirDetalhe(id){
-  vagaAtivaId=id;
-  const v = await DB.vagas.getAll().find(x=>x.id===id);if(!v)return;
-  const pi=prazoInfo(v);
-  document.getElementById('det-title').textContent=v.cargo;
-  document.getElementById('det-sub').textContent=`${v.empresa} · ${v.departamento||'—'} · ${v.perfil||'—'} · Abertura: ${fmtDate(v.abertura)}${v.prazo?' · '+pi.label:''}`;
-  const enc=v.status==='encerrada',pau=v.status==='pausada',isBT=!!v.isBancoTalentos;
-  document.getElementById('btn-encerrar').style.display=(enc||isBT)?'none':'inline-flex';
-  document.getElementById('btn-pausar').innerHTML=pau?'<i class="ti ti-player-play"></i> Retomar':'<i class="ti ti-player-pause"></i> Pausar';
-  document.getElementById('btn-pausar').style.display=(enc||isBT)?'none':'inline-flex';
-  renderKanban(v);openModal('modal-detalhe');
+// ════════════════════════════════════════════
+// NOVA VAGA
+// ════════════════════════════════════════════
+function calcPrazo() {
+  var perfId   = document.getElementById('v-perfil').value;
+  var abertura = document.getElementById('v-abertura').value;
+  var perf = DB.perfis.getAll().find(function(p) { return p.id === perfId; });
+  var sla = perf ? perf.sla : 0;
+  document.getElementById('v-sla').value   = sla;
+  document.getElementById('v-prazo').value = abertura && sla ? addDaysFrom(abertura, sla) : '';
 }
-async function encerrarVaga(){
-  if(!confirm('Encerrar esta vaga?'))return;
-  const vagas = await DB.vagas.getAll();
-  const v=vagas.find(x=>x.id===vagaAtivaId);if(!v)return;
-  const banco=vagas.find(x=>x.isBancoTalentos);
 
-  // separa: etapa 6 (integração agendada) fica, resto vai pro banco
-  const ficam=(v.candidatos||[]).filter(c=>c.etapa===6);
-  const voltam=(v.candidatos||[]).filter(c=>c.etapa!==6);
+function toggleSubstituto() {
+  var m = document.getElementById('v-motivo').value;
+  document.getElementById('bloco-substituto').style.display = m === 'SUBSTITUICAO' ? 'block' : 'none';
+}
 
-  if(voltam.length&&banco){
-    banco.candidatos=banco.candidatos||[];
-    voltam.forEach(c=>{
-      // evita duplicata por nome
-      if(!banco.candidatos.find(x=>x.nome===c.nome)){
-        banco.candidatos.push({
-          ...c,
-          id:'c_'+Date.now()+'_'+Math.random().toString(36).slice(2),
-          etapa:0,
-          historicoEtapas:[0],
-          obs:(c.obs?c.obs+' | ':'')+'RETORNO DO BANCO DE TALENTOS — VAGA: '+(v.codigo||v.cargo),
-        });
+function openNovaVaga() {
+  // Popular perfis no select
+  var sel = document.getElementById('v-perfil');
+  sel.innerHTML = '<option value="">Selecione</option>';
+  DB.perfis.getAll().forEach(function(p) {
+    var o = document.createElement('option');
+    o.value = p.id; o.textContent = p.nome+' ('+p.sla+'d)'; o.dataset.sla = p.sla;
+    sel.appendChild(o);
+  });
+  // Limpar form
+  ['v-empresa','v-perfil','v-motivo'].forEach(function(id) { document.getElementById(id).value = ''; });
+  ['v-cargo','v-depto','v-substituto','v-obs'].forEach(function(id) { document.getElementById(id).value = ''; });
+  document.getElementById('v-abertura').value = today();
+  document.getElementById('v-qtd').value = '1';
+  document.getElementById('v-sla').value = '';
+  document.getElementById('v-prazo').value = '';
+  document.getElementById('bloco-substituto').style.display = 'none';
+  document.getElementById('mv-title').textContent = 'Nova Vaga';
+  openModal('modal-vaga');
+}
+
+function gerarCodigo() {
+  var ano = new Date().getFullYear();
+  var n = DB.vagas.getAll().filter(function(v) { return !v.isBancoTalentos; }).length + 1;
+  return 'RH-'+ano+'-'+String(n).padStart(3,'0');
+}
+
+function salvarVaga() {
+  var empresa   = document.getElementById('v-empresa').value;
+  var cargo     = sanitize(document.getElementById('v-cargo').value.trim());
+  var depto     = sanitize(document.getElementById('v-depto').value.trim());
+  var perfil    = document.getElementById('v-perfil').value;
+  var abertura  = document.getElementById('v-abertura').value;
+  var motivo    = document.getElementById('v-motivo').value;
+  var substituto= sanitize(document.getElementById('v-substituto').value.trim());
+  if (!empresa||!cargo||!depto||!perfil||!abertura) { toast('Preencha os campos obrigatórios.','err'); return; }
+  if (motivo==='SUBSTITUICAO'&&!substituto) { toast('Informe o colaborador a ser substituído.','err'); return; }
+  var perf = DB.perfis.getAll().find(function(p) { return p.id === perfil; });
+  DB.vagas.add({
+    codigo: gerarCodigo(), empresa, cargo, departamento: depto,
+    perfil: perf ? perf.nome : perfil,
+    sla: parseInt(document.getElementById('v-sla').value)||0,
+    abertura, prazo: document.getElementById('v-prazo').value,
+    qtd: parseInt(document.getElementById('v-qtd').value)||1,
+    motivo, substituto: substituto||'',
+    obs: sanitize(document.getElementById('v-obs').value)
+  });
+  toast('Vaga aberta!'); closeModal('modal-vaga');
+}
+
+// ════════════════════════════════════════════
+// DETALHE / KANBAN
+// ════════════════════════════════════════════
+function abrirDetalhe(id) {
+  vagaAtivaId = id;
+  var v = DB.vagas.getAll().find(function(x) { return x.id === id; });
+  if (!v) return;
+  var pi = prazoInfo(v);
+  document.getElementById('det-title').textContent = v.cargo;
+  document.getElementById('det-sub').textContent   = (v.empresa||'')+(v.departamento?' · '+v.departamento:'')+(v.perfil?' · '+v.perfil:'')+(v.abertura?' · Abertura: '+fmtDate(v.abertura):'')+(pi.label?' · '+pi.label:'');
+  var enc = v.status==='encerrada', pau = v.status==='pausada', isBT = !!v.isBancoTalentos;
+  document.getElementById('btn-encerrar').style.display = (enc||isBT) ? 'none' : '';
+  document.getElementById('btn-pausar').style.display   = (enc||isBT) ? 'none' : '';
+  document.getElementById('btn-pausar').textContent     = pau ? ' Retomar' : ' Pausar';
+  document.getElementById('btn-pausar').innerHTML       = pau
+    ? '<i class="ti ti-player-play"></i> Retomar'
+    : '<i class="ti ti-player-pause"></i> Pausar';
+  renderKanban(v);
+  openModal('modal-detalhe');
+}
+
+function encerrarVaga() {
+  var vagas = DB.vagas.getAll();
+  var v = vagas.find(function(x) { return x.id === vagaAtivaId; });
+  if (!v) return;
+  if (!confirm('Encerrar esta vaga?')) return;
+  var banco = vagas.find(function(x) { return x.isBancoTalentos; });
+  var ficam  = (v.candidatos||[]).filter(function(c) { return c.etapa === 6; });
+  var voltam = (v.candidatos||[]).filter(function(c) { return c.etapa !== 6; });
+  if (voltam.length && banco) {
+    banco.candidatos = banco.candidatos||[];
+    voltam.forEach(function(c) {
+      if (!banco.candidatos.find(function(x) { return x.nome===c.nome; })) {
+        banco.candidatos.push(Object.assign({}, c, {
+          id: 'c_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+          etapa: 0, historicoEtapas: [0],
+          obs: (c.obs?c.obs+' | ':'')+'RETORNO BT — VAGA: '+(v.codigo||v.cargo)
+        }));
       }
     });
   }
-
-  v.candidatos=ficam;
-  v.status='encerrada';
-  await DB.vagas.saveAll(vagas);
-
-  const msg=voltam.length>0
-    ?`Vaga encerrada. ${voltam.length} candidato${voltam.length!==1?'s':''} retornado${voltam.length!==1?'s':''} ao Banco de Talentos.`
-    :'Vaga encerrada.';
-  toast(msg,'warn');
+  v.candidatos = ficam;
+  v.status = 'encerrada';
+  DB.vagas.save(vagas);
   closeModal('modal-detalhe');
-  renderVagas();
-}
-async function pausarVaga(){
-  const v = await DB.vagas.getAll().find(x=>x.id===vagaAtivaId);if(!v)return;
-  const novo=v.status==='pausada'?'aberta':'pausada';
-  await DB.vagas.update(vagaAtivaId,{status:novo});
-  toast(novo==='pausada'?'Vaga pausada.':'Vaga reativada.','warn');
-  abrirDetalhe(vagaAtivaId);renderVagas();
+  toast('Vaga encerrada.');
 }
 
-function renderKanban(v){
-  const cands=v.candidatos||[];
+function pausarVaga() {
+  var v = DB.vagas.getAll().find(function(x) { return x.id === vagaAtivaId; });
+  if (!v) return;
+  var novo = v.status === 'pausada' ? 'aberta' : 'pausada';
+  DB.vagas.update(vagaAtivaId, {status: novo});
+  toast(novo === 'pausada' ? 'Vaga pausada.' : 'Vaga retomada.');
+  closeModal('modal-detalhe');
+}
 
-  // Banco de Talentos: apenas 2 colunas
-  if(v.isBancoTalentos){
-    const btEtapas=[
-      {idx:0, label:'Currículo\nRecebido', color:'#b0c8e4'},
-      {idx:1, label:'Entrevista\nRealizada', color:'#d4a020'},
-    ];
-    const counts={0:cands.filter(c=>c.etapa===0).length,1:cands.filter(c=>c.etapa===1).length};
-    document.getElementById('kanban-board').innerHTML=btEtapas.map(e=>`
-      <div class="kanban-col col-${e.idx}" style="flex:0 0 280px" data-col="${e.idx}" ondragover="dragOver(event,this)" ondragleave="dragLeave(this)" ondrop="dropCard(event,this,${e.idx})">
-        <div class="kanban-header">
-          <div class="kanban-header-title">${e.label.replace('\n','<br>')}</div>
-          <div class="kanban-count">${counts[e.idx]}</div>
-        </div>
-        <div class="kanban-body">
-          ${cands.filter(c=>c.etapa===e.idx).map(c=>`
-            <div class="kcard" draggable="true" data-id="${c.id}" ondragstart="dragStart(event,'${c.id}')">
-              <div class="kc-name">${c.nome}</div>
-              <div class="kc-meta">${c.origem||'—'}${c.dtEntrevista?' · '+fmtDT(c.dtEntrevista):''}</div>
-              <div class="kc-actions">
-                <button class="btn btn-sm" style="padding:4px 8px;font-size:11px" onclick="editarCandidato('${c.id}')"><i class="ti ti-edit"></i></button>
-                <button class="btn btn-sm" style="padding:4px 8px;font-size:11px" title="Transferir para vaga" onclick="transferirCandidato('${c.id}')"><i class="ti ti-transfer"></i></button>
-                <button class="btn btn-sm btn-danger" style="padding:4px 8px;font-size:11px" onclick="removerCandidato('${c.id}')"><i class="ti ti-trash"></i></button>
-              </div>
-            </div>`).join('')}
-        </div>
-      </div>`).join('');
-    return;
+function cancelarVaga(id) {
+  if (!confirm('Cancelar esta vaga?')) return;
+  DB.vagas.update(id, {status:'cancelada'});
+  toast('Vaga cancelada.','warn');
+}
+
+// ════════════════════════════════════════════
+// KANBAN
+// ════════════════════════════════════════════
+function renderKanban(v) {
+  var cols = ETAPAS.map(function(et, i) { return {idx:i, label:et.label, color:et.color, cards:[]}; });
+  cols.unshift({idx:-1, label:'Triagem\nInicial', color:'#b0c8e4', cards:[]});
+  // Redistribuir: etapa 0 = coluna 0 (Triagem), etapas 1-7 = colunas 1-8
+  (v.candidatos||[]).forEach(function(c) {
+    var colIdx = c.etapa <= 0 ? 0 : c.etapa;
+    if (cols[colIdx]) cols[colIdx].cards.push(c);
+  });
+  // Mapear de volta: coluna 0 = etapa 0, coluna N = etapa N
+  var colDefs = [
+    {etapa:0,  label:'Triagem\nInicial',    color:'#b0c8e4'},
+    {etapa:1,  label:'Entrevista\nAgendada', color:'#b0c8e4'},
+    {etapa:2,  label:'Entrevista\nRealizada',color:'#d4a020'},
+    {etapa:3,  label:'Teste\nAgendado',     color:'#c07830'},
+    {etapa:4,  label:'Teste\nRealizado',    color:'#9b72cf'},
+    {etapa:5,  label:'Docs/\nExame',        color:'#4caf80'},
+    {etapa:6,  label:'Exame\nRecebido',     color:'#2196a0'},
+    {etapa:7,  label:'Integração\nAgendada',color:'#8ab800'},
+    {etapa:8,  label:'Reprovado/\nDesistiu',color:'#e05252'},
+  ];
+  // Simplificar: usar etapas 0-7 como no original
+  var kanbanCols = [];
+  for (var i = 0; i <= 7; i++) {
+    var label = i === 0 ? 'Triagem\nInicial' : ETAPAS[i-1] ? ETAPAS[i-1].label : '';
+    var color = i === 0 ? '#b0c8e4' : ETAPAS[i-1] ? ETAPAS[i-1].color : '#ccc';
+    kanbanCols.push({
+      etapa: i,
+      label: label,
+      color: color,
+      cards: (v.candidatos||[]).filter(function(c) { return c.etapa === i; })
+    });
   }
 
-  // Vagas normais: todas as 8 colunas
-  const histCounts=Array(8).fill(0);
-  cands.forEach(c=>{
-    const last=(c.historicoEtapas||[c.etapa]).slice(-1)[0];
-    if(last>=0&&last<=7)histCounts[last]++;
-  });
-  const curCounts=Array(8).fill(0);
-  cands.forEach(c=>{if(c.etapa>=0&&c.etapa<=7)curCounts[c.etapa]++;});
-  document.getElementById('kanban-board').innerHTML=ETAPAS.map((e,i)=>`
-    <div class="kanban-col col-${i}" data-col="${i}" ondragover="dragOver(event,this)" ondragleave="dragLeave(this)" ondrop="dropCard(event,this,${i})">
-      <div class="kanban-header">
-        <div class="kanban-header-title">${e.label.replace('\n','<br>')}</div>
-        <div class="kanban-count">${curCounts[i]}</div>
-        ${histCounts[i]>curCounts[i]?`<div class="kanban-total">Total passaram: ${histCounts[i]}</div>`:''}
-      </div>
-      <div class="kanban-body">
-        ${cands.filter(c=>c.etapa===i).map(c=>`
-          <div class="kcard" draggable="true" data-id="${c.id}" ondragstart="dragStart(event,'${c.id}')">
-            <div class="kc-name">${c.nome}</div>
-            <div class="kc-meta">${c.origem||'—'}${c.dtEntrevista?' · '+fmtDT(c.dtEntrevista):''}</div>
-            <div class="kc-actions">
-              <button class="btn btn-sm" style="padding:4px 8px;font-size:11px" onclick="editarCandidato('${c.id}')"><i class="ti ti-edit"></i></button>
-              <button class="btn btn-sm" style="padding:4px 8px;font-size:11px" title="Transferir" onclick="transferirCandidato('${c.id}')"><i class="ti ti-transfer"></i></button>
-              <button class="btn btn-sm btn-danger" style="padding:4px 8px;font-size:11px" onclick="removerCandidato('${c.id}')"><i class="ti ti-trash"></i></button>
-            </div>
-          </div>`).join('')}
-      </div>
-    </div>`).join('');
+  var html = kanbanCols.map(function(col) {
+    var total = (v.candidatos||[]).length;
+    var cards = col.cards.map(function(c) {
+      return '<div class="kcard col-'+col.etapa+'" draggable="true"'
+        +' ondragstart="dragStart(event,\''+c.id+'\')"'
+        +' onclick="event.stopPropagation();editarCandidato(\''+c.id+'\');"'
+        +' style="border-left-color:'+col.color+'">'
+        +'<div class="kc-name">'+c.nome+'</div>'
+        +'<div class="kc-meta">'+(c.origem||'')+(c.dtEntrevista?' · '+fmtDT(c.dtEntrevista):'')+'</div>'
+        +'<div class="kc-actions">'
+        +'<button class="btn-icon" style="font-size:11px" title="Remover" onclick="event.stopPropagation();removerCandidato(\''+c.id+'\')"><i class="ti ti-trash"></i></button>'
+        +'</div>'
+        +'</div>';
+    }).join('');
+
+    return '<div class="kanban-col col-'+col.etapa+'"'
+      +' ondragover="dragOver(event,this)"'
+      +' ondragleave="dragLeave(this)"'
+      +' ondrop="dropCard(event,this,'+col.etapa+')">'
+      +'<div class="kanban-header">'
+      +'<div class="kanban-header-title">'+col.label.replace('\n','<br>')+'</div>'
+      +'<div class="kanban-count">'+col.cards.length+'</div>'
+      +'<div class="kanban-total">de '+total+'</div>'
+      +'</div>'
+      +'<div class="kanban-body">'+cards+'</div>'
+      +'</div>';
+  }).join('');
+
+  document.getElementById('kanban-board').innerHTML = html;
 }
 
-// ======== DRAG & DROP ========
-function dragStart(e,id){dragId=id;e.currentTarget.classList.add('dragging');e.dataTransfer.effectAllowed='move';}
-async function dragOver(e,col){e.preventDefault();col.classList.add('drag-over');}
-async function dragLeave(col){col.classList.remove('drag-over');}
-async function dropCard(e,col,etapa){
-  e.preventDefault();col.classList.remove('drag-over');
-  if(!dragId)return;
-  const vagas = await DB.vagas.getAll();const v=vagas.find(x=>x.id===vagaAtivaId);if(!v)return;
-  const c=(v.candidatos||[]).find(x=>x.id===dragId);if(!c)return;
-  if(c.etapa===etapa){dragId=null;return;}
-  // trigger popup
-  pendingTransition={candId:dragId,toEtapa:etapa,vagaId:vagaAtivaId};
-  mostrarPopupTransicao(c,etapa);
-  dragId=null;
-  document.querySelectorAll('.kcard').forEach(k=>k.classList.remove('dragging'));
+// ════════════════════════════════════════════
+// DRAG & DROP
+// ════════════════════════════════════════════
+function dragStart(e, id) {
+  dragId = id;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function dragOver(e, col) {
+  e.preventDefault();
+  col.classList.add('drag-over');
+}
+function dragLeave(col) {
+  col.classList.remove('drag-over');
+}
+function dropCard(e, col, etapa) {
+  e.preventDefault();
+  col.classList.remove('drag-over');
+  if (!dragId) return;
+  var vagas = DB.vagas.getAll();
+  var v = vagas.find(function(x) { return x.id === vagaAtivaId; });
+  if (!v) return;
+  var c = (v.candidatos||[]).find(function(x) { return x.id === dragId; });
+  if (!c) return;
+  if (c.etapa === etapa) { dragId = null; return; }
+  pendingTransition = {candId: dragId, toEtapa: etapa, vagaId: vagaAtivaId};
+  mostrarPopupTransicao(c, etapa);
+  dragId = null;
+  document.querySelectorAll('.kcard').forEach(function(k) { k.classList.remove('dragging'); });
 }
 
-// ======== POPUP TRANSIÇÃO ========
-const POPUP_CONFIG={
-  1:{title:'Entrevista realizada',icon:'ti-clipboard-check',fields:[
-    {id:'pp-solicitacao',label:'Solicitação de Emprego',type:'select',options:['recebida','pendente'],required:true,hint:'Obrigatório — candidato preencheu ao chegar'},
+// ════════════════════════════════════════════
+// POPUP DE TRANSIÇÃO
+// ════════════════════════════════════════════
+var POPUP_CONFIG = {
+  1:{title:'Entrevista agendada',icon:'ti-calendar-event',fields:[
+    {id:'pp-dt-entrevista',label:'Data/Hora da Entrevista',type:'datetime-local',required:true},
+  ]},
+  2:{title:'Entrevista realizada',icon:'ti-clipboard-check',fields:[
+    {id:'pp-solicitacao',label:'Solicitação de Emprego',type:'select',options:['recebida','pendente'],required:true,hint:'Obrigatório'},
     {id:'pp-dt-entrevista',label:'Data/Hora da Entrevista',type:'datetime-local'},
     {id:'pp-resultado-entrevista',label:'Resultado',type:'select',options:['aprovado','reprovado']},
   ]},
-  2:{title:'Teste prático agendado',icon:'ti-calendar-event',fields:[
-    {id:'pp-dt-teste',label:'Data/Hora do Teste Prático',type:'datetime-local',required:true},
+  3:{title:'Teste prático agendado',icon:'ti-calendar-event',fields:[
+    {id:'pp-dt-teste',label:'Data/Hora do Teste',type:'datetime-local',required:true},
   ]},
-  3:{title:'Teste prático realizado',icon:'ti-clipboard-list',fields:[
-    {id:'pp-termo',label:'Termo de Regras',type:'select',options:['assinado','pendente'],required:true,hint:'Candidato assinou o termo ao chegar para o teste'},
+  4:{title:'Teste prático realizado',icon:'ti-clipboard-list',fields:[
+    {id:'pp-termo',label:'Termo de Regras',type:'select',options:['assinado','pendente'],required:true},
     {id:'pp-avaliacao',label:'Avaliação do Gestor',type:'select',options:['aprovado','reprovado','pendente'],required:true},
-    {id:'pp-dt-teste-real',label:'Data/Hora do Teste (confirmação)',type:'datetime-local'},
+    {id:'pp-dt-teste-real',label:'Data/Hora do Teste',type:'datetime-local'},
   ]},
-  4:{title:'Docs / Exame médico',icon:'ti-file-text',fields:[
+  5:{title:'Docs / Exame médico',icon:'ti-file-text',fields:[
     {id:'pp-interesse',label:'Interesse do Candidato',type:'select',options:['sim','nao'],required:true},
-    {id:'pp-dt-aceite',label:'Data do Aceite',type:'date',hint:'Registrada ao confirmar interesse — para contagem do prazo'},
+    {id:'pp-dt-aceite',label:'Data do Aceite',type:'date'},
     {id:'pp-checklist',label:'Checklist de Documentação',type:'select',options:['enviado','pendente']},
-    {id:'pp-dt-exame',label:'Data do Exame Multimed',type:'date'},
+    {id:'pp-dt-exame',label:'Data do Exame',type:'date'},
   ]},
-  5:{title:'Exame / Docs recebidos',icon:'ti-circle-check',fields:[
+  6:{title:'Exame / Docs recebidos',icon:'ti-circle-check',fields:[
     {id:'pp-guia',label:'Guia Multimed',type:'select',options:['enviada','pendente']},
     {id:'pp-docs-status',label:'Documentação',type:'select',options:['recebida','pendente']},
   ]},
-  6:{title:'Integração agendada',icon:'ti-users',fields:[
+  7:{title:'Integração agendada',icon:'ti-users',fields:[
     {id:'pp-dt-integracao',label:'Data/Hora da Integração',type:'datetime-local',required:true},
   ]},
-  7:{title:'Reprovado / Desistiu',icon:'ti-x',fields:[
+  8:{title:'Reprovado / Desistiu',icon:'ti-x',fields:[
     {id:'pp-motivo-rep',label:'Motivo',type:'select',options:['REQUISITOS TECNICOS','REQUISITOS COMPORTAMENTAIS','FALTOU A ENTREVISTA/TESTE','BACKGROUND CHECK','PRETENSAO SALARIAL','OUTRA PROPOSTA','DISPONIBILIDADE DE HORARIO','PROBLEMAS DE SAUDE','MOTIVOS PESSOAIS','OUTRO'],required:true},
   ]},
 };
 
-function mostrarPopupTransicao(cand,toEtapa){
-  const cfg=POPUP_CONFIG[toEtapa];
-  if(!cfg){confirmarTransicaoSimples();return;}
-  document.getElementById('pp-title').textContent=`${cand.nome} → ${cfg.title}`;
-  document.getElementById('pp-sub').textContent=`Etapa ${toEtapa+1}: ${ETAPAS[toEtapa].label.replace('\n',' ')}`;
-  document.getElementById('pp-icon').className=`ti ${cfg.icon}`;
-  const body=document.getElementById('pp-body');
-  body.innerHTML=cfg.fields.map(f=>`
-    <div class="popup-field">
-      <label class="popup-label">${f.label}${f.required?'<span class="req"> *</span>':''}</label>
-      ${f.type==='select'
-        ?`<select class="form-select" id="${f.id}"><option value="">—</option>${f.options.map(o=>`<option value="${o}">${o.charAt(0).toUpperCase()+o.slice(1)}</option>`).join('')}</select>`
-        :`<input class="form-input" type="${f.type}" id="${f.id}">`
-      }
-      ${f.hint?`<span class="form-hint">${f.hint}</span>`:''}
-    </div>`).join('');
-  // pre-fill com dados existentes do candidato
-  const vagas = await DB.vagas.getAll();const v=vagas.find(x=>x.id===pendingTransition.vagaId);
-  const c=(v.candidatos||[]).find(x=>x.id===pendingTransition.candId);
-  if(c){
-    cfg.fields.forEach(f=>{
-      const el=document.getElementById(f.id);if(!el)return;
-      const map={
-        'pp-solicitacao':c.solicitacao,'pp-dt-entrevista':c.dtEntrevista,'pp-resultado-entrevista':c.resultadoEntrevista,
-        'pp-dt-teste':c.dtTeste,'pp-termo':c.termoRegras,'pp-avaliacao':c.avaliacao,
-        'pp-dt-teste-real':c.dtTeste,'pp-interesse':c.interesse,'pp-dt-aceite':c.dtAceite,
-        'pp-checklist':c.checklistDocs,'pp-dt-exame':c.dtExame,'pp-guia':c.guia,
-        'pp-docs-status':c.docsStatus,'pp-dt-integracao':c.dtIntegracao,'pp-motivo-rep':c.motivoRep,
-      };
-      if(map[f.id])el.value=map[f.id];
-    });
-    // auto-preencher data do aceite quando interesse for selecionado
-    const interEl=document.getElementById('pp-interesse');
-    const aceiteEl=document.getElementById('pp-dt-aceite');
-    if(interEl&&aceiteEl){
-      interEl.addEventListener('change',()=>{
-        if(interEl.value==='sim'&&!aceiteEl.value)aceiteEl.value=today();
-        const warn=document.getElementById('pp-redirect-warn');
-        if(warn)warn.style.display=interEl.value==='nao'?'flex':'none';
-      });
+function mostrarPopupTransicao(cand, toEtapa) {
+  var cfg = POPUP_CONFIG[toEtapa];
+  if (!cfg) { confirmarTransicaoSimples(); return; }
+  document.getElementById('pp-icon').className = 'ti '+cfg.icon;
+  document.getElementById('pp-title').textContent = cfg.title;
+  document.getElementById('pp-sub').textContent   = cand.nome;
+  var body = cfg.fields.map(function(f) {
+    var inp = '';
+    if (f.type === 'select') {
+      inp = '<select class="form-select" id="'+f.id+'"><option value="">—</option>'
+        + f.options.map(function(o) { return '<option value="'+o+'">'+o+'</option>'; }).join('')
+        + '</select>';
+    } else {
+      inp = '<input class="form-input" type="'+f.type+'" id="'+f.id+'">';
     }
-    // aviso de redirecionamento para resultado entrevista
-    const resEl=document.getElementById('pp-resultado-entrevista');
-    if(resEl){
-      resEl.addEventListener('change',()=>{
-        const warn=document.getElementById('pp-redirect-warn');
-        if(warn)warn.style.display=resEl.value==='reprovado'?'flex':'none';
-      });
-    }
-    // aviso de redirecionamento para avaliação gestor
-    const avalEl=document.getElementById('pp-avaliacao');
-    if(avalEl){
-      avalEl.addEventListener('change',()=>{
-        const warn=document.getElementById('pp-redirect-warn');
-        if(warn)warn.style.display=avalEl.value==='reprovado'?'flex':'none';
-      });
-    }
-    // inserir aviso visual no popup
-    const warnDiv=document.createElement('div');
-    warnDiv.id='pp-redirect-warn';
-    warnDiv.style.cssText='display:none;align-items:center;gap:10px;padding:10px 13px;background:#fdeaea;border:1px solid #f5c6c6;border-radius:6px;font-size:12px;font-weight:600;color:#8b1c1c;';
-    warnDiv.innerHTML='<i class="ti ti-arrow-right" style="font-size:15px;flex-shrink:0"></i><span>Ao confirmar, o candidato será movido automaticamente para <strong>Reprovado / Desistiu</strong>.</span>';
-    body.appendChild(warnDiv);
-  }
+    return '<div class="popup-field"><label class="popup-label">'+f.label+(f.required?' <span style="color:#c0392b">*</span>':'')+'</label>'+inp+(f.hint?'<span style="font-size:11px;color:var(--text3)">'+f.hint+'</span>':'')+'</div>';
+  }).join('');
+  document.getElementById('pp-body').innerHTML = body;
   document.getElementById('popup-transicao').classList.add('open');
 }
 
-async function cancelarTransicao(){
-  pendingTransition={candId:null,toEtapa:null,vagaId:null};
+function cancelarTransicao() {
   document.getElementById('popup-transicao').classList.remove('open');
-  const v = await DB.vagas.getAll().find(x=>x.id===vagaAtivaId);if(v)renderKanban(v);
+  pendingTransition = {candId:null, toEtapa:null, vagaId:null};
 }
 
-function confirmarTransicao(){
-  const cfg=POPUP_CONFIG[pendingTransition.toEtapa];
-  // validate required
-  if(cfg){
-    for(const f of cfg.fields){
-      if(f.required){
-        const el=document.getElementById(f.id);
-        if(!el||!el.value.trim()){toast(`Campo obrigatório: ${f.label}`,'err');return;}
+function confirmarTransicao() {
+  var cfg = POPUP_CONFIG[pendingTransition.toEtapa];
+  if (cfg) {
+    for (var i = 0; i < cfg.fields.length; i++) {
+      var f = cfg.fields[i];
+      if (f.required) {
+        var el = document.getElementById(f.id);
+        if (!el || !el.value.trim()) { toast('Campo obrigatório: '+f.label,'err'); return; }
       }
     }
   }
-  // apply
-  const vagas = await DB.vagas.getAll();
-  const v=vagas.find(x=>x.id===pendingTransition.vagaId);if(!v)return;
-  const c=(v.candidatos||[]).find(x=>x.id===pendingTransition.candId);if(!c)return;
+  var vagas = DB.vagas.getAll();
+  var v = vagas.find(function(x) { return x.id === pendingTransition.vagaId; });
+  if (!v) return;
+  var c = (v.candidatos||[]).find(function(x) { return x.id === pendingTransition.candId; });
+  if (!c) return;
 
-  // update historico
-  if(!c.historicoEtapas)c.historicoEtapas=[c.etapa];
-  c.etapa=pendingTransition.toEtapa;
+  if (!c.historicoEtapas) c.historicoEtapas = [c.etapa];
+  c.etapa = pendingTransition.toEtapa;
   c.historicoEtapas.push(pendingTransition.toEtapa);
 
-  // map popup fields to cand
-  if(cfg){
-    const fieldMap={
-      'pp-solicitacao':'solicitacao','pp-dt-entrevista':'dtEntrevista',
-      'pp-resultado-entrevista':'resultadoEntrevista','pp-dt-teste':'dtTeste',
-      'pp-termo':'termoRegras','pp-avaliacao':'avaliacao','pp-dt-teste-real':'dtTeste',
-      'pp-interesse':'interesse','pp-dt-aceite':'dtAceite','pp-checklist':'checklistDocs',
-      'pp-dt-exame':'dtExame','pp-guia':'guia','pp-docs-status':'docsStatus',
-      'pp-dt-integracao':'dtIntegracao','pp-motivo-rep':'motivoRep',
-    };
-    cfg.fields.forEach(f=>{
-      const el=document.getElementById(f.id);
-      if(el&&el.value)c[fieldMap[f.id]||f.id]=el.value;
+  var fieldMap = {
+    'pp-solicitacao':'solicitacao','pp-dt-entrevista':'dtEntrevista',
+    'pp-resultado-entrevista':'resultadoEntrevista','pp-dt-teste':'dtTeste',
+    'pp-termo':'termoRegras','pp-avaliacao':'avaliacao','pp-dt-teste-real':'dtTeste',
+    'pp-interesse':'interesse','pp-dt-aceite':'dtAceite','pp-checklist':'checklistDocs',
+    'pp-dt-exame':'dtExame','pp-guia':'guia','pp-docs-status':'docsStatus',
+    'pp-dt-integracao':'dtIntegracao','pp-motivo-rep':'motivoRep',
+  };
+  if (cfg) {
+    cfg.fields.forEach(function(f) {
+      var el = document.getElementById(f.id);
+      if (el && el.value) c[fieldMap[f.id]||f.id] = el.value;
     });
+    // Auto agenda
+    if (pendingTransition.toEtapa===1&&c.dtEntrevista)
+      DB.eventos.add({tipo:'ENTREVISTA',desc:'ENTREVISTA: '+c.nome+' — '+v.cargo,dt:c.dtEntrevista,empresa:v.empresa||'',obs:v.codigo||''});
+    if ((pendingTransition.toEtapa===2||pendingTransition.toEtapa===3)&&c.dtTeste)
+      DB.eventos.add({tipo:'TESTE PRATICO',desc:'TESTE PRATICO: '+c.nome+' — '+v.cargo,dt:c.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
+    if (c.interesse==='sim'&&c.dtAceite&&!v.aceiteData) v.aceiteData = c.dtAceite;
 
-    // ---- AUTO-AGENDA: cria evento se houver data de entrevista ou teste ----
-    if(pendingTransition.toEtapa===1&&c.dtEntrevista)
-      await DB.eventos.add({tipo:'ENTREVISTA',desc:`ENTREVISTA: ${c.nome} — ${v.cargo}`,dt:c.dtEntrevista,empresa:v.empresa||'',obs:v.codigo||''});
-    if(pendingTransition.toEtapa===2&&c.dtTeste)
-      await DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${c.nome} — ${v.cargo}`,dt:c.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
-    if(pendingTransition.toEtapa===3&&c.dtTeste)
-      await DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${c.nome} — ${v.cargo}`,dt:c.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
-    // Se confirmou interesse, registrar aceite na vaga para parar contagem do prazo
-    if(c.interesse==='sim'&&c.dtAceite&&!v.aceiteData){
-      v.aceiteData=c.dtAceite;
-    }
-
-    // ---- REDIRECIONAMENTO AUTOMÁTICO PARA REPROVADO ----
-    // Entrevista reprovada (etapa 1)
-    if(pendingTransition.toEtapa===1&&c.resultadoEntrevista==='reprovado'){
-      c.etapa=7;c.historicoEtapas.push(7);
-      if(!c.motivoRep)c.motivoRep='REPROVADO NA ENTREVISTA';
-      await DB.vagas.saveAll(vagas);
+    // Redirecionamentos automáticos
+    if (pendingTransition.toEtapa===2&&c.resultadoEntrevista==='reprovado') {
+      c.etapa=8; c.historicoEtapas.push(8);
+      if (!c.motivoRep) c.motivoRep='REPROVADO NA ENTREVISTA';
+      DB.vagas.save(vagas);
       document.getElementById('popup-transicao').classList.remove('open');
       pendingTransition={candId:null,toEtapa:null,vagaId:null};
-      abrirDetalhe(vagaAtivaId);renderVagas();
-      toast('Candidato reprovado na entrevista — movido para Reprovado/Desistiu.','warn');
-      return;
+      abrirDetalhe(vagaAtivaId);
+      toast('Candidato reprovado na entrevista.','warn'); return;
     }
-    // Teste reprovado pelo gestor (etapa 3)
-    if(pendingTransition.toEtapa===3&&c.avaliacao==='reprovado'){
-      c.etapa=7;c.historicoEtapas.push(7);
-      if(!c.motivoRep)c.motivoRep='REPROVADO NO TESTE PRATICO';
-      await DB.vagas.saveAll(vagas);
+    if (pendingTransition.toEtapa===4&&c.avaliacao==='reprovado') {
+      c.etapa=8; c.historicoEtapas.push(8);
+      if (!c.motivoRep) c.motivoRep='REPROVADO NO TESTE';
+      DB.vagas.save(vagas);
       document.getElementById('popup-transicao').classList.remove('open');
       pendingTransition={candId:null,toEtapa:null,vagaId:null};
-      abrirDetalhe(vagaAtivaId);renderVagas();
-      toast('Candidato reprovado no teste — movido para Reprovado/Desistiu.','warn');
-      return;
+      abrirDetalhe(vagaAtivaId);
+      toast('Candidato reprovado no teste.','warn'); return;
     }
-    // Candidato não aceitou (etapa 4)
-    if(pendingTransition.toEtapa===4&&c.interesse==='nao'){
-      c.etapa=7;c.historicoEtapas.push(7);
-      if(!c.motivoRep)c.motivoRep='NAO ACEITOU A PROPOSTA';
-      await DB.vagas.saveAll(vagas);
+    if (pendingTransition.toEtapa===5&&c.interesse==='nao') {
+      c.etapa=8; c.historicoEtapas.push(8);
+      if (!c.motivoRep) c.motivoRep='NAO ACEITOU A PROPOSTA';
+      DB.vagas.save(vagas);
       document.getElementById('popup-transicao').classList.remove('open');
       pendingTransition={candId:null,toEtapa:null,vagaId:null};
-      abrirDetalhe(vagaAtivaId);renderVagas();
-      toast('Candidato não aceitou — movido para Reprovado/Desistiu.','warn');
-      return;
+      abrirDetalhe(vagaAtivaId);
+      toast('Candidato não aceitou.','warn'); return;
     }
   }
 
-  // auto-encerrar
-  const integrados=(v.candidatos||[]).filter(x=>x.etapa===6).length;
-  if(integrados>=(v.qtd||1)&&v.status==='aberta'){
-    const banco=vagas.find(x=>x.isBancoTalentos);
-    const voltam=(v.candidatos||[]).filter(c=>c.etapa!==6);
-    if(voltam.length&&banco){
-      banco.candidatos=banco.candidatos||[];
-      voltam.forEach(c=>{
-        if(!banco.candidatos.find(x=>x.nome===c.nome)){
-          banco.candidatos.push({...c,id:'c_'+Date.now()+'_'+Math.random().toString(36).slice(2),etapa:0,historicoEtapas:[0],obs:(c.obs?c.obs+' | ':'')+'RETORNO DO BANCO DE TALENTOS — VAGA: '+(v.codigo||v.cargo)});
+  // Auto-encerrar vaga
+  var integrados = (v.candidatos||[]).filter(function(x) { return x.etapa===7; }).length;
+  if (integrados >= (v.qtd||1) && v.status==='aberta') {
+    var banco = vagas.find(function(x) { return x.isBancoTalentos; });
+    var voltam = (v.candidatos||[]).filter(function(cc) { return cc.etapa!==7; });
+    if (voltam.length && banco) {
+      banco.candidatos = banco.candidatos||[];
+      voltam.forEach(function(cc) {
+        if (!banco.candidatos.find(function(x) { return x.nome===cc.nome; })) {
+          banco.candidatos.push(Object.assign({},cc,{
+            id:'c_'+Date.now()+'_'+Math.random().toString(36).slice(2),
+            etapa:0,historicoEtapas:[0],
+            obs:(cc.obs?cc.obs+' | ':'')+'RETORNO BT — VAGA: '+(v.codigo||v.cargo)
+          }));
         }
       });
     }
-    v.candidatos=(v.candidatos||[]).filter(c=>c.etapa===6);
-    v.status='encerrada';
+    v.candidatos = (v.candidatos||[]).filter(function(cc) { return cc.etapa===7; });
+    v.status = 'encerrada';
     toast('Vaga encerrada automaticamente!','warn');
   }
 
-  await DB.vagas.saveAll(vagas);
+  DB.vagas.save(vagas);
   document.getElementById('popup-transicao').classList.remove('open');
-  pendingTransition={candId:null,toEtapa:null,vagaId:null};
-  abrirDetalhe(vagaAtivaId);renderVagas();
+  pendingTransition = {candId:null,toEtapa:null,vagaId:null};
+  abrirDetalhe(vagaAtivaId);
   toast('Candidato movido com sucesso!');
 }
 
-async function confirmarTransicaoSimples(){
-  const vagas = await DB.vagas.getAll();
-  const v=vagas.find(x=>x.id===pendingTransition.vagaId);if(!v)return;
-  const c=(v.candidatos||[]).find(x=>x.id===pendingTransition.candId);if(!c)return;
-  if(!c.historicoEtapas)c.historicoEtapas=[c.etapa];
-  c.etapa=pendingTransition.toEtapa;
+function confirmarTransicaoSimples() {
+  var vagas = DB.vagas.getAll();
+  var v = vagas.find(function(x) { return x.id === pendingTransition.vagaId; });
+  if (!v) return;
+  var c = (v.candidatos||[]).find(function(x) { return x.id === pendingTransition.candId; });
+  if (!c) return;
+  if (!c.historicoEtapas) c.historicoEtapas = [c.etapa];
+  c.etapa = pendingTransition.toEtapa;
   c.historicoEtapas.push(pendingTransition.toEtapa);
-  await DB.vagas.saveAll(vagas);
-  pendingTransition={candId:null,toEtapa:null,vagaId:null};
-  abrirDetalhe(vagaAtivaId);renderVagas();
+  DB.vagas.save(vagas);
+  document.getElementById('popup-transicao').classList.remove('open');
+  pendingTransition = {candId:null,toEtapa:null,vagaId:null};
+  abrirDetalhe(vagaAtivaId);
+  toast('Candidato movido!');
 }
 
-// ======== MODAL CANDIDATO (edição completa) ========
-function openNovoCandidato(){
-  candEditId=null;
-  document.getElementById('mc-title').textContent='Novo Candidato';
-  ['c-nome','c-tel','c-obs','c-indicado','c-motivo-rep'].forEach(id=>document.getElementById(id).value='');
-  ['c-origem','c-solicitacao','c-resultado-entrevista','c-termo','c-avaliacao','c-checklist','c-guia','c-interesse'].forEach(id=>document.getElementById(id).value='');
-  ['c-dt-entrevista','c-dt-teste','c-dt-integracao','c-dt-exame','c-dt-aceite'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('bloco-indicado').style.display='none';
-  openModal('modal-cand');setTimeout(initUpper,50);
+// ════════════════════════════════════════════
+// CANDIDATOS
+// ════════════════════════════════════════════
+function openNovoCandidato() {
+  candEditId = null;
+  document.getElementById('mc-title').textContent = 'Novo Candidato';
+  ['c-nome','c-tel','c-indicado','c-obs','c-motivo-rep'].forEach(function(id){document.getElementById(id).value='';});
+  ['c-origem','c-dt-entrevista','c-dt-teste','c-dt-integracao','c-dt-exame',
+   'c-solicitacao','c-resultado-entrevista','c-termo','c-avaliacao',
+   'c-checklist','c-guia','c-interesse','c-dt-aceite'].forEach(function(id){document.getElementById(id).value='';});
+  document.getElementById('bloco-indicado').style.display = 'none';
+  openModal('modal-cand');
 }
-async function editarCandidato(cid){
-  const v = await DB.vagas.getAll().find(x=>x.id===vagaAtivaId);
-  const c=(v.candidatos||[]).find(x=>x.id===cid);if(!c)return;
-  candEditId=cid;
-  document.getElementById('mc-title').textContent='Editar Candidato';
-  document.getElementById('c-nome').value=c.nome||'';
-  document.getElementById('c-tel').value=c.tel||'';
-  document.getElementById('c-origem').value=c.origem||'';
-  document.getElementById('c-indicado').value=c.indicado||'';
-  document.getElementById('bloco-indicado').style.display=c.origem==='INDICACAO'?'block':'none';
-  document.getElementById('c-dt-entrevista').value=c.dtEntrevista||'';
-  document.getElementById('c-dt-teste').value=c.dtTeste||'';
-  document.getElementById('c-dt-integracao').value=c.dtIntegracao||'';
-  document.getElementById('c-dt-exame').value=c.dtExame||'';
-  document.getElementById('c-solicitacao').value=c.solicitacao||'';
-  document.getElementById('c-resultado-entrevista').value=c.resultadoEntrevista||'';
-  document.getElementById('c-termo').value=c.termoRegras||'';
-  document.getElementById('c-avaliacao').value=c.avaliacao||'';
-  document.getElementById('c-checklist').value=c.checklistDocs||'';
-  document.getElementById('c-guia').value=c.guia||'';
-  document.getElementById('c-interesse').value=c.interesse||'';
-  document.getElementById('c-dt-aceite').value=c.dtAceite||'';
-  document.getElementById('c-motivo-rep').value=c.motivoRep||'';
-  document.getElementById('c-obs').value=c.obs||'';
-  openModal('modal-cand');setTimeout(initUpper,50);
+
+function editarCandidato(cid) {
+  var v = DB.vagas.getAll().find(function(x) { return x.id === vagaAtivaId; });
+  if (!v) return;
+  var c = (v.candidatos||[]).find(function(x) { return x.id === cid; });
+  if (!c) return;
+  candEditId = cid;
+  document.getElementById('mc-title').textContent = 'Editar Candidato';
+  var map = {
+    'c-nome':c.nome,'c-tel':c.tel||'','c-origem':c.origem||'','c-indicado':c.indicado||'',
+    'c-dt-entrevista':c.dtEntrevista||'','c-dt-teste':c.dtTeste||'',
+    'c-dt-integracao':c.dtIntegracao||'','c-dt-exame':c.dtExame||'',
+    'c-solicitacao':c.solicitacao||'','c-resultado-entrevista':c.resultadoEntrevista||'',
+    'c-termo':c.termoRegras||'','c-avaliacao':c.avaliacao||'','c-checklist':c.checklistDocs||'',
+    'c-guia':c.guia||'','c-interesse':c.interesse||'','c-dt-aceite':c.dtAceite||'',
+    'c-motivo-rep':c.motivoRep||'','c-obs':c.obs||'',
+  };
+  Object.entries(map).forEach(function(entry) {
+    var el = document.getElementById(entry[0]);
+    if (el) el.value = entry[1];
+  });
+  document.getElementById('bloco-indicado').style.display = c.origem==='INDICACAO' ? 'block' : 'none';
+  openModal('modal-cand');
 }
-function toggleIndicacao(){
-  const o=document.getElementById('c-origem').value;
-  document.getElementById('bloco-indicado').style.display=o==='INDICACAO'?'block':'none';
+
+function toggleIndicacao() {
+  var o = document.getElementById('c-origem').value;
+  document.getElementById('bloco-indicado').style.display = o==='INDICACAO' ? 'block' : 'none';
 }
-function salvarCandidatoForm(){
-  const nome=sanitize(document.getElementById('c-nome').value.trim());
-  if(!nome){toast('Nome obrigatório.','err');return;}
-  const origem=document.getElementById('c-origem').value;
-  const indicado=sanitize(document.getElementById('c-indicado').value.trim());
-  if(origem==='INDICACAO'&&!indicado){toast('Informe quem indicou o candidato.','err');return;}
-  const cand={
-    id:candEditId||('c_'+Date.now()),nome,tel:document.getElementById('c-tel').value,
-    origem,indicado,
+
+function salvarCandidatoForm() {
+  var nome = sanitize(document.getElementById('c-nome').value.trim());
+  if (!nome) { toast('Nome obrigatório.','err'); return; }
+  var origem    = document.getElementById('c-origem').value;
+  var indicado  = sanitize(document.getElementById('c-indicado').value.trim());
+  if (origem==='INDICACAO'&&!indicado) { toast('Informe quem indicou.','err'); return; }
+  var cand = {
+    id: candEditId || ('c_'+Date.now()),
+    nome, tel:document.getElementById('c-tel').value,
+    origem, indicado,
     dtEntrevista:document.getElementById('c-dt-entrevista').value,
     dtTeste:document.getElementById('c-dt-teste').value,
     dtIntegracao:document.getElementById('c-dt-integracao').value,
@@ -999,229 +1148,213 @@ function salvarCandidatoForm(){
     dtAceite:document.getElementById('c-dt-aceite').value,
     motivoRep:sanitize(document.getElementById('c-motivo-rep').value),
     obs:sanitize(document.getElementById('c-obs').value),
-    etapa:0,historicoEtapas:[0],
+    etapa:0, historicoEtapas:[0],
   };
-  const vagas = await DB.vagas.getAll();
-  const v=vagas.find(x=>x.id===vagaAtivaId);if(!v)return;
-
-  if(candEditId){
-    const idx=(v.candidatos||[]).findIndex(x=>x.id===candEditId);
-    if(idx>=0){
-      const old=v.candidatos[idx]; // captura ANTES de substituir
-      cand.etapa=old.etapa;
-      cand.historicoEtapas=old.historicoEtapas||[old.etapa];
-      // agenda: só cria se a data mudou
-      if(cand.dtEntrevista&&cand.dtEntrevista!==old.dtEntrevista)
-        await DB.eventos.add({tipo:'ENTREVISTA',desc:`ENTREVISTA: ${cand.nome} — ${v.cargo}`,dt:cand.dtEntrevista,empresa:v.empresa||'',obs:v.codigo||''});
-      if(cand.dtTeste&&cand.dtTeste!==old.dtTeste)
-        await DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${cand.nome} — ${v.cargo}`,dt:cand.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
-      v.candidatos[idx]=cand;
+  var vagas = DB.vagas.getAll();
+  var v = vagas.find(function(x) { return x.id === vagaAtivaId; });
+  if (!v) return;
+  if (candEditId) {
+    var idx = (v.candidatos||[]).findIndex(function(x) { return x.id === candEditId; });
+    if (idx >= 0) {
+      var old = v.candidatos[idx];
+      cand.etapa = old.etapa;
+      cand.historicoEtapas = old.historicoEtapas||[old.etapa];
+      if (!cand.dtIntegracao && old.dtIntegracao) cand.dtIntegracao = old.dtIntegracao;
+      if (cand.dtEntrevista && cand.dtEntrevista !== old.dtEntrevista)
+        DB.eventos.add({tipo:'ENTREVISTA',desc:'ENTREVISTA: '+cand.nome+' — '+v.cargo,dt:cand.dtEntrevista,empresa:v.empresa||'',obs:v.codigo||''});
+      if (cand.dtTeste && cand.dtTeste !== old.dtTeste)
+        DB.eventos.add({tipo:'TESTE PRATICO',desc:'TESTE PRATICO: '+cand.nome+' — '+v.cargo,dt:cand.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
+      v.candidatos[idx] = cand;
     }
   } else {
-    v.candidatos=v.candidatos||[];
+    v.candidatos = v.candidatos||[];
     v.candidatos.push(cand);
-    // agenda: novo candidato com datas preenchidas
-    if(cand.dtEntrevista)
-      await DB.eventos.add({tipo:'ENTREVISTA',desc:`ENTREVISTA: ${cand.nome} — ${v.cargo}`,dt:cand.dtEntrevista,empresa:v.empresa||'',obs:v.codigo||''});
-    if(cand.dtTeste)
-      await DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${cand.nome} — ${v.cargo}`,dt:cand.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
+    if (cand.dtEntrevista)
+      DB.eventos.add({tipo:'ENTREVISTA',desc:'ENTREVISTA: '+cand.nome+' — '+v.cargo,dt:cand.dtEntrevista,empresa:v.empresa||'',obs:v.codigo||''});
+    if (cand.dtTeste)
+      DB.eventos.add({tipo:'TESTE PRATICO',desc:'TESTE PRATICO: '+cand.nome+' — '+v.cargo,dt:cand.dtTeste,empresa:v.empresa||'',obs:v.codigo||''});
   }
-
-  if(cand.interesse==='sim'&&cand.dtAceite&&!v.aceiteData)v.aceiteData=cand.dtAceite;
-
-  // Se reprovado na entrevista via edição, move para etapa 7
-  if(cand.resultadoEntrevista==='reprovado'&&cand.etapa<7){
-    cand.etapa=7;
-    cand.historicoEtapas=cand.historicoEtapas||[0];
-    cand.historicoEtapas.push(7);
-    if(!cand.motivoRep)cand.motivoRep='REPROVADO NA ENTREVISTA';
+  if (cand.interesse==='sim'&&cand.dtAceite&&!v.aceiteData) v.aceiteData = cand.dtAceite;
+  if (cand.resultadoEntrevista==='reprovado'&&cand.etapa<8) {
+    cand.etapa=8; cand.historicoEtapas=cand.historicoEtapas||[0]; cand.historicoEtapas.push(8);
+    if (!cand.motivoRep) cand.motivoRep='REPROVADO NA ENTREVISTA';
   }
-  await DB.vagas.saveAll(vagas);
+  DB.vagas.save(vagas);
   toast(candEditId?'Candidato atualizado.':'Candidato adicionado.');
-  closeModal('modal-cand');abrirDetalhe(vagaAtivaId);renderVagas();
-}
-async function removerCandidato(cid){
-  if(!confirm('Remover candidato?'))return;
-  const vagas = await DB.vagas.getAll();const v=vagas.find(x=>x.id===vagaAtivaId);if(!v)return;
-  v.candidatos=(v.candidatos||[]).filter(x=>x.id!==cid);await DB.vagas.saveAll(vagas);
-  toast('Candidato removido.');abrirDetalhe(vagaAtivaId);renderVagas();
+  closeModal('modal-cand');
+  abrirDetalhe(vagaAtivaId);
 }
 
-// ======== PERFIS ========
-async function openPerfisModal(){renderPerfis();openModal('modal-perfis');}
-async function renderPerfis(){
-  document.getElementById('lista-perfis').innerHTML=(await DB.perfis.getAll()).map(p=>`
-    <div class="perfil-row">
-      <div class="perfil-nome">${p.nome}</div>
-      <div style="font-size:12px;color:var(--text2);font-weight:500">${p.sla} dias</div>
-      <button class="btn btn-sm" onclick="editarPerfil('${p.id}')"><i class="ti ti-edit"></i></button>
-      <button class="btn btn-sm btn-danger" onclick="removerPerfil('${p.id}')"><i class="ti ti-trash"></i></button>
-    </div>`).join('');
-}
-async function addPerfil(){
-  const nome=sanitize(document.getElementById('np-nome').value.trim());
-  const sla=parseInt(document.getElementById('np-sla').value);
-  if(!nome||!sla){toast('Preencha nome e SLA.','err');return;}
-  const perfis = await DB.perfis.getAll();
-  if(perfis.find(p=>p.nome===nome)){toast('Perfil já existe.','err');return;}
-  perfis.push({id:'p_'+Date.now(),nome,sla});await DB.perfis.saveAll(perfis);
-  document.getElementById('np-nome').value='';document.getElementById('np-sla').value='';
-  renderPerfis();toast('Perfil adicionado!');
-}
-async function editarPerfil(id){
-  const perfis = await DB.perfis.getAll();const p=perfis.find(x=>x.id===id);if(!p)return;
-  const nn=prompt(`Nome atual: "${p.nome}"\nNovo nome:`,p.nome);if(!nn)return;
-  const ns=prompt(`SLA atual: ${p.sla} dias\nNovo SLA (dias):`,p.sla);if(!ns)return;
-  p.nome=sanitize(nn.trim())||p.nome;p.sla=parseInt(ns)||p.sla;
-  await DB.perfis.saveAll(perfis);renderPerfis();toast('Perfil atualizado. Vale para novas vagas.','warn');
-}
-async function removerPerfil(id){
-  if(!confirm('Remover perfil?'))return;
-  await DB.perfis.saveAll((await DB.perfis.getAll()).filter(p=>p.id!==id));renderPerfis();toast('Perfil removido.');
+function removerCandidato(cid) {
+  if (!confirm('Remover candidato?')) return;
+  var vagas = DB.vagas.getAll();
+  var v = vagas.find(function(x) { return x.id === vagaAtivaId; });
+  if (!v) return;
+  v.candidatos = (v.candidatos||[]).filter(function(x) { return x.id !== cid; });
+  DB.vagas.save(vagas);
+  toast('Candidato removido.');
+  abrirDetalhe(vagaAtivaId);
 }
 
-// ======== AGENDA ========
-async function renderAgenda(){
-  const eventos = await DB.eventos.getAll().sort((a,b)=>new Date(a.dt)-new Date(b.dt));
-  const hoje=new Date();hoje.setHours(0,0,0,0);
-  const fut=eventos.filter(e=>new Date(e.dt)>=hoje),pas=eventos.filter(e=>new Date(e.dt)<hoje);
-  document.getElementById('agenda-content').innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <div style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="ti ti-calendar" style="color:var(--gold);font-size:17px"></i> Agenda do RH</div>
-      <button class="btn btn-primary btn-sm" onclick="openModal('modal-evento')"><i class="ti ti-plus"></i> Novo Evento</button>
-    </div>
-    ${!fut.length&&!pas.length?'<div class="empty"><i class="ti ti-calendar"></i><p>Nenhum evento ainda.</p></div>':''}
-    ${fut.length?`<div class="divider-title">Próximos eventos</div>${fut.map(e=>evCard(e)).join('')}`:''}
-    ${pas.length?`<div class="divider-title" style="margin-top:20px">Passados</div>${pas.map(e=>evCard(e,true)).join('')}`:''}`;
-}
-function evCard(e,past=false){
-  const cores={ENTREVISTA:'#b0c8e4','TESTE PRATICO':'#9b72cf',INTEGRACAO:'#8ab800','RETORNO AO CANDIDATO':'#d4a020',OUTRO:'#a09890'};
-  const c=cores[e.tipo]||'#a09890';
-  return`<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;margin-bottom:8px;border-left:3px solid ${c};${past?'opacity:.6':''}">
-    <div style="display:flex;align-items:flex-start;justify-content:space-between">
-      <div>
-        <div style="font-size:13px;font-weight:700">${e.desc}</div>
-        <div style="font-size:11px;color:var(--text2);margin-top:3px;font-weight:500">${e.tipo}${e.empresa?' · '+e.empresa:''}</div>
-        <div style="font-size:11px;font-weight:700;color:var(--text3);margin-top:4px"><i class="ti ti-clock" style="font-size:12px;vertical-align:-2px"></i> ${fmtDT(e.dt)}</div>
-      </div>
-      <button class="btn-icon" onclick="removerEvento('${e.id}')"><i class="ti ti-trash"></i></button>
-    </div>
-  </div>`;
-}
-async function salvarEvento(){
-  const tipo=document.getElementById('ev-tipo').value;
-  const desc=sanitize(document.getElementById('ev-desc').value.trim());
-  const dt=document.getElementById('ev-dt').value;
-  if(!tipo||!desc||!dt){toast('Preencha os campos obrigatórios.','err');return;}
-  await DB.eventos.add({tipo,desc,dt,empresa:document.getElementById('ev-empresa').value,obs:sanitize(document.getElementById('ev-obs').value)});
-  toast('Evento adicionado!');closeModal('modal-evento');renderAgenda();
-}
-async function removerEvento(id){if(!confirm('Remover evento?'))return;DB.eventos.remove(id);renderAgenda();}
-
-// ======== CANCELAR VAGA ========
-async function cancelarVaga(id){
-  if(!confirm('Cancelar esta vaga? Ela ficará com status Cancelada.'))return;
-  await DB.vagas.update(id,{status:'cancelada'});
-  toast('Vaga cancelada.','warn');renderVagas();
+function transferirCandidato(cid) {
+  var vagas  = DB.vagas.getAll();
+  var origem = vagas.find(function(x) { return x.id === vagaAtivaId; });
+  if (!origem) return;
+  var cand = (origem.candidatos||[]).find(function(x) { return x.id === cid; });
+  if (!cand) return;
+  var destinos = vagas.filter(function(v) { return v.id !== vagaAtivaId && !v.isBancoTalentos && v.status === 'aberta'; });
+  if (!destinos.length) { toast('Sem outras vagas abertas para transferir.','err'); return; }
+  var opcoes = destinos.map(function(v,i) { return i+': '+v.cargo+' ('+v.empresa+')'; }).join('\n');
+  var idx = parseInt(prompt('Selecione a vaga de destino:\n'+opcoes));
+  if (isNaN(idx) || !destinos[idx]) return;
+  var dest = destinos[idx];
+  origem.candidatos = (origem.candidatos||[]).filter(function(x) { return x.id !== cid; });
+  dest.candidatos = dest.candidatos||[];
+  dest.candidatos.push(Object.assign({},cand,{id:'c_'+Date.now(),etapa:0,historicoEtapas:[0]}));
+  DB.vagas.save(vagas);
+  toast('Candidato transferido para '+dest.cargo+'.');
+  abrirDetalhe(vagaAtivaId);
 }
 
-// ======== TRANSFERIR CANDIDATO ========
-async function transferirCandidato(cid){
-  const vagas = await DB.vagas.getAll();
-  const origem=vagas.find(x=>x.id===vagaAtivaId);if(!origem)return;
-  const cand=(origem.candidatos||[]).find(x=>x.id===cid);if(!cand)return;
-  const opcoes=vagas.filter(v=>v.id!==vagaAtivaId&&v.status!=='cancelada'&&v.status!=='encerrada');
-  if(!opcoes.length){toast('Nenhuma vaga disponível para transferência.','err');return;}
-  const lista=opcoes.map((v,i)=>`${i+1}. [${v.codigo||'—'}] ${v.cargo} — ${v.empresa}`).join('\n');
-  const resp=prompt(`Transferir "${cand.nome}" para qual vaga?\n\n${lista}\n\nDigite o número:`);
-  if(!resp)return;
-  const idx=parseInt(resp)-1;
-  if(isNaN(idx)||idx<0||idx>=opcoes.length){toast('Opção inválida.','err');return;}
-  const destino=opcoes[idx];
-  // move
-  origem.candidatos=(origem.candidatos||[]).filter(x=>x.id!==cid);
-  destino.candidatos=destino.candidatos||[];
-  destino.candidatos.push({...cand,id:'c_'+Date.now()});
-  await DB.vagas.saveAll(vagas);
-  toast(`Candidato transferido para ${destino.cargo}!`);
-  abrirDetalhe(vagaAtivaId);renderVagas();
+// ════════════════════════════════════════════
+// PERFIS DE VAGA
+// ════════════════════════════════════════════
+function openPerfisModal() { renderPerfis(); openModal('modal-perfis'); }
+
+function renderPerfis() {
+  var html = DB.perfis.getAll().map(function(p) {
+    return '<div class="perfil-row">'
+      +'<span class="perfil-nome">'+p.nome+'</span>'
+      +'<span style="font-size:12px;color:var(--text2);font-weight:600;margin-right:8px">'+p.sla+'d</span>'
+      +'<button class="btn-icon" onclick="removerPerfil(\''+p.id+'\')"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button>'
+      +'</div>';
+  }).join('');
+  document.getElementById('lista-perfis').innerHTML = html || '<div style="font-size:13px;color:var(--text3);padding:8px">Nenhum perfil cadastrado.</div>';
 }
 
-// ======== AUTO-AGENDA (entrevista/teste) ========
-async function autoAgenda(cand,vaga){
-  if(cand.dtEntrevista){
-    await DB.eventos.add({tipo:'ENTREVISTA',desc:`ENTREVISTA: ${cand.nome} — ${vaga.cargo}`,dt:cand.dtEntrevista,empresa:vaga.empresa,obs:vaga.codigo||''});
-  }
-  if(cand.dtTeste){
-    await DB.eventos.add({tipo:'TESTE PRATICO',desc:`TESTE PRATICO: ${cand.nome} — ${vaga.cargo}`,dt:cand.dtTeste,empresa:vaga.empresa,obs:vaga.codigo||''});
-  }
+function addPerfil() {
+  var nome = (document.getElementById('np-nome').value||'').trim().toUpperCase();
+  var sla  = parseInt(document.getElementById('np-sla').value)||0;
+  if (!nome||!sla) { toast('Preencha nome e SLA.','err'); return; }
+  var perfis = DB.perfis.getAll();
+  if (perfis.find(function(p) { return p.nome===nome; })) { toast('Perfil já existe.','err'); return; }
+  perfis.push({id:'p_'+Date.now(), nome, sla});
+  DB.perfis.save(perfis);
+  document.getElementById('np-nome').value='';
+  document.getElementById('np-sla').value='';
+  renderPerfis();
+  toast('Perfil adicionado!');
 }
 
-// ======== EXPORTAR VAGA EXCEL ========
-async function exportarVagaExcel(id){
-  const v = await DB.vagas.getAll().find(x=>x.id===id);if(!v)return;
-  const rows=[
-    ['Código','Cargo','Empresa','Departamento','Perfil','SLA','Abertura','Prazo','Motivo','Substituto','Status'],
-    [v.codigo||'—',v.cargo,v.empresa,v.departamento||'—',v.perfil||'—',v.sla||'—',fmtDate(v.abertura),fmtDate(v.prazo),v.motivo||'—',v.substituto||'—',v.isBancoTalentos?'Banco de Talentos':v.status],
-    [],[],
-    ['Candidatos'],
-    ['Nome','Telefone','Origem','Indicado por','Etapa','Entrevista','Teste','Integração','Exame','Solicitação','Termo','Avaliação','Checklist','Guia','Interesse','Data Aceite','Motivo Rep.','Obs'],
-  ];
-  (v.candidatos||[]).forEach(c=>{
-    rows.push([
-      c.nome,c.tel||'—',c.origem||'—',c.indicado||'—',
-      ETAPAS[c.etapa]?.label.replace('\n',' ')||'—',
-      fmtDT(c.dtEntrevista),fmtDT(c.dtTeste),fmtDT(c.dtIntegracao),fmtDate(c.dtExame),
-      c.solicitacao||'—',c.termoRegras||'—',c.avaliacao||'—',c.checklistDocs||'—',
-      c.guia||'—',c.interesse||'—',fmtDate(c.dtAceite),c.motivoRep||'—',c.obs||'—',
-    ]);
+function removerPerfil(id) {
+  if (!confirm('Remover este perfil?')) return;
+  DB.perfis.save(DB.perfis.getAll().filter(function(p) { return p.id !== id; }));
+  renderPerfis();
+  toast('Perfil removido.');
+}
+
+// ════════════════════════════════════════════
+// AGENDA
+// ════════════════════════════════════════════
+function renderAgenda() {
+  var eventos = DB.eventos.getAll().sort(function(a,b) { return new Date(a.dt)-new Date(b.dt); });
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var fut = eventos.filter(function(e) { return new Date(e.dt) >= hoje; });
+  var pas = eventos.filter(function(e) { return new Date(e.dt) < hoje; });
+  var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+    +'<div style="font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px"><i class="ti ti-calendar" style="color:var(--gold);font-size:17px"></i> Agenda do RH</div>'
+    +'<button class="btn btn-primary btn-sm" onclick="openModal(\'modal-evento\')"><i class="ti ti-plus"></i> Novo Evento</button>'
+    +'</div>';
+  if (!fut.length&&!pas.length) html += '<div class="empty"><i class="ti ti-calendar"></i><p>Nenhum evento ainda.</p></div>';
+  if (fut.length) html += '<div class="divider-title">Próximos eventos</div>'+fut.map(function(e){return evCard(e,false);}).join('');
+  if (pas.length) html += '<div class="divider-title" style="margin-top:20px">Passados</div>'+pas.map(function(e){return evCard(e,true);}).join('');
+  document.getElementById('agenda-content').innerHTML = html;
+}
+
+function evCard(e, past) {
+  var cores = {ENTREVISTA:'#b0c8e4','TESTE PRATICO':'#9b72cf',INTEGRACAO:'#8ab800','RETORNO AO CANDIDATO':'#d4a020',OUTRO:'#a09890'};
+  var c = cores[e.tipo]||'#a09890';
+  return '<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;margin-bottom:8px;border-left:3px solid '+c+';'+(past?'opacity:.6':'')+'">'
+    +'<div style="display:flex;align-items:flex-start;justify-content:space-between">'
+    +'<div><div style="font-size:13px;font-weight:700">'+e.desc+'</div>'
+    +'<div style="font-size:11px;color:var(--text2);margin-top:3px;font-weight:500">'+e.tipo+(e.empresa?' · '+e.empresa:'')+'</div>'
+    +'<div style="font-size:11px;font-weight:700;color:var(--text3);margin-top:4px"><i class="ti ti-clock" style="font-size:12px;vertical-align:-2px"></i> '+fmtDT(e.dt)+'</div>'
+    +'</div>'
+    +'<button class="btn-icon" onclick="removerEvento(\''+e.id+'\')"><i class="ti ti-trash"></i></button>'
+    +'</div></div>';
+}
+
+function salvarEvento() {
+  var tipo  = document.getElementById('ev-tipo').value;
+  var desc  = sanitize(document.getElementById('ev-desc').value.trim());
+  var dt    = document.getElementById('ev-dt').value;
+  if (!tipo||!desc||!dt) { toast('Preencha os campos obrigatórios.','err'); return; }
+  DB.eventos.add({tipo, desc, dt,
+    empresa: document.getElementById('ev-empresa').value,
+    obs: sanitize(document.getElementById('ev-obs').value)
   });
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols']=[12,25,20,18,14,6,12,12,14,20,10].map(w=>({wch:w}));
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Vaga');
-  XLSX.writeFile(wb,`${v.codigo||'vaga'}_${sanitize(v.cargo).replace(/\s/g,'_')}.xlsx`);
-  toast('Excel exportado!');
+  toast('Evento adicionado!'); closeModal('modal-evento'); renderAgenda();
 }
 
-// ======== EXPORTAR TODAS AS VAGAS ========
-async function exportarTodasVagas(){
-  const vagas = await DB.vagas.getAll().filter(v=>!v.isBancoTalentos);
-  const rows=[['Código','Cargo','Empresa','Departamento','Perfil','SLA','Abertura','Prazo','Status','Motivo','Substituto','Candidatos','Ativos','Integrações']];
-  vagas.forEach(v=>{
-    const nC=(v.candidatos||[]).length;
-    const nA=(v.candidatos||[]).filter(c=>c.etapa<7).length;
-    const nI=(v.candidatos||[]).filter(c=>c.etapa===6).length;
-    rows.push([v.codigo||'—',v.cargo,v.empresa,v.departamento||'—',v.perfil||'—',v.sla||'—',fmtDate(v.abertura),fmtDate(v.prazo),v.status,v.motivo||'—',v.substituto||'—',nC,nA,nI]);
+function removerEvento(id) {
+  if (!confirm('Remover evento?')) return;
+  DB.eventos.remove(id); renderAgenda();
+}
+
+// ════════════════════════════════════════════
+// EXPORTAÇÃO XLSX
+// ════════════════════════════════════════════
+function exportarVagaExcel(id) {
+  var v = DB.vagas.getAll().find(function(x) { return x.id===id; });
+  if (!v) return;
+  var rows = [['Nome','Telefone','Origem','Etapa','Dt Entrevista','Resultado Entrev','Dt Teste','Avaliação','Dt Integração','Dt Exame','Interesse','Motivo Rep','Obs']];
+  var etapaLabels = ['Triagem','Ent.Agendada','Ent.Realizada','Teste Ag.','Teste Real.','Docs/Exame','Exame Rec.','Integração','Reprovado'];
+  (v.candidatos||[]).forEach(function(c) {
+    rows.push([c.nome,c.tel||'',c.origem||'',etapaLabels[c.etapa]||c.etapa,
+      c.dtEntrevista||'',c.resultadoEntrevista||'',c.dtTeste||'',c.avaliacao||'',
+      c.dtIntegracao||'',c.dtExame||'',c.interesse||'',c.motivoRep||'',c.obs||'']);
   });
-  const ws=XLSX.utils.aoa_to_sheet(rows);
-  const wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb,ws,'Vagas');
-  XLSX.writeFile(wb,`vagas_${today()}.xlsx`);
-  toast('Excel exportado!');
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Candidatos');
+  XLSX.writeFile(wb, (v.codigo||v.cargo)+'_candidatos.xlsx');
 }
 
-// ======== BANCO DE TALENTOS INIT ========
-async function ensureBancoTalentos(){
-  const vagas = await DB.vagas.getAll();
-  if(!vagas.find(v=>v.isBancoTalentos)){
-    const b={id:'banco_talentos',isBancoTalentos:true,cargo:'BANCO DE TALENTOS',departamento:'—',perfil:'—',empresa:'Nova.',status:'aberta',candidatos:[],criadoEm:'2000-01-01T00:00:00.000Z',codigo:'BT-0001'};
-    vagas.unshift(b);await DB.vagas.saveAll(vagas);
+function exportarTodasVagas() {
+  var rows = [['Código','Cargo','Empresa','Departamento','Perfil','Abertura','Prazo','Status','Candidatos','Integrações']];
+  DB.vagas.getAll().filter(function(v){return !v.isBancoTalentos;}).forEach(function(v) {
+    rows.push([v.codigo||'',v.cargo,v.empresa||'',v.departamento||'',v.perfil||'',
+      fmtDate(v.abertura),fmtDate(v.prazo),v.status,
+      (v.candidatos||[]).length,
+      (v.candidatos||[]).filter(function(c){return c.etapa===7;}).length]);
+  });
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Vagas');
+  XLSX.writeFile(wb, 'vagas_novaRH.xlsx');
+}
+
+// ════════════════════════════════════════════
+// BANCO DE TALENTOS
+// ════════════════════════════════════════════
+function ensureBancoTalentos() {
+  if (!_vagas.find(function(v) { return v.isBancoTalentos; })) {
+    var b = {
+      id:'banco_talentos', isBancoTalentos:true, cargo:'BANCO DE TALENTOS',
+      departamento:'—', perfil:'—', empresa:'Nova.', status:'aberta',
+      candidatos:[], criadoEm:'2000-01-01T00:00:00.000Z', codigo:'BT-0001'
+    };
+    db.collection('vagas').doc('banco_talentos').set(b).catch(function(e){console.error(e);});
+    _vagas.unshift(b);
   }
 }
 
-// ======== MODAL HELPERS ========
-function openModal(id){document.getElementById(id).classList.add('open');}
-function closeModal(id){document.getElementById(id).classList.remove('open');}
-document.querySelectorAll('.modal-overlay').forEach(el=>{el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});});
-
-// ======== INIT ========
-(function(){
-  const b={id:'banco_talentos',isBancoTalentos:true,cargo:'BANCO DE TALENTOS',departamento:'—',perfil:'—',empresa:'Nova.',status:'aberta',candidatos:[],criadoEm:'2000-01-01T00:00:00.000Z',codigo:'BT-0001'};
-  localStorage.setItem('nova_vagas_v3',JSON.stringify([b]));
-  localStorage.removeItem('nova_eventos_v1');
-})();
-renderVagas();
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+document.querySelectorAll('.modal-overlay,.popup-overlay').forEach(function(el) {
+  el.addEventListener('click', function(e) { if (e.target===this) this.classList.remove('open'); });
+});
+initUpper();
+iniciarListeners();
 </script>
 </body>
 </html>

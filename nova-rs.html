@@ -1223,8 +1223,8 @@ function transferirCandidato(cid) {
   if (!cand) return;
 
   // Destinos: outras vagas abertas + banco de talentos
-  var destinos = vagas.filter(function(v) { return v.id !== vagaAtivaId && v.status !== 'cancelada'; });
-  if (!destinos.length) { toast('Sem outras vagas disponíveis.','err'); return; }
+  var destinos = vagas.filter(function(v) { return v.id !== vagaAtivaId && v.status === 'aberta'; });
+  if (!destinos.length) { toast('Sem vagas abertas disponíveis para transferir.','err'); return; }
 
   // Criar/reusar modal de transferência
   var existing = document.getElementById('modal-transferir');

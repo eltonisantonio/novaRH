@@ -115,6 +115,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .kcard.dragging{opacity:.35;cursor:grabbing;}
 .kcard .kc-name{font-size:12px;font-weight:700;margin-bottom:2px;}
 .kcard .kc-meta{font-size:10px;color:var(--text3);font-weight:500;}
+.kcard .kc-rep{font-size:10px;color:#e05252;font-weight:700;margin-top:3px;}
 .kcard .kc-actions{display:flex;gap:3px;margin-top:6px;}
 .col-0 .kcard{border-left-color:#b0c8e4;}
 .col-1 .kcard{border-left-color:#d4a020;}
@@ -828,9 +829,11 @@ function renderKanban(v) {
   ];
   // Simplificar: usar etapas 0-7 como no original
   var kanbanCols = [];
-  for (var i = 0; i <= 7; i++) {
-    var label = i === 0 ? 'Triagem\nInicial' : ETAPAS[i-1] ? ETAPAS[i-1].label : '';
-    var color = i === 0 ? '#b0c8e4' : ETAPAS[i-1] ? ETAPAS[i-1].color : '#ccc';
+  for (var i = 0; i <= 8; i++) {
+    var label, color;
+    if (i === 0) { label = 'Triagem\nInicial'; color = '#b0c8e4'; }
+    else if (i === 8) { label = 'Reprovado/\nDesistiu'; color = '#e05252'; }
+    else { label = ETAPAS[i-1] ? ETAPAS[i-1].label : ''; color = ETAPAS[i-1] ? ETAPAS[i-1].color : '#ccc'; }
     kanbanCols.push({
       etapa: i,
       label: label,
@@ -842,12 +845,14 @@ function renderKanban(v) {
   var html = kanbanCols.map(function(col) {
     var total = (v.candidatos||[]).length;
     var cards = col.cards.map(function(c) {
+      var metaExtra = c.etapa === 8 && c.motivoRep ? '<div class="kc-rep">'+c.motivoRep+'</div>' : '';
       return '<div class="kcard col-'+col.etapa+'" draggable="true"'
         +' ondragstart="dragStart(event,\''+c.id+'\')"'
         +' onclick="event.stopPropagation();editarCandidato(\''+c.id+'\');"'
         +' style="border-left-color:'+col.color+'">'
         +'<div class="kc-name">'+c.nome+'</div>'
         +'<div class="kc-meta">'+(c.origem||'')+(c.dtEntrevista?' · '+fmtDT(c.dtEntrevista):'')+'</div>'
+        +metaExtra
         +'<div class="kc-actions">'
         +'<button class="btn-icon" style="font-size:11px" title="Remover" onclick="event.stopPropagation();removerCandidato(\''+c.id+'\')"><i class="ti ti-trash"></i></button>'
         +'</div>'

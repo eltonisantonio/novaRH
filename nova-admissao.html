@@ -604,6 +604,9 @@ function iniciarListeners() {
   db.collection('adm_processos').onSnapshot(function(snap) {
     _processos = snap.docs.map(function(d) { return Object.assign({id:d.id}, d.data()); });
     _processos.sort(function(a,b) { return (b.criadoEm||'').localeCompare(a.criadoEm||''); });
+    // Resetar select de empresa para repopular com dados reais
+    var efEmp = document.getElementById('ef-empresa');
+    if (efEmp) efEmp.dataset.populated = '';
     // Atualizar _procAtual se modal estiver aberto
     if (_procAtual) {
       var updated = _processos.find(function(p){ return p.id===_procAtual.id; });
@@ -1318,6 +1321,16 @@ function renderItensCfg() {
 // ════════════════════════════════════════════
 var _exportSelecionados = {};
 
+function normDate(s) {
+  if (!s) return '';
+  s = String(s).trim();
+  if (s.includes('/')) {
+    var p = s.split('/');
+    if (p.length === 3) return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+  }
+  return s;
+}
+
 function getProcessosFiltrados() {
   var dtDe  = document.getElementById('ef-dt-de').value;
   var dtAte = document.getElementById('ef-dt-ate').value;
@@ -1328,10 +1341,10 @@ function getProcessosFiltrados() {
 
   return _processos.filter(function(p) {
     var d = p.dados||{};
-    var adm = d.admissao||'';
+    var adm = normDate(d.admissao||'');
     if (dtDe  && adm < dtDe)  return false;
     if (dtAte && adm > dtAte) return false;
-    if (emp   && d.empresa !== emp) return false;
+    if (emp   && (d.empresa||'') !== emp) return false;
     if (perf  && p.perfil !== perf) return false;
     if (st    && p.status !== st)   return false;
     if (busca && !(d.nome||'').toLowerCase().includes(busca)) return false;
@@ -1347,6 +1360,20 @@ function renderExport() {
       var o = document.createElement('option'); o.value=p.id; o.textContent=p.nome; efPerf.appendChild(o);
     });
     efPerf.dataset.populated = '1';
+  }
+
+  // Popular select de empresa com valores reais dos processos
+  var efEmp = document.getElementById('ef-empresa');
+  if (efEmp && !efEmp.dataset.populated && _processos.length) {
+    var empresas = {};
+    _processos.forEach(function(p){ var e=(p.dados&&p.dados.empresa)||''; if(e) empresas[e]=1; });
+    var val = efEmp.value;
+    efEmp.innerHTML = '<option value="">Todas as empresas</option>';
+    Object.keys(empresas).sort().forEach(function(e){
+      var o = document.createElement('option'); o.value=e; o.textContent=e; efEmp.appendChild(o);
+    });
+    efEmp.dataset.populated = '1';
+    if (val) efEmp.value = val;
   }
 
   var lista = getProcessosFiltrados();
@@ -1366,7 +1393,7 @@ function renderExport() {
       +'<input type="checkbox" '+(sel?'checked':'')+' onclick="event.stopPropagation();toggleExportSel(\''+p.id+'\')" style="width:16px;height:16px;accent-color:var(--black)">'
       +'<div style="flex:1">'
       +'<div style="font-size:13px;font-weight:700">'+(d.nome||'—')+'</div>'
-      +'<div style="font-size:11px;color:var(--text2);margin-top:2px">'+(d.empresa||'')+(d.cargo?' · '+d.cargo:'')+(d.admissao?' · Admissão: '+fmtDate(d.admissao):'')+' · '+((p.perfil||'').toUpperCase())+'</div>'
+      +'<div style="font-size:11px;color:var(--text2);margin-top:2px">'+(d.empresa||'')+(d.cargo?' · '+d.cargo:'')+(d.admissao?' · Admissão: '+fmtDate(normDate(d.admissao)):'')+' · '+((p.perfil||'').toUpperCase())+'</div>'
       +'</div>'
       +'<span class="badge '+(p.status==='concluido'?'b-green':'b-amber')+'">'+(p.status==='concluido'?'Concluído':'Em andamento')+'</span>'
       +'</div>';

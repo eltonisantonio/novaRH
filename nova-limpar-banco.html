@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova. RH — Limpar Banco</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:#0e0f12;color:#f2eee5;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;}
+.card{background:#1a1b1f;border:1px solid #2a2b30;border-radius:12px;padding:36px;width:100%;max-width:560px;}
+.logo{font-size:22px;font-weight:900;letter-spacing:-.5px;margin-bottom:4px;}
+.logo span{display:inline-block;width:8px;height:8px;background:#d7ff3d;border-radius:50%;margin-left:2px;vertical-align:middle;}
+.sub{font-size:11px;font-weight:600;color:#6b6558;letter-spacing:2px;text-transform:uppercase;margin-bottom:28px;}
+h2{font-size:16px;font-weight:800;margin-bottom:6px;color:#f2eee5;}
+.desc{font-size:13px;color:#a09890;margin-bottom:24px;line-height:1.6;}
+.warn{background:#2a1a1a;border:1px solid #8b1c1c;border-radius:8px;padding:14px 16px;font-size:13px;color:#f5c6c6;margin-bottom:24px;display:flex;gap:10px;align-items:flex-start;}
+.warn-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.collections{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;}
+.col-item{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#0e0f12;border:1px solid #2a2b30;border-radius:8px;cursor:pointer;}
+.col-item input{width:16px;height:16px;accent-color:#d7ff3d;cursor:pointer;flex-shrink:0;}
+.col-name{font-size:13px;font-weight:600;flex:1;}
+.col-desc{font-size:11px;color:#6b6558;}
+.col-count{font-size:11px;font-weight:700;color:#a09890;background:#1a1b1f;padding:2px 8px;border-radius:10px;}
+.actions{display:flex;gap:10px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 18px;border-radius:8px;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.btn-danger{background:#8b1c1c;color:#fff;}
+.btn-danger:hover{background:#a02020;}
+.btn-outline{background:transparent;color:#a09890;border:1px solid #2a2b30;}
+.btn-outline:hover{background:#1a1b1f;}
+.btn:disabled{opacity:.4;cursor:not-allowed;}
+.log{margin-top:20px;background:#0e0f12;border:1px solid #2a2b30;border-radius:8px;padding:14px;max-height:220px;overflow-y:auto;font-size:12px;font-family:monospace;display:none;}
+.log-line{margin-bottom:4px;line-height:1.5;}
+.log-line.ok{color:#d7ff3d;}
+.log-line.err{color:#f5c6c6;}
+.log-line.info{color:#a09890;}
+.progress{height:4px;background:#2a2b30;border-radius:2px;overflow:hidden;margin-top:16px;display:none;}
+.progress-fill{height:100%;background:#d7ff3d;border-radius:2px;transition:width .3s;width:0%;}
+.confirm-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);align-items:center;justify-content:center;z-index:10;}
+.confirm-overlay.open{display:flex;}
+.confirm-box{background:#1a1b1f;border:1px solid #8b1c1c;border-radius:12px;padding:28px;max-width:420px;text-align:center;}
+.confirm-title{font-size:16px;font-weight:800;margin-bottom:8px;color:#f5c6c6;}
+.confirm-sub{font-size:13px;color:#a09890;margin-bottom:20px;line-height:1.5;}
+.confirm-input{width:100%;padding:10px 12px;background:#0e0f12;border:1px solid #2a2b30;border-radius:8px;color:#f2eee5;font-size:14px;font-family:'Inter',sans-serif;font-weight:700;text-align:center;outline:none;margin-bottom:16px;letter-spacing:2px;}
+.confirm-input.valid{border-color:#d7ff3d;}
+.confirm-actions{display:flex;gap:10px;justify-content:center;}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">NOVA<span></span></div>
+  <div class="sub">Utilitário — Limpar Banco de Dados</div>
+
+  <h2>Selecione o que deseja apagar</h2>
+  <div class="desc">Escolha as coleções que deseja remover. Esta operação é <strong>irreversível</strong> — os dados apagados não podem ser recuperados.</div>
+
+  <div class="warn">
+    <div class="warn-icon">⚠️</div>
+    <div>Use apenas para remover <strong>dados de teste</strong>. Em produção, certifique-se de ter um backup antes de continuar.</div>
+  </div>
+
+  <div class="collections" id="col-list"></div>
+
+  <div class="actions">
+    <button class="btn btn-outline" onclick="contarDocs()">🔍 Contar documentos</button>
+    <button class="btn btn-danger" id="btn-limpar" onclick="confirmarLimpeza()" disabled>🗑️ Limpar selecionados</button>
+  </div>
+
+  <div class="progress" id="progress"><div class="progress-fill" id="progress-fill"></div></div>
+  <div class="log" id="log"></div>
+</div>
+
+<!-- CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-title">⚠️ Confirmação necessária</div>
+    <div class="confirm-sub">Esta ação apagará permanentemente os documentos das coleções selecionadas.<br><br>Digite <strong>LIMPAR</strong> para confirmar:</div>
+    <input class="confirm-input" type="text" id="confirm-input" placeholder="LIMPAR" oninput="checkConfirm(this)">
+    <div class="confirm-actions">
+      <button class="btn btn-outline" onclick="document.getElementById('confirm-overlay').classList.remove('open')">Cancelar</button>
+      <button class="btn btn-danger" id="btn-confirm-ok" onclick="executarLimpeza()" disabled>Confirmar e Apagar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyAhoLSoe7bRdDakJ6apJcnWMBL5RHmQtDI",
+  authDomain:"novarh-4fbc6.firebaseapp.com",
+  projectId:"novarh-4fbc6",
+  storageBucket:"novarh-4fbc6.firebasestorage.app",
+  messagingSenderId:"805399291743",
+  appId:"1:805399291743:web:ac13f2572f875c0ec1b8ea"
+});
+var db = firebase.firestore();
+
+var COLECOES = [
+  {id:'vagas',          nome:'Vagas & Candidatos',     desc:'R&S — vagas, kanban e banco de talentos'},
+  {id:'eventos',        nome:'Eventos de Agenda',       desc:'R&S — entrevistas e testes agendados'},
+  {id:'adm_processos',  nome:'Processos de Admissão',   desc:'Admissão — FO1029, checklists e dados'},
+  {id:'dossie_funcs',   nome:'Funcionários do Dossiê',  desc:'Dossiê — cadastros manuais'},
+  {id:'dossie_eventos', nome:'Eventos do Dossiê',       desc:'Dossiê — histórico de eventos'},
+  {id:'exp_data',       nome:'Dados de Experiência',    desc:'Experiência — registros dos 90 dias'},
+  {id:'rescisao_processos', nome:'Processos de Rescisão', desc:'Rescisão — processos e checklists'},
+  {id:'solicitacoes',   nome:'Solicitações de Vaga',    desc:'Solicitações — formulários e N2'},
+  {id:'rh_users',       nome:'Usuários do Sistema',     desc:'Index — usuários e senhas'},
+  {id:'sol_setores',    nome:'Setores de Solicitação',  desc:'Config — setores cadastrados'},
+  {id:'sol_n2s',        nome:'Responsáveis N2',         desc:'Config — aprovadores N2'},
+  {id:'perfis',         nome:'Perfis de Vaga (R&S)',    desc:'Config — SLA por perfil'},
+  {id:'adm_perfis',     nome:'Perfis de Admissão',      desc:'Config — perfis do checklist'},
+  {id:'adm_itens',      nome:'Itens do Checklist Adm.', desc:'Config — itens configurados'},
+  {id:'adm_regras',     nome:'Regras de Validação',     desc:'Config — regras por perfil'},
+  {id:'rescisao_perfis',nome:'Perfis de Rescisão',      desc:'Config — perfis e condicionais'},
+  {id:'rescisao_itens', nome:'Itens do Checklist Resc.',desc:'Config — itens da rescisão'},
+  {id:'dossie_tipos',   nome:'Tipos de Evento Dossiê',  desc:'Config — tipos personalizados'},
+  {id:'exp_cfg',        nome:'Config. de Experiência',  desc:'Config — vídeos e contatos'},
+];
+
+var counts = {};
+
+function renderCols(){
+  var el = document.getElementById('col-list');
+  el.innerHTML = COLECOES.map(function(c){
+    return '<label class="col-item">'
+      +'<input type="checkbox" value="'+c.id+'" onchange="atualizarBotao()">'
+      +'<div class="col-name">'+c.nome+'</div>'
+      +'<div class="col-desc">'+c.desc+'</div>'
+      +'<div class="col-count" id="count-'+c.id+'">'+(counts[c.id]!==undefined?counts[c.id]+'docs':'—')+'</div>'
+      +'</label>';
+  }).join('');
+}
+
+function atualizarBotao(){
+  var sel = document.querySelectorAll('#col-list input:checked');
+  document.getElementById('btn-limpar').disabled = sel.length === 0;
+}
+
+function contarDocs(){
+  log('Contando documentos...','info');
+  var promises = COLECOES.map(function(c){
+    return db.collection(c.id).get().then(function(snap){
+      counts[c.id] = snap.size;
+      var el = document.getElementById('count-'+c.id);
+      if(el) el.textContent = snap.size+'docs';
+    });
+  });
+  Promise.all(promises).then(function(){
+    log('Contagem concluída.','ok');
+  });
+}
+
+function confirmarLimpeza(){
+  document.getElementById('confirm-input').value='';
+  document.getElementById('btn-confirm-ok').disabled=true;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function checkConfirm(el){
+  var ok = el.value.trim().toUpperCase() === 'LIMPAR';
+  el.classList.toggle('valid', ok);
+  document.getElementById('btn-confirm-ok').disabled = !ok;
+}
+
+function executarLimpeza(){
+  document.getElementById('confirm-overlay').classList.remove('open');
+  var selecionadas = Array.from(document.querySelectorAll('#col-list input:checked')).map(function(i){return i.value;});
+  if(!selecionadas.length) return;
+
+  document.getElementById('progress').style.display='block';
+  document.getElementById('log').style.display='block';
+  document.getElementById('btn-limpar').disabled=true;
+  document.getElementById('btn-confirm-ok').disabled=true;
+
+  log('Iniciando limpeza de '+selecionadas.length+' coleção(ões)...','info');
+
+  var total = selecionadas.length;
+  var feitos = 0;
+
+  function processarProxima(idx){
+    if(idx >= selecionadas.length){
+      document.getElementById('progress-fill').style.width='100%';
+      log('✅ Limpeza concluída!','ok');
+      document.getElementById('btn-limpar').disabled=false;
+      return;
+    }
+    var colId = selecionadas[idx];
+    log('Apagando: '+colId+'...','info');
+    apagarColecao(colId).then(function(n){
+      feitos++;
+      document.getElementById('progress-fill').style.width=Math.round(feitos/total*100)+'%';
+      log('✅ '+colId+' — '+n+' documentos removidos','ok');
+      counts[colId]=0;
+      var el=document.getElementById('count-'+colId);
+      if(el)el.textContent='0docs';
+      processarProxima(idx+1);
+    }).catch(function(e){
+      log('❌ Erro em '+colId+': '+e.message,'err');
+      processarProxima(idx+1);
+    });
+  }
+  processarProxima(0);
+}
+
+function apagarColecao(colId){
+  return db.collection(colId).get().then(function(snap){
+    var docs = snap.docs;
+    if(!docs.length) return 0;
+    // Deletar em batches de 400
+    var batches = [];
+    var batch = db.batch();
+    var count = 0;
+    docs.forEach(function(d){
+      batch.delete(d.ref);
+      count++;
+      if(count % 400 === 0){
+        batches.push(batch.commit());
+        batch = db.batch();
+      }
+    });
+    batches.push(batch.commit());
+    return Promise.all(batches).then(function(){ return docs.length; });
+  });
+}
+
+function log(msg, tipo){
+  var el = document.getElementById('log');
+  var line = document.createElement('div');
+  line.className = 'log-line '+(tipo||'info');
+  line.textContent = new Date().toLocaleTimeString('pt-BR')+' — '+msg;
+  el.appendChild(line);
+  el.scrollTop = el.scrollHeight;
+}
+
+// Marcar tudo / desmarcar tudo com duplo clique no título
+document.addEventListener('DOMContentLoaded', function(){
+  renderCols();
+});
+renderCols();
+</script>
+</body>
+</html>

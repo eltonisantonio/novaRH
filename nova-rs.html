@@ -644,7 +644,7 @@ function renderVagas() {
   var vagas = DB.vagas.getAll().filter(function(v) {
     if (v.isBancoTalentos) return false;
     if (q && !(v.cargo||'').toLowerCase().includes(q) && !(v.empresa||'').toLowerCase().includes(q) && !(v.departamento||'').toLowerCase().includes(q)) return false;
-    if (fe && v.empresa !== fe) return false;
+    if (fe && !(v.empresa||'').toUpperCase().includes(fe.split(' ')[0].toUpperCase())) return false;
     if (fs && v.status !== fs) return false;
     return true;
   });

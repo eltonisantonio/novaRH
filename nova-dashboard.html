@@ -551,7 +551,7 @@ function renderSecaoRescisao(){
   var rescs = _dados.rescisoes.filter(function(r){
     var dt=normDate(r.deslig||r.criadoEm||'');
     if(dt&&dt<dtInicio) return false;
-    if(emp && r.empresa!==emp) return false;
+    if(emp && !(r.empresa||'').toUpperCase().includes(emp.split(' ')[0].toUpperCase())) return false;
     return true;
   });
 

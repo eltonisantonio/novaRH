@@ -170,11 +170,6 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         </div>
         <select class="form-select" id="f-empresa" onchange="renderLista()" style="width:185px">
           <option value="">Todas as empresas</option>
-          <option>RAGUIFE INDUSTRIA E COMERCIO DE RACOES LTDA</option>
-          <option>NEVES QUEIROZ ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA</option>
-          <option>DISTRIBUIDORA AMBAR AMARAL LTDA</option>
-          <option>AMBAR AMARAL ADMINISTRADORA DE BENS PROPRIOS LTDA</option>
-          <option>M B PRONI DO AMARAL CONSTRUCOES E ACABAMENTOS</option>
         </select>
         <select class="form-select" id="f-status" onchange="renderLista()" style="width:150px">
           <option value="">Todos</option>
@@ -437,12 +432,21 @@ function showTab(t) {
 
 // ════ LISTA ════
 function renderLista() {
+  // Popular select de empresa dinamicamente
+  var selEmp = document.getElementById('f-empresa');
+  if (selEmp && selEmp.options.length <= 1) {
+    var emps = {};
+    _funcs.forEach(function(f){ if(f.empresa) emps[f.empresa]=1; });
+    Object.keys(emps).sort().forEach(function(e){
+      var o=document.createElement('option'); o.value=e; o.textContent=e; selEmp.appendChild(o);
+    });
+  }
   var q   = (document.getElementById('busca').value||'').toLowerCase();
   var fe  = document.getElementById('f-empresa').value;
   var fs  = document.getElementById('f-status').value;
   var lista = _funcs.filter(function(f) {
     if (q && !(f.nome||'').toLowerCase().includes(q) && !(f.cargo||'').toLowerCase().includes(q) && !(f.empresa||'').toLowerCase().includes(q)) return false;
-    if (fe && f.empresa !== fe) return false;
+    if (fe && !(f.empresa||'').toUpperCase().includes(fe.split(' ')[0].toUpperCase())) return false;
     if (fs==='ativo'    && (f.desligado||f.status==='desligado')) return false;
     if (fs==='desligado'&& !f.desligado && f.status!=='desligado') return false;
     return true;

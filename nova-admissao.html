@@ -1471,7 +1471,7 @@ function getProcessosFiltrados() {
     var adm = normDate(d.admissao||'');
     if (dtDe  && adm < dtDe)  return false;
     if (dtAte && adm > dtAte) return false;
-    if (emp   && (d.empresa||'') !== emp) return false;
+    if (emp   && !(d.empresa||'').toUpperCase().includes(emp.split(' ')[0].toUpperCase())) return false;
     if (perf  && p.perfil !== perf) return false;
     if (st    && p.status !== st)   return false;
     if (busca && !(d.nome||'').toLowerCase().includes(busca)) return false;

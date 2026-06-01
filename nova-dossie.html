@@ -463,6 +463,7 @@ function showTab(t) {
     _funcAtivo=null;
     tb.innerHTML = 'Dossiê de Funcionários';
     ta.innerHTML = '<button class="btn btn-sm" onclick="showTab(\'cfg\')"><i class="ti ti-settings"></i> Configurações</button>'
+      +'<button class="btn btn-sm" onclick="openEventoGrupo()"><i class="ti ti-users"></i> Evento em Grupo</button>'
       +'<button class="btn btn-primary btn-sm" onclick="openCadastrarFunc()"><i class="ti ti-user-plus"></i> Novo Funcionário</button>';
   }
   if (t==='dossie' && _funcAtivo) {
@@ -806,6 +807,84 @@ function renderCfg() {
       +'<td>'+(isPadrao?'<span style="font-size:11px;color:var(--text3)">Padrão</span>':'<button class="btn-icon" onclick="removerTipo(\''+t.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button>')+'</td>'
       +'</tr>';
   }).join('') || '<tr><td colspan="3" style="color:var(--text3);font-size:12px;padding:16px">Nenhum tipo.</td></tr>';
+}
+
+
+// ════ EVENTO EM GRUPO ════
+var _egSelecionados = {};
+
+function openEventoGrupo() {
+  _egSelecionados = {};
+  var sel = document.getElementById('eg-tipo');
+  sel.innerHTML = '<option value="">Selecione</option>'
+    + _tipos.map(function(t){ return '<option value="'+t.id+'">'+t.nome+'</option>'; }).join('');
+  document.getElementById('eg-titulo').value = '';
+  document.getElementById('eg-obs').value = '';
+  document.getElementById('eg-resp').value = '';
+  document.getElementById('eg-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('eg-busca').value = '';
+  renderEGLista();
+  openModal('modal-grupo');
+}
+
+function renderEGLista() {
+  var q = (document.getElementById('eg-busca').value||'').toLowerCase();
+  var lista = _funcs.filter(function(f){
+    if (f.desligado || f.status === 'desligado') return false;
+    if (q && !(f.nome||'').toLowerCase().includes(q)) return false;
+    return true;
+  });
+  lista.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||''); });
+  var count = Object.values(_egSelecionados).filter(Boolean).length;
+  document.getElementById('eg-count').textContent = count + ' selecionado'+(count!==1?'s':'');
+  document.getElementById('eg-lista').innerHTML = lista.map(function(f){
+    var sel = !!_egSelecionados[f.id];
+    return '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;background:'+(sel?'#f0ffe0':'var(--white)')+'" onclick="toggleEG(\''+f.id+'\')">'
+      +'<input type="checkbox" '+(sel?'checked':'')+' style="accent-color:var(--black);width:15px;height:15px" onclick="event.stopPropagation();toggleEG(\''+f.id+'\')">'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.nome+'</div>'
+      +'<div style="font-size:10px;color:var(--text3)">'+(f.cargo||'')+(f.empresa?' · '+f.empresa.split(' ')[0]:'')+'</div>'
+      +'</div></div>';
+  }).join('') || '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">Nenhum encontrado</div>';
+}
+
+function toggleEG(id){ _egSelecionados[id]=!_egSelecionados[id]; renderEGLista(); }
+function filtrarEG(){ renderEGLista(); }
+function selecionarTodosEG(){
+  var q=(document.getElementById('eg-busca').value||'').toLowerCase();
+  _funcs.filter(function(f){ return !f.desligado&&f.status!=='desligado'&&(!q||(f.nome||'').toLowerCase().includes(q)); })
+    .forEach(function(f){ _egSelecionados[f.id]=true; });
+  renderEGLista();
+}
+function limparEG(){ _egSelecionados={}; renderEGLista(); }
+
+function salvarEventoGrupo(){
+  var tipoId=document.getElementById('eg-tipo').value;
+  var titulo=(document.getElementById('eg-titulo').value||'').trim();
+  var data=document.getElementById('eg-data').value;
+  var resp=(document.getElementById('eg-resp').value||'').trim();
+  var obs=(document.getElementById('eg-obs').value||'').trim();
+  if(!tipoId){toast('Selecione o tipo.','err');return;}
+  if(!titulo){toast('Informe o título.','err');return;}
+  if(!data){toast('Informe a data.','err');return;}
+  if(!resp){toast('Informe o responsável.','err');return;}
+  var ids=Object.keys(_egSelecionados).filter(function(id){return _egSelecionados[id];});
+  if(!ids.length){toast('Selecione ao menos um funcionário.','err');return;}
+  var now=new Date().toISOString();
+  var promises=[];
+  for(var i=0;i<ids.length;i+=20){
+    var batch=db.batch();
+    ids.slice(i,i+20).forEach(function(funcId){
+      var evRef=db.collection('dossie_eventos').doc();
+      batch.set(evRef,{id:evRef.id,funcId:funcId,tipoId:tipoId,titulo:titulo,data:data,obs:obs,resp:resp,criadoEm:now,grupo:true});
+    });
+    promises.push(batch.commit());
+  }
+  Promise.all(promises).then(function(){
+    toast('Evento registrado para '+ids.length+' funcionário'+(ids.length!==1?'s':'')+'!','ok');
+    closeModal('modal-grupo');
+    _egSelecionados={};
+  }).catch(function(e){toast('Erro: '+e.message,'err');});
 }
 
 document.querySelectorAll('.overlay').forEach(function(el){

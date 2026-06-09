@@ -201,12 +201,14 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="cfg-section">
         <div style="font-size:13px;font-weight:800;margin-bottom:4px">Perfis de Rescisão</div>
         <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Os perfis determinam quais itens condicionais aparecem no checklist.</div>
+        <input type="hidden" id="np-edit-id">
         <div style="display:flex;gap:8px;margin-bottom:14px;align-items:end">
           <div style="flex:1"><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Nome</label>
             <input class="fi" type="text" id="np-nome" placeholder="Ex: MOTORISTA"></div>
           <div style="width:280px"><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Condicionais ativos (vírgula)</label>
             <input class="fi" type="text" id="np-conds" placeholder="Ex: mot,adm"></div>
-          <button class="btn btn-primary" style="height:38px" onclick="addPerfil()"><i class="ti ti-plus"></i> Adicionar</button>
+          <button class="btn btn-primary" style="height:38px" id="np-add-btn" onclick="addPerfil()"><i class="ti ti-plus"></i> Adicionar</button>
+          <button class="btn btn-sm" style="height:38px" onclick="cancelarEdicaoPerfil()" title="Cancelar"><i class="ti ti-x"></i></button>
         </div>
         <table class="cfg-table"><thead><tr><th>Perfil</th><th>Condicionais</th><th style="width:50px"></th></tr></thead>
         <tbody id="tb-perfis"></tbody></table>
@@ -216,7 +218,8 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="cfg-section">
         <div style="font-size:13px;font-weight:800;margin-bottom:4px">Itens do Checklist</div>
         <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Itens condicionais só aparecem se o perfil tiver o condicional ativado.</div>
-        <div style="display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px;margin-bottom:14px;align-items:end">
+        <input type="hidden" id="ni-edit-id">
+        <div style="display:grid;grid-template-columns:auto 1fr 1fr auto auto;gap:8px;margin-bottom:14px;align-items:end">
           <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Setor</label>
             <select class="fi" id="ni-setor" style="width:130px">
               <option value="rh">RH/DP</option><option value="sesmt">SESMT</option>
@@ -227,7 +230,8 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
             <input class="fi" type="text" id="ni-texto" placeholder="Descrição do item"></div>
           <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Condicional</label>
             <input class="fi" type="text" id="ni-cond" placeholder="Ex: mot (ou vazio p/ todos)" style="width:160px"></div>
-          <button class="btn btn-primary" style="height:38px" onclick="addItem()"><i class="ti ti-plus"></i> Adicionar</button>
+          <button class="btn btn-primary" style="height:38px" id="ni-add-btn" onclick="addItem()"><i class="ti ti-plus"></i> Adicionar</button>
+          <button class="btn btn-sm" style="height:38px" onclick="cancelarEdicaoItem()" title="Cancelar"><i class="ti ti-x"></i></button>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:10px">
           <select class="fi" id="fi-setor-cfg" onchange="renderItensCfg()" style="width:160px">
@@ -926,14 +930,32 @@ function addPerfil(){
   var nome=(document.getElementById('np-nome').value||'').trim().toUpperCase();
   var conds=(document.getElementById('np-conds').value||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
   if(!nome){toast('Informe o nome.','err');return;}
-  var id='perf_'+Date.now();
+  var editId=document.getElementById('np-edit-id').value;
+  var id=editId||('perf_'+Date.now());
   db.collection('rescisao_perfis').doc(id).set({id:id,nome:nome,conds:conds}).then(function(){
-    document.getElementById('np-nome').value='';document.getElementById('np-conds').value='';
-    toast('Perfil adicionado!','ok');
+    document.getElementById('np-nome').value='';
+    document.getElementById('np-conds').value='';
+    document.getElementById('np-edit-id').value='';
+    document.getElementById('np-add-btn').innerHTML='<i class="ti ti-plus"></i> Adicionar';
+    toast(editId?'Perfil atualizado!':'Perfil adicionado!','ok');
   });
 }
+function editarPerfil(id){
+  var p=_perfis.find(function(x){return x.id===id;});
+  if(!p)return;
+  document.getElementById('np-nome').value=p.nome;
+  document.getElementById('np-conds').value=(p.conds||[]).join(', ');
+  document.getElementById('np-edit-id').value=id;
+  document.getElementById('np-add-btn').innerHTML='<i class="ti ti-check"></i> Salvar';
+  document.getElementById('np-nome').focus();
+}
+function cancelarEdicaoPerfil(){
+  document.getElementById('np-nome').value='';
+  document.getElementById('np-conds').value='';
+  document.getElementById('np-edit-id').value='';
+  document.getElementById('np-add-btn').innerHTML='<i class="ti ti-plus"></i> Adicionar';
+}
 function removerPerfil(id){
-  if(PERFIS_DEFAULT.find(function(p){return p.id===id;})){toast('Perfis padrão não podem ser removidos.','warn');return;}
   if(!confirm('Remover perfil?'))return;
   db.collection('rescisao_perfis').doc(id).delete().then(function(){toast('Removido.');});
 }
@@ -942,14 +964,33 @@ function addItem(){
   var text=(document.getElementById('ni-texto').value||'').trim();
   var cond=(document.getElementById('ni-cond').value||'').trim()||null;
   if(!text){toast('Informe a descrição.','err');return;}
-  var id='custom_'+Date.now();
+  var editId=document.getElementById('ni-edit-id').value;
+  var id=editId||('custom_'+Date.now());
   db.collection('rescisao_itens').doc(id).set({id:id,sector:sector,text:text,conditional:cond}).then(function(){
-    document.getElementById('ni-texto').value='';document.getElementById('ni-cond').value='';
-    toast('Item adicionado!','ok');
+    document.getElementById('ni-texto').value='';
+    document.getElementById('ni-cond').value='';
+    document.getElementById('ni-edit-id').value='';
+    document.getElementById('ni-add-btn').innerHTML='<i class="ti ti-plus"></i> Adicionar';
+    toast(editId?'Item atualizado!':'Item adicionado!','ok');
   });
 }
+function editarItem(id){
+  var it=_itens.find(function(x){return x.id===id;})||ITENS_DEFAULT.find(function(x){return x.id===id;});
+  if(!it)return;
+  document.getElementById('ni-setor').value=it.sector;
+  document.getElementById('ni-texto').value=it.text;
+  document.getElementById('ni-cond').value=it.conditional||'';
+  document.getElementById('ni-edit-id').value=id;
+  document.getElementById('ni-add-btn').innerHTML='<i class="ti ti-check"></i> Salvar';
+  document.getElementById('ni-texto').focus();
+}
+function cancelarEdicaoItem(){
+  document.getElementById('ni-texto').value='';
+  document.getElementById('ni-cond').value='';
+  document.getElementById('ni-edit-id').value='';
+  document.getElementById('ni-add-btn').innerHTML='<i class="ti ti-plus"></i> Adicionar';
+}
 function removerItem(id){
-  if(ITENS_DEFAULT.find(function(it){return it.id===id;})){toast('Itens padrão não podem ser removidos.','warn');return;}
   if(!confirm('Remover item?'))return;
   db.collection('rescisao_itens').doc(id).delete().then(function(){toast('Removido.');});
 }
@@ -958,19 +999,25 @@ function renderItensCfg(){
   var lista=(_itens.length?_itens:ITENS_DEFAULT).filter(function(it){return !filtro||it.sector===filtro;});
   var secNames={rh:'RH/DP',sesmt:'SESMT',amb:'Ambulatório',ti:'TI',log:'Logística',alm:'Almoxarifado'};
   document.getElementById('tb-itens').innerHTML=lista.map(function(it){
-    var isPadrao=!!ITENS_DEFAULT.find(function(x){return x.id===it.id;});
-    return '<tr><td style="font-weight:600">'+(secNames[it.sector]||it.sector)+'</td>'
+    return '<tr>'
+      +'<td style="font-weight:600">'+(secNames[it.sector]||it.sector)+'</td>'
       +'<td>'+it.text+'</td>'
       +'<td style="font-size:11px;color:var(--text2)">'+(it.conditional||'Todos')+'</td>'
-      +'<td>'+(isPadrao?'<span style="font-size:11px;color:var(--text3)">Padrão</span>':'<button class="btn-icon" onclick="removerItem(\''+it.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button>')+'</td></tr>';
+      +'<td style="white-space:nowrap">'
+        +'<button class="btn-icon" onclick="editarItem(\''+it.id+'\')" title="Editar"><i class="ti ti-pencil" style="font-size:14px;color:var(--text2)"></i></button>'
+        +'<button class="btn-icon" onclick="removerItem(\''+it.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button>'
+      +'</td></tr>';
   }).join('')||'<tr><td colspan="4" style="color:var(--text3);font-size:12px;padding:16px">Nenhum item.</td></tr>';
 }
 function renderCfg(){
   document.getElementById('tb-perfis').innerHTML=_perfis.map(function(p){
-    var isPadrao=!!PERFIS_DEFAULT.find(function(x){return x.id===p.id;});
-    return '<tr><td style="font-weight:700">'+p.nome+'</td>'
+    return '<tr>'
+      +'<td style="font-weight:700">'+p.nome+'</td>'
       +'<td style="font-size:11px;color:var(--text2)">'+(p.conds&&p.conds.length?p.conds.join(', '):'Nenhum')+'</td>'
-      +'<td>'+(isPadrao?'<span style="font-size:11px;color:var(--text3)">Padrão</span>':'<button class="btn-icon" onclick="removerPerfil(\''+p.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button>')+'</td></tr>';
+      +'<td style="white-space:nowrap">'
+        +'<button class="btn-icon" onclick="editarPerfil(\''+p.id+'\')" title="Editar"><i class="ti ti-pencil" style="font-size:14px;color:var(--text2)"></i></button>'
+        +'<button class="btn-icon" onclick="removerPerfil(\''+p.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button>'
+      +'</td></tr>';
   }).join('')||'<tr><td colspan="3" style="color:var(--text3);font-size:12px;padding:16px">Nenhum perfil.</td></tr>';
   renderItensCfg();
 }

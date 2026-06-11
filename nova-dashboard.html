@@ -59,6 +59,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .stat.blue::after{background:#4a7fc1;}
 .stat.purple::after{background:#9b72cf;}
 .stat.green::after{background:#4caf80;}
+.stat.amber::after{background:#d4a020;}
 .stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:8px;}
 .stat-value{font-size:28px;font-weight:900;letter-spacing:-1px;line-height:1;}
 .stat-sub{font-size:11px;color:var(--text3);font-weight:500;margin-top:4px;}
@@ -206,15 +207,33 @@ function recarregar(){
     db.collection('solicitacoes').get(),
     db.collection('exp_data').get(),
     db.collection('perfis').get(),
+    db.collection('dossie_eventos').get(),
+    db.collection('dossie_funcs').get(),
   ]).then(function(results){
+    // Monta dossieFuncs mesclando adm_processos + dossie_funcs
+    var admFuncs = results[2].docs.map(function(d){
+      var p=d.data(); var d2=p.dados||{}; var adm=d2.admissao||'';
+      if(adm&&adm.includes('/')){var pts=adm.split('/');if(pts.length===3)adm=pts[2]+'-'+pts[1].padStart(2,'0')+'-'+pts[0].padStart(2,'0');}
+      return {id:'adm_'+d.id,nome:d2.nome||'',cargo:d2.cargo||'',empresa:d2.empresa||'',departamento:d2.estrutura||'',admissao:adm,cpf:d2.cpf||'',status:p.status==='concluido'?'ativo':'em_admissao',desligado:!!p.desligado,fonte:'admissao'};
+    });
+    var manuais = results[8].docs.map(function(d){return Object.assign({id:d.id,fonte:'manual'},d.data());});
+    var todos = admFuncs.slice();
+    manuais.forEach(function(m){
+      var cpf=String(m.cpf||'').replace(/\D/g,'');
+      var jaExiste=cpf&&admFuncs.find(function(f){return String(f.cpf||'').replace(/\D/g,'')===cpf;});
+      if(!jaExiste) todos.push(m);
+    });
+
     _dados = {
-      vagas:      results[0].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
-      eventos:    results[1].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
-      processos:  results[2].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
-      rescisoes:  results[3].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
-      solicitacoes: results[4].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
-      expData:    results[5].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
-      perfis:     results[6].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      vagas:         results[0].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      eventos:       results[1].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      processos:     results[2].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      rescisoes:     results[3].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      solicitacoes:  results[4].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      expData:       results[5].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      perfis:        results[6].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      dossieEventos: results[7].docs.map(function(d){return Object.assign({id:d.id},d.data());}),
+      dossieFuncs:   todos,
     };
     popularEmpresaSelect();
     renderDash();
@@ -288,6 +307,12 @@ function renderDash(){
   // ── Solicitações ──
   html += renderSecaoSolicitacoes();
 
+  // ── Treinamentos ──
+  html += renderSecaoTreinamentos();
+
+  // ── Feedback & Desenvolvimento ──
+  html += renderSecaoFeedback();
+
   document.getElementById('dash-content').innerHTML = html;
 
   // Renderizar gráficos após o HTML estar no DOM
@@ -296,6 +321,7 @@ function renderDash(){
     renderGraficosAdmissao();
     renderGraficosRescisao();
     renderGraficosSolicitacoes();
+    renderGraficosTreinamentos();
   }, 100);
 }
 
@@ -320,7 +346,6 @@ function renderSecaoRS(){
 
   var abertas   = vagas.filter(function(v){return v.status==='aberta';}).length;
   var encerradas= vagas.filter(function(v){return v.status==='encerrada';}).length;
-  var pausadas  = vagas.filter(function(v){return v.status==='pausada';}).length;
 
   var totalCands = vagas.reduce(function(s,v){return s+(v.candidatos||[]).length;},0);
   var integrados = vagas.reduce(function(s,v){return s+(v.candidatos||[]).filter(function(c){return c.etapa===7;}).length;},0);
@@ -337,6 +362,20 @@ function renderSecaoRS(){
     var slaEsperado = v.sla||perfis[v.perfil]||30;
     return {cargo:v.cargo,empresa:v.empresa,diasAberto:diasAberto,slaEsperado:slaEsperado,pct:Math.round(diasAberto/slaEsperado*100)};
   }).sort(function(a,b){return b.pct-a.pct;}).slice(0,8);
+
+  // SLA consolidado (% vagas que cumpriram SLA — abertas + encerradas com abertura registrada)
+  var vagasComSla = vagas.filter(function(v){return v.abertura;});
+  var vagasDentroSla = vagasComSla.filter(function(v){
+    var diasAberto = Math.round((new Date()-new Date(v.abertura+'T12:00:00'))/86400000);
+    var slaEsperado = v.sla||perfis[v.perfil]||30;
+    // Encerradas: usar a data de encerramento se disponível, senão usa hoje
+    if(v.status==='encerrada'&&v.encerradoEm){
+      var diasReais = Math.round((new Date(v.encerradoEm)-new Date(v.abertura+'T12:00:00'))/86400000);
+      return diasReais<=slaEsperado;
+    }
+    return diasAberto<=slaEsperado;
+  }).length;
+  var slaGeral = vagasComSla.length>0?Math.round(vagasDentroSla/vagasComSla.length*100):null;
 
   // Motivos de reprovação
   var motivos = {};
@@ -355,21 +394,41 @@ function renderSecaoRS(){
   var entrevistas = eventosRS.filter(function(e){return (e.tipo||'').includes('ENTREVISTA');}).length;
   var testes      = eventosRS.filter(function(e){return (e.tipo||'').includes('TESTE');}).length;
 
+  // Funil: candidatos por etapa nomeada
+  var allCands = vagas.reduce(function(arr,v){return arr.concat(v.candidatos||[]);}, []);
+  var fEntrevistados = allCands.filter(function(c){return c.etapa>=1&&c.etapa<=2;}).length; // Ent. agendada + realizada
+  var fTestados      = allCands.filter(function(c){return c.etapa>=3&&c.etapa<=4;}).length; // Teste agendado + realizado
+  var fAprovados     = allCands.filter(function(c){return c.etapa>=5&&c.etapa<=6;}).length; // Docs/Exame + Exame rec.
+  var fAdmitidos     = integrados; // etapa 7
+
+  // Taxa de esforço: média de candidatos entrevistados por vaga encerrada (com integração)
+  var vagasFechadas = vagas.filter(function(v){return (v.candidatos||[]).some(function(c){return c.etapa===7;});});
+  var esforcoTotal  = vagasFechadas.reduce(function(s,v){
+    return s + (v.candidatos||[]).filter(function(c){return c.etapa>=1;}).length;
+  }, 0);
+  var taxaEsforco = vagasFechadas.length>0?Math.round(esforcoTotal/vagasFechadas.length):0;
+
   var html = '<div class="dash-section">'
     +'<div class="section-title"><i class="ti ti-user-search"></i> Recrutamento & Seleção</div>'
     +'<div class="stats-row stats-4" style="margin-bottom:16px">'
     +statCard('Total de Vagas', vagas.length, abertas+' abertas · '+encerradas+' encerradas', 'lime', 'ti-briefcase')
     +statCard('Candidatos', totalCands, integrados+' integrados · '+reprovados+' reprovados', 'blue', 'ti-users')
     +statCard('Taxa de Conversão', taxaConv+'%', 'candidatos → integração', 'green', 'ti-trending-up')
-    +statCard('Entrevistas / Testes', entrevistas+' / '+testes, 'agendados no período', 'gold', 'ti-calendar')
+    +statCard('SLA Geral', slaGeral!==null?slaGeral+'%':'—', slaGeral!==null?vagasDentroSla+'/'+vagasComSla.length+' vagas no prazo':'sem datas de abertura', slaGeral===null?'gold':slaGeral>=80?'green':slaGeral>=60?'gold':'red', 'ti-target')
     +'</div>'
 
-    +'<div class="charts-row charts-2">'
-    +'<div class="chart-card"><div class="chart-title">Candidatos por Etapa</div><div class="chart-sub">Distribuição atual no kanban</div>'
-    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-etapas"></canvas></div></div>'
-
-    +'<div class="chart-card"><div class="chart-title">Vagas por Empresa</div><div class="chart-sub">Total no período selecionado</div>'
-    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-empresas-rs"></canvas></div></div>'
+    // Funil + taxa de esforço
+    +'<div class="charts-row charts-2" style="margin-bottom:16px">'
+    +'<div class="chart-card">'
+    +'<div class="chart-title">Funil de Recrutamento</div>'
+    +'<div class="chart-sub">Candidatos por fase no período</div>'
+    +'<div id="funil-rs"></div>'
+    +'</div>'
+    +'<div class="chart-card">'
+    +'<div class="chart-title">Entrevistas / Testes</div>'
+    +'<div class="chart-sub">Agendados no período · Taxa de esforço: <strong>'+taxaEsforco+' entrev./vaga fechada</strong></div>'
+    +'<div class="chart-wrap" style="height:180px"><canvas id="chart-etapas"></canvas></div>'
+    +'</div>'
     +'</div>'
 
     +'<div class="charts-row charts-2">'
@@ -379,10 +438,16 @@ function renderSecaoRS(){
     +'<div class="chart-card"><div class="chart-title">Motivos de Reprovação</div><div class="chart-sub">Top motivos no período</div>'
     +'<div class="chart-wrap" style="height:200px"><canvas id="chart-motivos"></canvas></div></div>'
     +'</div>'
+
+    +'<div class="charts-row charts-2">'
+    +'<div class="chart-card"><div class="chart-title">Vagas por Empresa</div><div class="chart-sub">Total no período selecionado</div>'
+    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-empresas-rs"></canvas></div></div>'
+    +'<div class="chart-card"></div>'
+    +'</div>'
     +'</div>';
 
   // Guardar dados para gráficos
-  _dados._rs = {vagas, motivos};
+  _dados._rs = {vagas, motivos, funil:{fEntrevistados, fTestados, fAprovados, fAdmitidos}};
   return html;
 }
 
@@ -399,17 +464,51 @@ function renderSLA(lista){
   }).join('')+'</div>';
 }
 
+function renderFunilRS(){
+  var funil = (_dados._rs||{}).funil;
+  if(!funil) return;
+  var el = document.getElementById('funil-rs');
+  if(!el) return;
+  var etapas = [
+    {label:'Entrevistados', val:funil.fEntrevistados, cor:'#4a7fc1'},
+    {label:'Testados',      val:funil.fTestados,      cor:'#9b72cf'},
+    {label:'Aprovados',     val:funil.fAprovados,     cor:'#4caf80'},
+    {label:'Admitidos',     val:funil.fAdmitidos,     cor:'#8ab800'},
+  ];
+  var max = Math.max(1, etapas[0].val);
+  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:8px;padding:8px 0">'
+    + etapas.map(function(e,i){
+        var pct = Math.round(e.val/max*100);
+        var conv = i>0&&etapas[i-1].val>0?Math.round(e.val/etapas[i-1].val*100)+'%':'—';
+        return '<div>'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+          +'<span style="font-size:11px;font-weight:700;color:var(--text2)">'+e.label+'</span>'
+          +'<div style="display:flex;align-items:center;gap:8px">'
+          +(i>0?'<span style="font-size:10px;color:var(--text3)">'+conv+' da etapa anterior</span>':'')
+          +'<span style="font-size:13px;font-weight:900">'+e.val+'</span>'
+          +'</div></div>'
+          +'<div style="background:var(--border);border-radius:4px;height:10px;overflow:hidden">'
+          +'<div style="background:'+e.cor+';width:'+pct+'%;height:100%;border-radius:4px;transition:width .5s"></div>'
+          +'</div>'
+          +'</div>';
+      }).join('')
+    +'</div>';
+}
+
 function renderGraficosRS(){
   var vagas = _dados._rs ? _dados._rs.vagas : [];
 
-  // Candidatos por etapa
-  var etapaLabels = ['Triagem','Ent.Agendada','Ent.Realizada','Teste Ag.','Teste Real.','Docs/Exame','Exame Rec.','Integração','Reprovado'];
+  // Funil
+  renderFunilRS();
+
+  // Candidatos por etapa (bar horizontal compacto)
+  var etapaLabels = ['Triagem','Ent.Ag.','Ent.Real.','Teste Ag.','Teste Real.','Docs','Exame','Integrado','Reprovado'];
   var etapaCounts = [0,0,0,0,0,0,0,0,0];
   vagas.forEach(function(v){
     (v.candidatos||[]).forEach(function(c){ if(c.etapa>=0&&c.etapa<=8) etapaCounts[c.etapa]++; });
   });
-  var etapaColors = ['#b0c8e4','#4a7fc1','#d4a020','#c07830','#9b72cf','#4caf80','#2196a0','#8ab800','#e05252'];
-  renderBarChart('chart-etapas', etapaLabels, etapaCounts, etapaColors);
+  var etapaColors = ['#b0c8e4','#4a7fc1','#4a7fc1','#9b72cf','#9b72cf','#4caf80','#4caf80','#8ab800','#e05252'];
+  renderBarChart('chart-etapas', etapaLabels, etapaCounts, etapaColors, true);
 
   // Vagas por empresa
   var empMap = {};
@@ -663,6 +762,200 @@ function renderGraficosSolicitacoes(){
   }
   var eKeys = Object.keys(dados.empMap);
   if(eKeys.length) renderDoughnutChart('chart-sol-emp', eKeys, eKeys.map(function(k){return dados.empMap[k];}));
+}
+
+// ════ TREINAMENTOS ════
+function renderSecaoTreinamentos(){
+  var dtInicio = getDataInicio();
+  var emp = getEmpresa();
+
+  var treinamentos = _dados.dossieEventos.filter(function(ev){
+    if(ev.tipoId !== 'trein') return false;
+    var dt = normDate(ev.data||'');
+    if(dt && dt < dtInicio) return false;
+    if(emp){
+      var func = _dados.dossieFuncs.find(function(f){return f.id===ev.funcId;});
+      if(!func || !(func.empresa||'').toUpperCase().includes(emp.split(' ')[0].toUpperCase())) return false;
+    }
+    return true;
+  });
+
+  var totalHoras  = treinamentos.reduce(function(s,ev){return s+(ev.treinHoras||0);},0);
+  var totalFuncs  = _dados.dossieFuncs.filter(function(f){return !f.desligado&&f.status!=='desligado';}).length;
+  var mediaHoras  = totalFuncs>0?(totalHoras/totalFuncs).toFixed(1):0;
+  var remunerados = treinamentos.filter(function(ev){return ev.treinRemunerado;}).length;
+
+  // Por setor do funcionário
+  var setorMap = {};
+  treinamentos.forEach(function(ev){
+    var func = _dados.dossieFuncs.find(function(f){return f.id===ev.funcId;});
+    var setor = (func&&func.departamento)||'Sem setor';
+    setorMap[setor]=(setorMap[setor]||0)+(ev.treinHoras||0);
+  });
+
+  // Por mês
+  var porMes = {};
+  treinamentos.forEach(function(ev){
+    var dt = normDate(ev.data||'');
+    if(dt){var m=dt.slice(0,7);porMes[m]=(porMes[m]||0)+(ev.treinHoras||0);}
+  });
+
+  // Funcs com pelo menos 1 treinamento no período
+  var funcsComTrein = new Set(treinamentos.map(function(ev){return ev.funcId;})).size;
+
+  _dados._trein = {treinamentos, setorMap, porMes};
+
+  return '<div class="dash-section">'
+    +'<div class="section-title"><i class="ti ti-certificate"></i> Treinamentos</div>'
+    +'<div class="stats-row stats-4" style="margin-bottom:16px">'
+    +statCard('Total de Horas', totalHoras+'h', funcsComTrein+' colaboradores treinados', 'purple', 'ti-certificate')
+    +statCard('Média por Colaborador', mediaHoras+'h', 'base: todos os ativos', 'blue', 'ti-chart-bar')
+    +statCard('Registros no Período', treinamentos.length, remunerados+' remunerados', 'gold', 'ti-list')
+    +statCard('Colaboradores Treinados', funcsComTrein, 'de '+totalFuncs+' ativos', 'green', 'ti-users')
+    +'</div>'
+    +'<div class="charts-row charts-2">'
+    +'<div class="chart-card"><div class="chart-title">Horas por Mês</div><div class="chart-sub">Volume acumulado no período</div>'
+    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-trein-mes"></canvas></div></div>'
+    +'<div class="chart-card"><div class="chart-title">Horas por Setor</div><div class="chart-sub">Distribuição no período</div>'
+    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-trein-setor"></canvas></div></div>'
+    +'</div>'
+    +'</div>';
+}
+
+function renderGraficosTreinamentos(){
+  var dados = _dados._trein;
+  if(!dados) return;
+  var meses = Object.keys(dados.porMes).sort();
+  if(meses.length) renderBarChart('chart-trein-mes', meses.map(meslabel), meses.map(function(m){return dados.porMes[m];}), '#9b72cf');
+  var sKeys = Object.keys(dados.setorMap).sort(function(a,b){return dados.setorMap[b]-dados.setorMap[a];}).slice(0,8);
+  if(sKeys.length) renderBarChart('chart-trein-setor', sKeys.map(function(k){return k.length>18?k.slice(0,16)+'…':k;}), sKeys.map(function(k){return dados.setorMap[k];}), '#4a7fc1', true);
+  else{var e=document.getElementById('chart-trein-setor');if(e)e.parentElement.innerHTML='<div class="empty-chart">Sem dados</div>';}
+}
+
+// ════ FEEDBACK & DESENVOLVIMENTO ════
+function renderSecaoFeedback(){
+  var emp = getEmpresa();
+  var hoje = today();
+  var tresM = subDays(90);
+
+  var allAtivos = _dados.dossieFuncs.filter(function(f){return !f.desligado&&f.status!=='desligado';});
+  if(emp) allAtivos = allAtivos.filter(function(f){return (f.empresa||'').toUpperCase().includes(emp.split(' ')[0].toUpperCase());});
+  var totalAtivos = allAtivos.length;
+
+  // IDs de ativos
+  var idsAtivos = new Set(allAtivos.map(function(f){return f.id;}));
+
+  // Feedbacks (tipo feed) nos últimos 90 dias
+  var feedRecentes = _dados.dossieEventos.filter(function(ev){
+    return ev.tipoId==='feed' && normDate(ev.data||'')>=tresM && idsAtivos.has(ev.funcId);
+  });
+  var funcsComFeed = new Set(feedRecentes.map(function(ev){return ev.funcId;})).size;
+  var pctFeed = totalAtivos>0?Math.round(funcsComFeed/totalAtivos*100):0;
+
+  // Avaliação de experiência (tipo exp) nos últimos 90 dias
+  var expRecentes = _dados.dossieEventos.filter(function(ev){
+    return ev.tipoId==='exp' && normDate(ev.data||'')>=tresM && idsAtivos.has(ev.funcId);
+  });
+  var funcsComExp = new Set(expRecentes.map(function(ev){return ev.funcId;})).size;
+  var pctExp = totalAtivos>0?Math.round(funcsComExp/totalAtivos*100):0;
+
+  // DSP nos últimos 90 dias
+  var dspRecentes = _dados.dossieEventos.filter(function(ev){
+    return ev.tipoId==='dsp' && normDate(ev.data||'')>=tresM && idsAtivos.has(ev.funcId);
+  });
+  var funcsComDsp = new Set(dspRecentes.map(function(ev){return ev.funcId;})).size;
+  var pctDsp = totalAtivos>0?Math.round(funcsComDsp/totalAtivos*100):0;
+
+  // Ranking por setor: feedbacks
+  var setorFeed = {}; var setorDsp = {}; var setorTrein = {};
+  _dados.dossieEventos.filter(function(ev){
+    return normDate(ev.data||'')>=tresM && idsAtivos.has(ev.funcId);
+  }).forEach(function(ev){
+    var func = allAtivos.find(function(f){return f.id===ev.funcId;});
+    var setor = (func&&func.departamento)||'Sem setor';
+    if(ev.tipoId==='feed')  setorFeed[setor]=(setorFeed[setor]||0)+1;
+    if(ev.tipoId==='dsp')   setorDsp[setor]=(setorDsp[setor]||0)+1;
+    if(ev.tipoId==='trein') setorTrein[setor]=(setorTrein[setor]||0)+(ev.treinHoras||0);
+  });
+
+  function topRank(map, max, unit){
+    var keys = Object.keys(map).sort(function(a,b){return map[b]-map[a];}).slice(0,max);
+    if(!keys.length) return '<div class="empty-chart" style="height:80px">Sem dados no período</div>';
+    var top = map[keys[0]]||1;
+    return '<div style="display:flex;flex-direction:column;gap:6px;margin-top:8px">'
+      +keys.map(function(k,i){
+        var pct=Math.round(map[k]/top*100);
+        var medal=['🥇','🥈','🥉'][i]||'';
+        return '<div style="display:flex;align-items:center;gap:8px">'
+          +'<div style="width:20px;font-size:12px;text-align:center">'+medal+'</div>'
+          +'<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+k+'</div>'
+          +'<div style="background:var(--border);border-radius:3px;height:6px;margin-top:3px;overflow:hidden">'
+          +'<div style="background:#4a7fc1;width:'+pct+'%;height:100%;border-radius:3px"></div></div></div>'
+          +'<div style="font-size:12px;font-weight:800;white-space:nowrap">'+map[k]+(unit?' '+unit:'')+'</div>'
+          +'</div>';
+      }).join('')
+      +'</div>';
+  }
+
+  function pctBar(pct, cor){
+    return '<div style="display:flex;align-items:center;gap:10px;margin-top:8px">'
+      +'<div style="flex:1;background:var(--border);border-radius:4px;height:12px;overflow:hidden">'
+      +'<div style="background:'+cor+';width:'+Math.min(100,pct)+'%;height:100%;border-radius:4px;transition:width .5s"></div></div>'
+      +'<div style="font-size:15px;font-weight:900;min-width:42px;text-align:right">'+pct+'%</div>'
+      +'</div>';
+  }
+
+  return '<div class="dash-section">'
+    +'<div class="section-title"><i class="ti ti-message-dots"></i> Feedback & Desenvolvimento</div>'
+
+    // Cards de % cobertura
+    +'<div class="stats-row stats-3" style="margin-bottom:16px">'
+    +statCard('Feedback (90d)', pctFeed+'%', funcsComFeed+' de '+totalAtivos+' colaboradores', pctFeed>=70?'green':pctFeed>=40?'gold':'red', 'ti-message')
+    +statCard('Aval. Experiência (90d)', pctExp+'%', funcsComExp+' colaboradores avaliados', pctExp>=70?'green':pctExp>=40?'gold':'red', 'ti-clock')
+    +statCard('DSP (90d)', pctDsp+'%', funcsComDsp+' colaboradores com DSP', pctDsp>=70?'green':pctDsp>=40?'gold':'red', 'ti-heart')
+    +'</div>'
+
+    // Barras de cobertura visual
+    +'<div class="charts-row charts-3" style="margin-bottom:16px">'
+    +'<div class="chart-card">'
+    +'<div class="chart-title">Cobertura de Feedbacks</div>'
+    +'<div class="chart-sub">Últimos 3 meses</div>'
+    +pctBar(pctFeed,'#4a7fc1')
+    +'<div style="font-size:11px;color:var(--text3);margin-top:8px">'+funcsComFeed+' colaboradores com ao menos 1 feedback</div>'
+    +'</div>'
+    +'<div class="chart-card">'
+    +'<div class="chart-title">Cobertura de Avaliações</div>'
+    +'<div class="chart-sub">Período de experiência — últimos 3 meses</div>'
+    +pctBar(pctExp,'#b6904a')
+    +'<div style="font-size:11px;color:var(--text3);margin-top:8px">'+funcsComExp+' colaboradores avaliados</div>'
+    +'</div>'
+    +'<div class="chart-card">'
+    +'<div class="chart-title">Cobertura de DSP</div>'
+    +'<div class="chart-sub">Últimos 3 meses</div>'
+    +pctBar(pctDsp,'#d4a020')
+    +'<div style="font-size:11px;color:var(--text3);margin-top:8px">'+funcsComDsp+' colaboradores com DSP registrado</div>'
+    +'</div>'
+    +'</div>'
+
+    // Rankings
+    +'<div class="charts-row charts-3">'
+    +'<div class="chart-card">'
+    +'<div class="chart-title">Ranking por Setor — Feedbacks</div>'
+    +'<div class="chart-sub">Qtd. de feedbacks registrados (90d)</div>'
+    +topRank(setorFeed,5,'')
+    +'</div>'
+    +'<div class="chart-card">'
+    +'<div class="chart-title">Ranking por Setor — DSP</div>'
+    +'<div class="chart-sub">Diálogos de Segurança Psicológica (90d)</div>'
+    +topRank(setorDsp,5,'')
+    +'</div>'
+    +'<div class="chart-card">'
+    +'<div class="chart-title">Ranking por Setor — Treinamentos</div>'
+    +'<div class="chart-sub">Total de horas de treinamento (90d)</div>'
+    +topRank(setorTrein,5,'h')
+    +'</div>'
+    +'</div>'
+    +'</div>';
 }
 
 // ════ HELPERS CHART.JS ════

@@ -100,13 +100,25 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .check-item{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--border);}
 .check-item:last-child{border-bottom:none;}
 .check-item.done{background:#f8fff4;}
+.check-item.na{background:#f9f7f4;opacity:.7;}
 .check-box{width:20px;height:20px;border-radius:4px;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;}
 .check-box.checked{background:var(--lime);border-color:var(--lime);}
 .check-box.checked i{color:var(--black);}
+.check-box.na-box{background:#e8e3d8;border-color:#c4bfb4;}
 .check-box i{font-size:12px;}
 .check-label{font-size:13px;font-weight:500;flex:1;}
 .check-label.done{text-decoration:line-through;color:var(--text3);}
+.check-label.na{color:var(--text3);font-style:italic;}
+.btn-na{padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--white);color:var(--text3);font-family:'Inter',sans-serif;transition:all .15s;flex-shrink:0;}
+.btn-na:hover{background:var(--s2);color:var(--text2);}
+.btn-na.active{background:#f0ede6;color:#8b6914;border-color:#c4bfb4;}
+.drag-handle{cursor:grab;color:var(--text3);font-size:14px;padding:0 4px;flex-shrink:0;}
+.drag-handle:active{cursor:grabbing;}
+.item-check-row.dragging{opacity:.4;}
+.item-check-row.drag-over{border-top:2px solid var(--black);}
 .hom-section{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:20px;margin-top:16px;}
+.hom-digital-section{background:#eef3fb;border:1px solid #b0c8e4;border-radius:var(--rl);padding:16px 20px;margin-top:12px;}
+
 /* MODAL */
 .overlay{display:none;position:fixed;inset:0;background:rgba(14,15,18,.55);z-index:100;align-items:center;justify-content:center;}
 .overlay.open{display:flex;}
@@ -443,9 +455,11 @@ function getItensParaPerfil(proc){
     todos=todos.filter(function(it){return it.sector===_setor;});
   }
   if(!perf)return todos;
-  // Novo modelo: vínculo direto por lista itens[]
+  // Novo modelo: vínculo direto por lista itens[] — respeita a ordem salva
   if(perf.itens&&perf.itens.length){
-    return todos.filter(function(it){return perf.itens.indexOf(it.id)!==-1;});
+    var filtrados=todos.filter(function(it){return perf.itens.indexOf(it.id)!==-1;});
+    filtrados.sort(function(a,b){return perf.itens.indexOf(a.id)-perf.itens.indexOf(b.id);});
+    return filtrados;
   }
   // Fallback legado: condicional
   var conds=perf.conds||[];
@@ -459,7 +473,10 @@ function getItensParaPerfil(proc){
 function progress(proc){
   var itens=getItensParaPerfil(proc);
   var total=itens.length;
-  var done=itens.filter(function(it){return proc.checks&&proc.checks[it.id];}).length;
+  var done=itens.filter(function(it){
+    var ck=proc.checks&&proc.checks[it.id];
+    return ck && (ck==='na'||(typeof ck==='object'&&!ck.na)||ck===true);
+  }).length;
   return{done:done,total:total,pct:total?Math.round(done/total*100):0};
 }
 
@@ -669,33 +686,51 @@ function renderChecklist(){
       +'</div>'
       +itsAtivos.map(function(it){
         var ck = p.checks && p.checks[it.id];
-        var done = !!ck;
-        var meta = done && typeof ck === 'object'
+        var done = ck && ck !== 'na';
+        var isNA = ck === 'na' || (ck && ck.na);
+        var meta = done && typeof ck === 'object' && !ck.na
           ? '<div style="font-size:10px;color:var(--text3);margin-top:3px">'
             +'<i class="ti ti-calendar" style="font-size:10px;vertical-align:-1px"></i> '+(ck.data?fmtDate(ck.data):'—')
             +' · <i class="ti ti-user" style="font-size:10px;vertical-align:-1px"></i> '+(ck.resp||'—')
             +(ck.obs?' · '+ck.obs:'')+'</div>'
           : '';
-        return '<div class="check-item'+(done?' done':'')+'">'
-          +'<div class="check-box'+(done?' checked':'')+'" onclick="'+(podeMarcar?'toggleCheck(\''+it.id+'\')':'')+'">'
-          +(done?'<i class="ti ti-check"></i>':'')+'</div>'
-          +'<div style="flex:1"><span class="check-label'+(done?' done':'')+'">'+it.text+'</span>'+meta+'</div>'
+        var rowCls = isNA ? ' na' : (done ? ' done' : '');
+        var boxCls = isNA ? ' na-box' : (done ? ' checked' : '');
+        var boxIcon = isNA ? '<i class="ti ti-minus" style="font-size:10px;color:var(--text3)"></i>' : (done ? '<i class="ti ti-check"></i>' : '');
+        var labelCls = isNA ? ' na' : (done ? ' done' : '');
+        return '<div class="check-item'+rowCls+'">'
+          +'<div class="check-box'+boxCls+'" onclick="'+(podeMarcar&&!isNA?'toggleCheck(\''+it.id+'\')':'')+'">'
+          +boxIcon+'</div>'
+          +'<div style="flex:1"><span class="check-label'+labelCls+'">'+(isNA?'<s>'+it.text+'</s>':it.text)+'</span>'+meta+'</div>'
+          +(podeMarcar?'<button class="btn-na'+(isNA?' active':'')+'" onclick="toggleNA(\''+it.id+'\')" title="Não Aplicável">'+(isNA?'✕ N/A':'N/A')+'</button>':'')
           +'</div>';
       }).join('')
       +'</div>';
   }
 
-  // Homologação (só RH)
-  if(_setor==='rh'){
+  // Homologação (só RH e só na aba RH)
+  if(_setor==='rh' && _setorTab==='rh'){
     var hom=p.homologacao||{};
+    var hd=hom.digital||{};
     html+='<div class="hom-section">'
       +'<div style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:14px">Dados de Homologação</div>'
       +'<div class="form-grid-2">'
       +'<div class="fg"><label class="fl">Data da Homologação</label><input class="fi" type="date" id="hom-data" value="'+(hom.data||'')+'"></div>'
+      +'<div class="fg"><label class="fl">Horário</label><input class="fi" type="time" id="hom-hora" value="'+(hom.hora||'')+'"></div>'
       +'<div class="fg"><label class="fl">Local</label><input class="fi" type="text" id="hom-local" placeholder="Ex: Sede Raguife" value="'+(hom.local||'')+'"></div>'
-      +'<div class="fg" style="grid-column:1/-1"><label class="fl">Observações</label><textarea class="ft" id="hom-obs" rows="2">'+(hom.obs||'')+'</textarea></div>'
+      +'<div class="fg"><label class="fl">Observações</label><input class="fi" type="text" id="hom-obs" placeholder="Opcional..." value="'+(hom.obs||'')+'"></div>'
       +'</div>'
+      +'<div class="hom-digital-section">'
+      +'<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:#1e3a6e;margin-bottom:12px"><i class="ti ti-mail" style="font-size:13px;margin-right:5px;vertical-align:-2px"></i>Homologação Digital</div>'
+      +'<div class="form-grid-2">'
+      +'<div class="fg"><label class="fl">Data de envio</label><input class="fi" type="date" id="hom-dig-data" value="'+(hd.data||'')+'"></div>'
+      +'<div class="fg"><label class="fl">Horário de envio</label><input class="fi" type="time" id="hom-dig-hora" value="'+(hd.hora||'')+'"></div>'
+      +'<div class="fg" style="grid-column:1/-1"><label class="fl">E-mail enviado para</label><input class="fi" type="email" id="hom-dig-email" placeholder="email@empresa.com.br" value="'+(hd.email||'')+'"></div>'
+      +'</div>'
+      +'</div>'
+      +'<div style="margin-top:14px">'
       +'<button class="btn btn-primary btn-sm" onclick="salvarHomologacao()"><i class="ti ti-device-floppy"></i> Salvar Homologação</button>'
+      +'</div>'
       +'</div>';
   }
 
@@ -705,6 +740,20 @@ function renderChecklist(){
 function setSetorTab(s){_setorTab=s;renderChecklist();}
 
 var _itemPendente = null;
+
+function toggleNA(itemId){
+  if(!_procAtual)return;
+  var checks=Object.assign({},_procAtual.checks||{});
+  var isNA = checks[itemId]==='na'||(checks[itemId]&&checks[itemId].na);
+  if(isNA){
+    delete checks[itemId];
+  } else {
+    checks[itemId]='na';
+  }
+  db.collection('rescisao_processos').doc(_procAtual.id).update({
+    checks:checks, atualizadoEm:new Date().toISOString()
+  }).then(function(){_procAtual.checks=checks;renderChecklist();});
+}
 
 function toggleCheck(itemId){
   if(!_procAtual)return;
@@ -751,8 +800,14 @@ function confirmarItem(){
 function salvarHomologacao(){
   var hom={
     data:document.getElementById('hom-data').value,
+    hora:(document.getElementById('hom-hora').value||'').trim(),
     local:(document.getElementById('hom-local').value||'').trim(),
     obs:(document.getElementById('hom-obs').value||'').trim(),
+    digital:{
+      data:(document.getElementById('hom-dig-data').value||''),
+      hora:(document.getElementById('hom-dig-hora').value||'').trim(),
+      email:(document.getElementById('hom-dig-email').value||'').trim(),
+    },
     savedAt:new Date().toISOString(),
   };
   db.collection('rescisao_processos').doc(_procAtual.id).update({
@@ -1021,14 +1076,28 @@ function renderDetalheItens(){
   setores.forEach(function(s){
     var grupo=todos.filter(function(it){return it.sector===s;});
     if(!grupo.length)return;
+    // Ordenar pelo índice em vinculados (itens vinculados primeiro, na ordem salva)
+    grupo.sort(function(a,b){
+      var ia=vinculados.indexOf(a.id); var ib=vinculados.indexOf(b.id);
+      if(ia===-1&&ib===-1)return 0;
+      if(ia===-1)return 1; if(ib===-1)return -1;
+      return ia-ib;
+    });
     html+='<div class="setor-group-hdr">'+(secNames[s]||s)+'</div>';
-    grupo.forEach(function(it){
+    grupo.forEach(function(it, idx){
       var checked=vinculados.indexOf(it.id)!==-1;
       var uid='chk_'+it.id;
-      html+='<div class="item-check-row">'
+      var posVinc=vinculados.indexOf(it.id);
+      var podeSubir=checked&&posVinc>0;
+      var podeBaixar=checked&&posVinc<vinculados.length-1;
+      html+='<div class="item-check-row" data-item-id="'+it.id+'" draggable="'+(checked?'true':'false')+'" '
+        +'ondragstart="onDragStart(event,\''+it.id+'\')" ondragover="onDragOver(event)" ondrop="onDrop(event,\''+it.id+'\')" ondragleave="onDragLeave(event)">'
+        +(checked?'<span class="drag-handle" title="Arraste para reordenar"><i class="ti ti-grip-vertical"></i></span>':'<span style="width:22px;flex-shrink:0"></span>')
         +'<input type="checkbox" id="'+uid+'" '+(checked?'checked':'')+' onchange="toggleItemPerfil(\''+it.id+'\')">'
         +'<label class="item-check-label" for="'+uid+'">'+it.text+'</label>'
         +'<div class="item-actions">'
+          +(checked?'<button class="btn-icon" onclick="moverItem(\''+it.id+'\',-1)" title="Subir" '+(podeSubir?'':'disabled style="opacity:.3"')+'><i class="ti ti-chevron-up" style="font-size:13px"></i></button>':'')
+          +(checked?'<button class="btn-icon" onclick="moverItem(\''+it.id+'\',1)" title="Descer" '+(podeBaixar?'':'disabled style="opacity:.3"')+'><i class="ti ti-chevron-down" style="font-size:13px"></i></button>':'')
           +'<button class="btn-icon" onclick="editarItem(\''+it.id+'\')" title="Editar"><i class="ti ti-pencil" style="font-size:13px;color:var(--text2)"></i></button>'
           +'<button class="btn-icon" onclick="removerItemGlobal(\''+it.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:13px;color:#c0392b"></i></button>'
         +'</div>'
@@ -1040,6 +1109,46 @@ function renderDetalheItens(){
   var marcados=(p.itens||[]).length;
   document.getElementById('detalhe-contador').textContent=marcados+' de '+total+' selecionados';
   document.getElementById('detalhe-perf-sub').textContent=marcados+' itens ativos neste perfil';
+}
+
+// ── Mover item ──
+function moverItem(itemId, dir){
+  var p=_perfis.find(function(x){return x.id===_perfilDetalheId;});
+  if(!p)return;
+  var lista=(p.itens||[]).slice();
+  var idx=lista.indexOf(itemId);
+  if(idx===-1)return;
+  var novo=idx+dir;
+  if(novo<0||novo>=lista.length)return;
+  lista.splice(idx,1); lista.splice(novo,0,itemId);
+  db.collection('rescisao_perfis').doc(p.id).update({itens:lista}).then(function(){renderDetalheItens();});
+}
+
+// ── Drag & drop ──
+var _dragId=null;
+function onDragStart(e,id){_dragId=id;e.target.classList.add('dragging');}
+function onDragOver(e){
+  e.preventDefault();
+  var row=e.target.closest('.item-check-row');
+  if(row&&row.dataset.itemId!==_dragId){
+    document.querySelectorAll('.item-check-row').forEach(function(r){r.classList.remove('drag-over');});
+    row.classList.add('drag-over');
+  }
+}
+function onDragLeave(e){var row=e.target.closest('.item-check-row');if(row)row.classList.remove('drag-over');}
+function onDrop(e,targetId){
+  e.preventDefault();
+  document.querySelectorAll('.item-check-row').forEach(function(r){r.classList.remove('drag-over','dragging');});
+  if(!_dragId||_dragId===targetId)return;
+  var p=_perfis.find(function(x){return x.id===_perfilDetalheId;});
+  if(!p)return;
+  var lista=(p.itens||[]).slice();
+  var fromIdx=lista.indexOf(_dragId);
+  var toIdx=lista.indexOf(targetId);
+  if(fromIdx===-1||toIdx===-1)return;
+  lista.splice(fromIdx,1); lista.splice(toIdx,0,_dragId);
+  _dragId=null;
+  db.collection('rescisao_perfis').doc(p.id).update({itens:lista}).then(function(){renderDetalheItens();});
 }
 
 function toggleItemPerfil(itemId){

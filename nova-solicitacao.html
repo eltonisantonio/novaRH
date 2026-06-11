@@ -400,14 +400,86 @@ function showTab(t) {
 }
 
 // ════════════════════════════════════════════
+// SOM DE NOTIFICAÇÃO
+// ════════════════════════════════════════════
+var _isRH = (function() {
+  try {
+    var u = sessionStorage.getItem('nova_rh_session_v1');
+    if (u) { var obj = JSON.parse(u); return obj.perfil === 'rh' || obj.perfil === 'admin'; }
+    return false;
+  } catch(e) { return false; }
+})();
+
+function tocarSom(tipo) {
+  if (!_isRH) return;
+  try {
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (tipo === 'nova') {
+      // Dois bipes ascendentes — nova solicitação
+      [0, 180].forEach(function(delay, i) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(i === 0 ? 520 : 680, ctx.currentTime + delay/1000);
+        gain.gain.setValueAtTime(0.28, ctx.currentTime + delay/1000);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay/1000 + 0.25);
+        osc.start(ctx.currentTime + delay/1000);
+        osc.stop(ctx.currentTime + delay/1000 + 0.25);
+      });
+    } else {
+      // Bipe duplo mais agudo — N2 aprovou
+      [0, 140, 280].forEach(function(delay) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(780, ctx.currentTime + delay/1000);
+        gain.gain.setValueAtTime(0.22, ctx.currentTime + delay/1000);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + delay/1000 + 0.18);
+        osc.start(ctx.currentTime + delay/1000);
+        osc.stop(ctx.currentTime + delay/1000 + 0.18);
+      });
+    }
+  } catch(e) {}
+}
+
+// ════════════════════════════════════════════
 // SOLICITAÇÕES — Firestore real-time
 // ════════════════════════════════════════════
 var solicitacoes = [];
+var _solIdsConhecidos = null; // null = primeira carga (não toca)
+var _solStatusAnterior = {};  // id → status anterior
 
 function escutarSolicitacoes() {
   db.collection('solicitacoes').onSnapshot(function(snap) {
-    solicitacoes = snap.docs.map(function(d) { return Object.assign({id: d.id}, d.data()); });
-    solicitacoes.sort(function(a, b) { return (b.criadoEm || '').localeCompare(a.criadoEm || ''); });
+    var novas = snap.docs.map(function(d) { return Object.assign({id: d.id}, d.data()); });
+    novas.sort(function(a, b) { return (b.criadoEm || '').localeCompare(a.criadoEm || ''); });
+
+    if (_solIdsConhecidos === null) {
+      // Primeira carga — apenas registra o estado atual, sem tocar
+      _solIdsConhecidos = {};
+      novas.forEach(function(s) {
+        _solIdsConhecidos[s.id] = true;
+        _solStatusAnterior[s.id] = s.status;
+      });
+    } else {
+      // Cargas subsequentes — detecta o que mudou
+      novas.forEach(function(s) {
+        var statusAnt = _solStatusAnterior[s.id];
+        if (!_solIdsConhecidos[s.id]) {
+          // Doc novo → nova solicitação chegou
+          _solIdsConhecidos[s.id] = true;
+          if (s.status === 'pendente') tocarSom('nova');
+        } else if (statusAnt !== s.status && s.status === 'aprovado_n2') {
+          // Mudou para aprovado_n2 → N2 aprovou
+          tocarSom('n2');
+        }
+        _solStatusAnterior[s.id] = s.status;
+      });
+    }
+
+    solicitacoes = novas;
     renderLista();
   }, function(err) {
     console.error('[Sol] onSnapshot erro:', err);

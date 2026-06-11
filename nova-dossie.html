@@ -160,6 +160,8 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .badge-brig.ativo{background:#fdeaea;border-style:solid;border-color:#c0392b;}
 .badge-cipa{background:#fff8e6;color:#7d4e00;border-color:#d4a020;}
 .badge-cipa.ativo{background:#fef3cd;border-style:solid;border-color:#b8860b;}
+.badge-mult{background:#f0f8ff;color:#1a5276;border-color:#2e86ab;}
+.badge-mult.ativo{background:#d6eaf8;border-style:solid;border-color:#1a5276;}
 .badge-especial-off{opacity:.5;}
 /* PROMOÇÃO */
 .prom-diff{display:flex;align-items:center;gap:8px;background:var(--s2);border-radius:var(--r);padding:10px 14px;font-size:12px;margin-top:8px;flex-wrap:wrap;}
@@ -239,6 +241,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="cfg-sub-tabs">
         <button class="cfg-sub-tab active" id="cfg-tab-tipos" onclick="showCfgTab('tipos')"><i class="ti ti-tags" style="margin-right:5px;font-size:12px"></i>Tipos de Evento</button>
         <button class="cfg-sub-tab" id="cfg-tab-trein" onclick="showCfgTab('trein')"><i class="ti ti-certificate" style="margin-right:5px;font-size:12px"></i>Relatório de Treinamentos</button>
+        <button class="cfg-sub-tab" id="cfg-tab-mult" onclick="showCfgTab('mult')"><i class="ti ti-star" style="margin-right:5px;font-size:12px"></i>Relatório de Multiplicadores</button>
         <button class="cfg-sub-tab" id="cfg-tab-adiant" onclick="showCfgTab('adiant')"><i class="ti ti-cash" style="margin-right:5px;font-size:12px"></i>Relatório de Adiantamentos</button>
         <button class="cfg-sub-tab" id="cfg-tab-disc" onclick="showCfgTab('disc')"><i class="ti ti-file-alert" style="margin-right:5px;font-size:12px"></i>Medidas Disciplinares</button>
       </div>
@@ -287,6 +290,41 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           </div>
           <div id="rel-trein-result">
             <div class="rel-empty"><i class="ti ti-certificate" style="font-size:32px;display:block;margin-bottom:8px;color:var(--text3)"></i>Selecione uma competência e clique em Filtrar.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUB: Relatório Multiplicadores -->
+      <div id="cfg-view-mult" style="display:none">
+        <div class="cfg-section">
+          <div style="font-size:13px;font-weight:800;margin-bottom:4px">Relatório de Multiplicadores</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Colaboradores ativos como Multiplicadores, com nível e pontuação acumulada.</div>
+          <div class="rel-filter-row">
+            <div>
+              <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Empresa</label>
+              <select class="fs" id="rel-mult-empresa" style="width:220px">
+                <option value="">Todas as empresas</option>
+                <option>RAGUIFE INDUSTRIA E COMERCIO DE RACOES LTDA</option>
+                <option>NEVES QUEIROZ ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA</option>
+                <option>DISTRIBUIDORA AMBAR AMARAL LTDA</option>
+                <option>AMBAR AMARAL ADMINISTRADORA DE BENS PROPRIOS LTDA</option>
+                <option>M B PRONI DO AMARAL CONSTRUCOES E ACABAMENTOS</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Nível</label>
+              <select class="fs" id="rel-mult-nivel" style="width:160px">
+                <option value="">Todos</option>
+                <option value="1">Nível 1</option>
+                <option value="2">Nível 2</option>
+                <option value="3">Nível 3</option>
+              </select>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="gerarRelMult()"><i class="ti ti-search"></i> Filtrar</button>
+            <button class="btn btn-sm" onclick="imprimirRelMult()"><i class="ti ti-printer"></i> Imprimir</button>
+          </div>
+          <div id="rel-mult-result">
+            <div class="rel-empty"><i class="ti ti-star" style="font-size:32px;display:block;margin-bottom:8px;color:var(--text3)"></i>Clique em Filtrar para listar os multiplicadores ativos.</div>
           </div>
         </div>
       </div>
@@ -385,6 +423,10 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <!-- EXTRA: Treinamento -->
       <div class="extra-block" id="extra-trein" style="display:none">
         <div class="extra-block-title"><i class="ti ti-certificate" style="color:#9b72cf"></i> Informações do Treinamento</div>
+        <div class="fg" style="margin-bottom:12px">
+          <label class="fl">Carga horária (horas)</label>
+          <input class="fi" type="number" id="ev-trein-horas" placeholder="Ex: 8" min="0" step="0.5" style="width:160px">
+        </div>
         <div class="checkbox-row">
           <input type="checkbox" id="ev-trein-rem" onchange="document.getElementById('extra-trein-abono').style.display=this.checked?'block':'none'">
           <label for="ev-trein-rem">Treinamento Remunerado (gera verba Horas Treinamento)</label>
@@ -514,6 +556,82 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
     <div class="modal-f">
       <button class="btn" onclick="closeModal('modal-especial')">Cancelar</button>
       <button class="btn btn-primary" id="btn-especial-salvar" onclick="salvarEspecial()"><i class="ti ti-device-floppy"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL MULTIPLICADOR -->
+<div class="overlay" id="modal-mult">
+  <div class="modal" style="width:440px">
+    <div class="modal-h">
+      <span class="modal-title" id="mult-modal-title">Multiplicador</span>
+      <button class="btn-icon" onclick="closeModal('modal-mult')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-b">
+      <div id="mult-ativando">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:16px" id="mult-desc-on"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="fg">
+            <label class="fl">Data de início <span style="color:#c0392b">*</span></label>
+            <input class="fi" type="date" id="mult-data-ini">
+          </div>
+          <div class="fg">
+            <label class="fl">Nível inicial <span style="color:#c0392b">*</span></label>
+            <select class="fs" id="mult-nivel-ini">
+              <option value="1">Nível 1</option>
+              <option value="2">Nível 2</option>
+              <option value="3">Nível 3</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Observações</label>
+          <input class="fi" type="text" id="mult-obs-ini" placeholder="Ex: Certificado SENAI, área de atuação...">
+        </div>
+      </div>
+      <div id="mult-ativo" style="display:none">
+        <div style="display:flex;gap:10px;margin-bottom:18px">
+          <div class="stat" style="flex:1">
+            <div class="stat-v" style="color:#1a5276" id="mult-pts-atual">—</div>
+            <div class="stat-l">Pontuação atual</div>
+          </div>
+          <div class="stat" style="flex:1">
+            <div class="stat-v" id="mult-nivel-atual">—</div>
+            <div class="stat-l">Nível atual</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="fg">
+            <label class="fl">Ajuste de pontos <span style="color:#c0392b">*</span></label>
+            <input class="fi" type="number" id="mult-pts-ajuste" placeholder="Ex: +10 ou -5" step="1">
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">Use valor negativo para remover pontos.</div>
+          </div>
+          <div class="fg">
+            <label class="fl">Novo nível</label>
+            <select class="fs" id="mult-nivel-novo">
+              <option value="">Manter atual</option>
+              <option value="1">Nível 1</option>
+              <option value="2">Nível 2</option>
+              <option value="3">Nível 3</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl">Data do registro <span style="color:#c0392b">*</span></label>
+          <input class="fi" type="date" id="mult-data-ajuste">
+        </div>
+        <div class="fg" style="margin-bottom:0">
+          <label class="fl">Motivo / Observações</label>
+          <input class="fi" type="text" id="mult-obs-ajuste" placeholder="Ex: Facilitou treinamento de integração...">
+        </div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+          <button class="btn btn-danger btn-sm" onclick="desativarMult()"><i class="ti ti-user-minus"></i> Remover como Multiplicador</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-mult')">Cancelar</button>
+      <button class="btn btn-primary" id="btn-mult-salvar" onclick="salvarMult()"><i class="ti ti-device-floppy"></i> Salvar</button>
     </div>
   </div>
 </div>
@@ -700,6 +818,9 @@ var TIPOS_DEFAULT = [
   {id:'brigadista_fim', nome:'Brigadista — saída',          cor:'#c0392b', icon:'ti-shield-off'},
   {id:'cipa',           nome:'CIPA — entrada',              cor:'#b8860b', icon:'ti-certificate'},
   {id:'cipa_fim',       nome:'CIPA — saída',                cor:'#b8860b', icon:'ti-certificate-off'},
+  {id:'multiplicador',       nome:'Multiplicador — entrada',    cor:'#1a5276', icon:'ti-star'},
+  {id:'multiplicador_ajuste',nome:'Multiplicador — ajuste',     cor:'#1a5276', icon:'ti-star-half'},
+  {id:'multiplicador_fim',   nome:'Multiplicador — saída',      cor:'#1a5276', icon:'ti-star-off'},
   {id:'promocao',       nome:'Promoção / Mudança de cargo', cor:'#2e86ab', icon:'ti-trending-up'},
   {id:'outro', nome:'Outro',                                cor:'#a09890', icon:'ti-dots'},
 ];
@@ -761,6 +882,7 @@ function iniciarListeners() {
         desligado: !!p.desligado,
         brigadista: p.brigadista||null,
         cipa: p.cipa||null,
+        multiplicador: p.multiplicador||null,
       };
     });
     // Funcionários manuais
@@ -912,6 +1034,7 @@ function renderDossie(f) {
   var isDeslig = f.desligado||f.status==='desligado';
   var isBrig = !!(f.brigadista && f.brigadista.ativo);
   var isCipa = !!(f.cipa && f.cipa.ativo);
+  var isMult = !!(f.multiplicador && f.multiplicador.ativo);
 
   var badgeBrig = '<span class="badge-especial badge-brig'+(isBrig?' ativo':' badge-especial-off')+'" '
     +'title="'+(isBrig?'Brigadista desde '+fmtDate(f.brigadista.inicio):'Clique para marcar como Brigadista')+'" '
@@ -927,12 +1050,21 @@ function renderDossie(f) {
     +(isCipa?'CIPA':'+ CIPA')
     +'</span>';
 
+  var multPts = isMult ? (f.multiplicador.pontos||0) : 0;
+  var multNiv = isMult ? (f.multiplicador.nivel||1) : 1;
+  var badgeMult = '<span class="badge-especial badge-mult'+(isMult?' ativo':' badge-especial-off')+'" '
+    +'title="'+(isMult?'Multiplicador · Nível '+multNiv+' · '+multPts+' pts':'Clique para marcar como Multiplicador')+'" '
+    +'onclick="openMult()">'
+    +'<i class="ti ti-star" style="font-size:11px"></i>'
+    +(isMult?'Multiplicador Nv.'+multNiv+' · '+multPts+'pts':'+ Multiplicador')
+    +'</span>';
+
   document.getElementById('dossie-header').innerHTML =
     '<div class="dossie-avatar">'+iniciais(f.nome)+'</div>'
     +'<div style="flex:1">'
     +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
     +'<div class="dossie-nome">'+f.nome+'</div>'
-    +badgeBrig+badgeCipa
+    +badgeBrig+badgeCipa+badgeMult
     +'</div>'
     +'<div class="dossie-meta">'+(f.cargo||'')+(f.empresa?' · '+f.empresa:'')+(f.departamento?' · '+f.departamento:'')+(f.admissao?' · Admissão: '+fmtDate(f.admissao):'')+'</div>'
     +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
@@ -978,6 +1110,10 @@ function renderDossie(f) {
       var labRem = {horas_treinamento:'Horas Treinamento', gratificacao_cargo:'Gratif. Cargo Confiança', abono:'ABONO'}[ev.treinTipoRem||'horas_treinamento'] || 'Remunerado';
       extraHtml += '<div style="display:inline-flex;align-items:center;gap:5px;background:#f0e8ff;border:1px solid #c9a8f0;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:700;color:#6b33c9;margin-top:6px">'
         +'<i class="ti ti-currency-dollar" style="font-size:11px"></i> Remunerado · '+labRem+'</div>';
+    }
+    if (ev.tipoId === 'trein' && ev.treinHoras) {
+      extraHtml += '<div style="display:inline-flex;align-items:center;gap:5px;background:#f0f8ff;border:1px solid #93c5fd;border-radius:4px;padding:3px 9px;font-size:11px;font-weight:700;color:#1a5276;margin-top:6px;margin-left:4px">'
+        +'<i class="ti ti-clock" style="font-size:11px"></i> '+ev.treinHoras+'h</div>';
     }
 
     // Adiantamento
@@ -1094,6 +1230,7 @@ function openNovoEvento() {
   document.getElementById('ev-tipo').value = '';
   document.getElementById('ev-data').value = new Date().toISOString().split('T')[0];
   // Limpar extras
+  document.getElementById('ev-trein-horas').value = '';
   document.getElementById('ev-trein-rem').checked = false;
   document.getElementById('extra-trein-abono').style.display = 'none';
   document.getElementById('ev-adiant-valor').value = '';
@@ -1126,6 +1263,8 @@ function salvarEvento() {
 
   // Campos extras: Treinamento
   if (tipoId === 'trein') {
+    var horas = parseFloat(document.getElementById('ev-trein-horas').value||'0');
+    if (horas > 0) payload.treinHoras = horas;
     var rem = document.getElementById('ev-trein-rem').checked;
     payload.treinRemunerado = rem;
     if (rem) payload.treinTipoRem = document.getElementById('ev-trein-tipo-rem').value;
@@ -1490,6 +1629,126 @@ function salvarEspecial() {
   }
 }
 
+// ════ MULTIPLICADOR ════
+function openMult() {
+  if (!_funcAtivo) return;
+  var m = _funcAtivo.multiplicador || {};
+  var isAtivo = !!m.ativo;
+  document.getElementById('mult-modal-title').textContent = 'Multiplicador';
+
+  if (!isAtivo) {
+    document.getElementById('mult-ativando').style.display = 'block';
+    document.getElementById('mult-ativo').style.display = 'none';
+    document.getElementById('mult-desc-on').textContent = 'Registrar ' + _funcAtivo.nome + ' como Multiplicador.';
+    document.getElementById('mult-data-ini').value = new Date().toISOString().split('T')[0];
+    document.getElementById('mult-nivel-ini').value = '1';
+    document.getElementById('mult-obs-ini').value = '';
+  } else {
+    document.getElementById('mult-ativando').style.display = 'none';
+    document.getElementById('mult-ativo').style.display = 'block';
+    document.getElementById('mult-pts-atual').textContent = m.pontos || 0;
+    document.getElementById('mult-nivel-atual').textContent = 'Nível ' + (m.nivel || 1);
+    document.getElementById('mult-pts-ajuste').value = '';
+    document.getElementById('mult-nivel-novo').value = '';
+    document.getElementById('mult-data-ajuste').value = new Date().toISOString().split('T')[0];
+    document.getElementById('mult-obs-ajuste').value = '';
+  }
+  openModal('modal-mult');
+}
+
+function salvarMult() {
+  if (!_funcAtivo) return;
+  var m = _funcAtivo.multiplicador || {};
+  var isAtivo = !!m.ativo;
+  var now = new Date().toISOString();
+
+  var funcRef = _funcAtivo.fonte === 'manual'
+    ? db.collection('dossie_funcs').doc(_funcAtivo.id)
+    : db.collection('adm_processos').doc(_funcAtivo._admId);
+
+  if (!isAtivo) {
+    // Ativando
+    var ini = document.getElementById('mult-data-ini').value;
+    var nivel = parseInt(document.getElementById('mult-nivel-ini').value) || 1;
+    var obs = (document.getElementById('mult-obs-ini').value || '').trim();
+    if (!ini) { toast('Informe a data de início.', 'err'); return; }
+
+    var dadosMult = { ativo: true, inicio: ini, nivel: nivel, pontos: 0, obs: obs, atualizadoEm: now };
+    var evRef = db.collection('dossie_eventos').doc();
+    var batch = db.batch();
+    batch.update(funcRef, { multiplicador: dadosMult });
+    batch.set(evRef, {
+      id: evRef.id, funcId: _funcAtivo.id, tipoId: 'multiplicador',
+      titulo: 'Passou a ser Multiplicador — Nível ' + nivel,
+      data: ini, obs: obs, resp: '', criadoEm: now, especial: true,
+    });
+    batch.commit().then(function() {
+      _funcAtivo.multiplicador = dadosMult;
+      toast('Multiplicador ativado!', 'ok');
+      closeModal('modal-mult');
+      renderDossie(_funcAtivo);
+    }).catch(function(e) { toast('Erro: ' + e.message, 'err'); });
+
+  } else {
+    // Ajuste de pontuação/nível
+    var ajuste = parseInt(document.getElementById('mult-pts-ajuste').value || '0');
+    var novoNivel = document.getElementById('mult-nivel-novo').value;
+    var dataAj = document.getElementById('mult-data-ajuste').value;
+    var obsAj = (document.getElementById('mult-obs-ajuste').value || '').trim();
+    if (!ajuste && !novoNivel) { toast('Informe o ajuste de pontos ou o novo nível.', 'err'); return; }
+    if (!dataAj) { toast('Informe a data.', 'err'); return; }
+
+    var novoPts = Math.max(0, (m.pontos || 0) + ajuste);
+    var nivelFinal = novoNivel ? parseInt(novoNivel) : (m.nivel || 1);
+    var dadosAjuste = Object.assign({}, m, { pontos: novoPts, nivel: nivelFinal, atualizadoEm: now });
+
+    var tituloEv = ajuste !== 0
+      ? ('Pontuação ajustada: ' + (ajuste > 0 ? '+' : '') + ajuste + ' pts → ' + novoPts + ' pts' + (novoNivel ? ' · Nível ' + nivelFinal : ''))
+      : ('Nível atualizado para Nível ' + nivelFinal);
+
+    var evRef2 = db.collection('dossie_eventos').doc();
+    var batch2 = db.batch();
+    batch2.update(funcRef, { multiplicador: dadosAjuste });
+    batch2.set(evRef2, {
+      id: evRef2.id, funcId: _funcAtivo.id, tipoId: 'multiplicador_ajuste',
+      titulo: tituloEv,
+      data: dataAj, obs: obsAj, resp: '', criadoEm: now, especial: true,
+    });
+    batch2.commit().then(function() {
+      _funcAtivo.multiplicador = dadosAjuste;
+      toast('Atualizado!', 'ok');
+      closeModal('modal-mult');
+      renderDossie(_funcAtivo);
+    }).catch(function(e) { toast('Erro: ' + e.message, 'err'); });
+  }
+}
+
+function desativarMult() {
+  if (!_funcAtivo) return;
+  if (!confirm('Remover ' + _funcAtivo.nome + ' como Multiplicador?')) return;
+  var m = _funcAtivo.multiplicador || {};
+  var now = new Date().toISOString();
+  var dadosDesativo = Object.assign({}, m, { ativo: false, fim: now.split('T')[0], atualizadoEm: now });
+  var funcRef = _funcAtivo.fonte === 'manual'
+    ? db.collection('dossie_funcs').doc(_funcAtivo.id)
+    : db.collection('adm_processos').doc(_funcAtivo._admId);
+
+  var evRef = db.collection('dossie_eventos').doc();
+  var batch = db.batch();
+  batch.update(funcRef, { multiplicador: dadosDesativo });
+  batch.set(evRef, {
+    id: evRef.id, funcId: _funcAtivo.id, tipoId: 'multiplicador_fim',
+    titulo: 'Saiu do programa Multiplicador (pontuação final: ' + (m.pontos || 0) + ' pts)',
+    data: now.split('T')[0], obs: '', resp: '', criadoEm: now, especial: true,
+  });
+  batch.commit().then(function() {
+    _funcAtivo.multiplicador = dadosDesativo;
+    toast('Multiplicador removido.', 'warn');
+    closeModal('modal-mult');
+    renderDossie(_funcAtivo);
+  }).catch(function(e) { toast('Erro: ' + e.message, 'err'); });
+}
+
 // ════ PROMOÇÃO / MUDANÇA DE CARGO / SETOR ════
 function openPromocao() {
   if (!_funcAtivo) return;
@@ -1638,7 +1897,7 @@ function cancelarRecibo(evId, e) {
 
 // ════ CFG SUB-TABS ════
 function showCfgTab(t) {
-  ['tipos','trein','adiant','disc'].forEach(function(k){
+  ['tipos','trein','mult','adiant','disc'].forEach(function(k){
     document.getElementById('cfg-view-'+k).style.display = (k===t) ? 'block' : 'none';
     var btn = document.getElementById('cfg-tab-'+k);
     if (btn) btn.classList.toggle('active', k===t);
@@ -1662,26 +1921,30 @@ function gerarRelTrein() {
     el.innerHTML = '<div class="rel-empty">Nenhum treinamento encontrado para os filtros selecionados.</div>';
     return;
   }
-  var totalRem = evs.filter(function(e){ return e.treinRemunerado; }).length;
+  var totalRem  = evs.filter(function(e){ return e.treinRemunerado; }).length;
+  var totalHoras = evs.reduce(function(acc, e){ return acc + (e.treinHoras||0); }, 0);
   el.innerHTML = '<div style="display:flex;gap:10px;margin-bottom:14px">'
     +'<div class="stat" style="max-width:130px"><div class="stat-v">'+evs.length+'</div><div class="stat-l">Total</div></div>'
     +'<div class="stat" style="max-width:130px"><div class="stat-v" style="color:#6b33c9">'+totalRem+'</div><div class="stat-l">Remunerados</div></div>'
     +'<div class="stat" style="max-width:130px"><div class="stat-v">'+String(evs.length-totalRem)+'</div><div class="stat-l">Não remunerados</div></div>'
+    +'<div class="stat" style="max-width:130px"><div class="stat-v" style="color:#1a5276">'+(totalHoras%1===0?totalHoras:totalHoras.toFixed(1))+'h</div><div class="stat-l">Total de horas</div></div>'
     +'</div>'
     +'<div style="overflow-x:auto"><table class="rel-table">'
-    +'<thead><tr><th>Data</th><th>Funcionário</th><th>Empresa</th><th>Cargo</th><th>Título</th><th>Remunerado</th><th>Tipo</th></tr></thead>'
+    +'<thead><tr><th>Data</th><th>Funcionário</th><th>Empresa</th><th>Cargo</th><th>Título</th><th>Horas</th><th>Remunerado</th><th>Tipo</th></tr></thead>'
     +'<tbody>'
     + evs.map(function(ev){
       var f = _funcs.find(function(x){ return x.id===ev.funcId; }) || {};
       var labRem = ev.treinRemunerado
         ? ({horas_treinamento:'Horas Treinamento', gratificacao_cargo:'Gratif. Cargo Confiança', abono:'ABONO'}[ev.treinTipoRem||'horas_treinamento']||'Sim')
         : '—';
+      var hStr = ev.treinHoras ? (ev.treinHoras%1===0?ev.treinHoras:ev.treinHoras.toFixed(1))+'h' : '—';
       return '<tr>'
         +'<td style="white-space:nowrap">'+fmtDate(ev.data)+'</td>'
         +'<td style="font-weight:600">'+( f.nome||'—')+'</td>'
         +'<td style="font-size:11px;color:var(--text2)">'+(f.empresa||'—')+'</td>'
         +'<td style="font-size:11px;color:var(--text2)">'+(f.cargo||'—')+'</td>'
         +'<td>'+ev.titulo+'</td>'
+        +'<td style="font-weight:700;color:#1a5276">'+hStr+'</td>'
         +'<td>'+(ev.treinRemunerado?'<span style="color:#1a5c35;font-weight:700">Sim</span>':'<span style="color:var(--text3)">Não</span>')+'</td>'
         +'<td style="font-size:11px">'+labRem+'</td>'
         +'</tr>';
@@ -1698,18 +1961,101 @@ function imprimirRelTrein() {
   });
   evs.sort(function(a,b){ return (a.data||'').localeCompare(b.data||''); });
   if (!evs.length) { toast('Nenhum dado para imprimir.','warn'); return; }
+  var totalHoras = evs.reduce(function(acc,e){ return acc+(e.treinHoras||0); },0);
   var linhas = evs.map(function(ev){
     var f = _funcs.find(function(x){ return x.id===ev.funcId; }) || {};
     var labRem = ev.treinRemunerado
       ? ({horas_treinamento:'Horas Treinamento', gratificacao_cargo:'Gratif. Cargo Confiança', abono:'ABONO'}[ev.treinTipoRem||'horas_treinamento']||'Sim')
       : 'Não remunerado';
-    return '<tr><td>'+fmtDate(ev.data)+'</td><td>'+( f.nome||'—')+'</td><td>'+(f.empresa||'—')+'</td><td>'+(f.cargo||'—')+'</td><td>'+ev.titulo+'</td><td>'+(ev.treinRemunerado?'<strong style="color:#1a5c35">Sim</strong>':'Não')+'</td><td>'+labRem+'</td></tr>';
+    var hStr = ev.treinHoras ? (ev.treinHoras%1===0?ev.treinHoras:ev.treinHoras.toFixed(1))+'h' : '—';
+    return '<tr><td>'+fmtDate(ev.data)+'</td><td>'+(f.nome||'—')+'</td><td>'+(f.empresa||'—')+'</td><td>'+(f.cargo||'—')+'</td><td>'+ev.titulo+'</td><td style="font-weight:700;color:#1a5276">'+hStr+'</td><td>'+(ev.treinRemunerado?'<strong style="color:#1a5c35">Sim</strong>':'Não')+'</td><td>'+labRem+'</td></tr>';
   }).join('');
   var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório de Treinamentos</title>'
-    +'<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;padding:36px;font-size:12px;}h1{font-size:17px;font-weight:900;margin-bottom:4px;}p{color:#666;margin-bottom:20px;}table{width:100%;border-collapse:collapse;}th{background:#0e0f12;color:#fff;padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.6px;}td{padding:9px 10px;border-bottom:1px solid #e8e3d8;}</style>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;padding:36px;font-size:12px;}h1{font-size:17px;font-weight:900;margin-bottom:4px;}p{color:#666;margin-bottom:12px;}table{width:100%;border-collapse:collapse;}th{background:#0e0f12;color:#fff;padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.6px;}td{padding:9px 10px;border-bottom:1px solid #e8e3d8;}.resumo{display:flex;gap:16px;margin-bottom:20px;}.resumo div{padding:8px 14px;border-radius:6px;text-align:center;}.resumo strong{display:block;font-size:18px;font-weight:900;}.resumo span{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#666;}</style>'
     +'</head><body><h1>Relatório de Treinamentos'+(mes?' — Competência '+mes.split('-').reverse().join('/'):'')+'</h1>'
     +'<p>Emitido em '+fmtDate(new Date().toISOString())+' · '+evs.length+' registro(s)</p>'
-    +'<table><thead><tr><th>Data</th><th>Funcionário</th><th>Empresa</th><th>Cargo</th><th>Treinamento</th><th>Remunerado</th><th>Tipo</th></tr></thead><tbody>'+linhas+'</tbody></table>'
+    +'<div class="resumo">'
+    +'<div style="background:#f5f5f5"><strong>'+evs.length+'</strong><span>Total</span></div>'
+    +'<div style="background:#e8f4ff"><strong style="color:#1a5276">'+(totalHoras%1===0?totalHoras:totalHoras.toFixed(1))+'h</strong><span>Total de horas</span></div>'
+    +'</div>'
+    +'<table><thead><tr><th>Data</th><th>Funcionário</th><th>Empresa</th><th>Cargo</th><th>Treinamento</th><th>Horas</th><th>Remunerado</th><th>Tipo</th></tr></thead><tbody>'+linhas+'</tbody></table>'
+    +'</body></html>';
+  var w = window.open('','_blank','width=1100,height=700');
+  w.document.write(html); w.document.close();
+  w.onload = function(){ w.focus(); w.print(); };
+}
+
+// ════ RELATÓRIO MULTIPLICADORES ════
+function gerarRelMult() {
+  var emp   = document.getElementById('rel-mult-empresa').value;
+  var nivel = document.getElementById('rel-mult-nivel').value;
+  var lista = _funcs.filter(function(f) {
+    if (!(f.multiplicador && f.multiplicador.ativo)) return false;
+    if (emp && (f.empresa||'').indexOf(emp.split(' ')[0]) < 0) return false;
+    if (nivel && String(f.multiplicador.nivel||1) !== nivel) return false;
+    return true;
+  });
+  lista.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||''); });
+  var el = document.getElementById('rel-mult-result');
+  if (!lista.length) {
+    el.innerHTML = '<div class="rel-empty">Nenhum multiplicador ativo encontrado para os filtros.</div>';
+    return;
+  }
+  var totalPts = lista.reduce(function(acc,f){ return acc+(f.multiplicador.pontos||0); },0);
+  var por_nivel = {1:0,2:0,3:0};
+  lista.forEach(function(f){ por_nivel[f.multiplicador.nivel||1]++; });
+  el.innerHTML = '<div style="display:flex;gap:10px;margin-bottom:14px">'
+    +'<div class="stat" style="max-width:120px"><div class="stat-v">'+lista.length+'</div><div class="stat-l">Total</div></div>'
+    +'<div class="stat" style="max-width:100px"><div class="stat-v">'+por_nivel[1]+'</div><div class="stat-l">Nível 1</div></div>'
+    +'<div class="stat" style="max-width:100px"><div class="stat-v">'+por_nivel[2]+'</div><div class="stat-l">Nível 2</div></div>'
+    +'<div class="stat" style="max-width:100px"><div class="stat-v">'+por_nivel[3]+'</div><div class="stat-l">Nível 3</div></div>'
+    +'<div class="stat" style="max-width:140px"><div class="stat-v" style="color:#1a5276">'+totalPts+'</div><div class="stat-l">Pontuação total</div></div>'
+    +'</div>'
+    +'<div style="overflow-x:auto"><table class="rel-table">'
+    +'<thead><tr><th>Funcionário</th><th>Empresa</th><th>Cargo</th><th>Desde</th><th>Nível</th><th>Pontuação</th></tr></thead>'
+    +'<tbody>'
+    + lista.map(function(f){
+      var m = f.multiplicador;
+      var nivLabel = ['','Nível 1','Nível 2','Nível 3'][m.nivel||1]||'Nível '+(m.nivel||1);
+      return '<tr>'
+        +'<td style="font-weight:600">'+f.nome+'</td>'
+        +'<td style="font-size:11px;color:var(--text2)">'+(f.empresa||'—')+'</td>'
+        +'<td style="font-size:11px;color:var(--text2)">'+(f.cargo||'—')+'</td>'
+        +'<td style="white-space:nowrap">'+fmtDate(m.inicio)+'</td>'
+        +'<td><span style="font-weight:700;color:#1a5276">'+nivLabel+'</span></td>'
+        +'<td><span style="font-weight:900;font-size:15px;color:#1a5276">'+(m.pontos||0)+'</span></td>'
+        +'</tr>';
+    }).join('')
+    +'</tbody></table></div>';
+}
+
+function imprimirRelMult() {
+  var lista = _funcs.filter(function(f){ return !!(f.multiplicador && f.multiplicador.ativo); });
+  lista.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||''); });
+  if (!lista.length) { toast('Nenhum multiplicador ativo para imprimir.','warn'); return; }
+  var totalPts = lista.reduce(function(acc,f){ return acc+(f.multiplicador.pontos||0); },0);
+  var linhas = lista.map(function(f){
+    var m = f.multiplicador;
+    var nivLabel = ['','Nível 1','Nível 2','Nível 3'][m.nivel||1]||'Nível '+(m.nivel||1);
+    return '<tr>'
+      +'<td><strong>'+f.nome+'</strong></td>'
+      +'<td>'+(f.empresa||'—')+'</td>'
+      +'<td>'+(f.cargo||'—')+'</td>'
+      +'<td>'+fmtDate(m.inicio)+'</td>'
+      +'<td style="font-weight:700;color:#1a5276">'+nivLabel+'</td>'
+      +'<td style="font-weight:900;font-size:14px;color:#1a5276">'+(m.pontos||0)+'</td>'
+      +'</tr>';
+  }).join('');
+  var html = '<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>Relatório de Multiplicadores</title>'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:Arial,sans-serif;padding:36px;font-size:12px;}h1{font-size:17px;font-weight:900;margin-bottom:4px;}p{color:#666;margin-bottom:12px;}table{width:100%;border-collapse:collapse;}th{background:#0e0f12;color:#fff;padding:8px 10px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.6px;}td{padding:9px 10px;border-bottom:1px solid #e8e3d8;}.resumo{display:flex;gap:16px;margin-bottom:20px;}.resumo div{padding:8px 14px;border-radius:6px;text-align:center;}.resumo strong{display:block;font-size:18px;font-weight:900;}.resumo span{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:#666;}</style>'
+    +'</head><body>'
+    +'<h1>Relatório de Multiplicadores</h1>'
+    +'<p>Emitido em '+fmtDate(new Date().toISOString())+' · '+lista.length+' multiplicador(es) ativo(s)</p>'
+    +'<div class="resumo">'
+    +'<div style="background:#f5f5f5"><strong>'+lista.length+'</strong><span>Ativos</span></div>'
+    +'<div style="background:#e8f4ff"><strong style="color:#1a5276">'+totalPts+'</strong><span>Pontuação total</span></div>'
+    +'</div>'
+    +'<table><thead><tr><th>Funcionário</th><th>Empresa</th><th>Cargo</th><th>Desde</th><th>Nível</th><th>Pontuação</th></tr></thead><tbody>'+linhas+'</tbody></table>'
     +'</body></html>';
   var w = window.open('','_blank','width=1000,height=700');
   w.document.write(html); w.document.close();

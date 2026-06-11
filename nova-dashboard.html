@@ -243,14 +243,19 @@ function recarregar(){
   });
 }
 
+var EMPRESAS_GRUPO = [
+  'RAGUIFE INDUSTRIA E COMERCIO DE RACOES LTDA',
+  'NEVES QUEIROZ ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA',
+  'DISTRIBUIDORA AMBAR AMARAL LTDA',
+  'AMBAR AMARAL ADMINISTRADORA DE BENS PROPRIOS LTDA',
+  'M B PRONI DO AMARAL CONSTRUCOES E ACABAMENTOS',
+];
+
 function popularEmpresaSelect(){
   var sel = document.getElementById('f-empresa');
   var val = sel.value;
-  var empresas = {};
-  _dados.vagas.forEach(function(v){if(v.empresa)empresas[v.empresa]=1;});
-  _dados.processos.forEach(function(p){var e=(p.dados||{}).empresa;if(e)empresas[e]=1;});
   sel.innerHTML = '<option value="">Todas as empresas</option>';
-  Object.keys(empresas).sort().forEach(function(e){
+  EMPRESAS_GRUPO.forEach(function(e){
     var o=document.createElement('option');o.value=e;o.textContent=e;sel.appendChild(o);
   });
   if(val)sel.value=val;
@@ -650,7 +655,7 @@ function renderSecaoRescisao(){
   var rescs = _dados.rescisoes.filter(function(r){
     var dt=normDate(r.deslig||r.criadoEm||'');
     if(dt&&dt<dtInicio) return false;
-    if(emp && !(r.empresa||'').toUpperCase().includes(emp.split(' ')[0].toUpperCase())) return false;
+    if(emp && (r.empresa||'') !== emp) return false;
     return true;
   });
 
@@ -775,7 +780,7 @@ function renderSecaoTreinamentos(){
     if(dt && dt < dtInicio) return false;
     if(emp){
       var func = _dados.dossieFuncs.find(function(f){return f.id===ev.funcId;});
-      if(!func || !(func.empresa||'').toUpperCase().includes(emp.split(' ')[0].toUpperCase())) return false;
+      if(!func || (func.empresa||'') !== emp) return false;
     }
     return true;
   });
@@ -839,7 +844,7 @@ function renderSecaoFeedback(){
   var tresM = subDays(90);
 
   var allAtivos = _dados.dossieFuncs.filter(function(f){return !f.desligado&&f.status!=='desligado';});
-  if(emp) allAtivos = allAtivos.filter(function(f){return (f.empresa||'').toUpperCase().includes(emp.split(' ')[0].toUpperCase());});
+  if(emp) allAtivos = allAtivos.filter(function(f){return (f.empresa||'') === emp;});
   var totalAtivos = allAtivos.length;
 
   // IDs de ativos

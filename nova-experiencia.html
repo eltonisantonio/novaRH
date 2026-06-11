@@ -56,10 +56,13 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .stat-value{font-size:30px;font-weight:900;letter-spacing:-1px;line-height:1;}
 .stat-sub{font-size:11px;color:var(--text3);font-weight:500;margin-top:4px;}
 /* FILTROS */
-.filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
 .tab-btn{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--white);color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s;}
 .tab-btn.active{background:var(--black);color:var(--lime);border-color:var(--black);}
 .form-select{padding:8px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;color:var(--text);}
+.search-wrap{position:relative;flex:1;min-width:180px;}
+.search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;pointer-events:none;}
+.search-input{width:100%;padding:8px 11px 8px 32px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;}
 /* FUNC CARD */
 .func-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:16px 20px;margin-bottom:10px;cursor:pointer;transition:all .15s;}
 .func-card:hover{box-shadow:0 2px 12px rgba(0,0,0,.06);}
@@ -163,6 +166,13 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="filters">
         <button class="tab-btn active" id="tab-ativos" onclick="setTabAtivos('ativos',this)">Em experiência</button>
         <button class="tab-btn" id="tab-efetivados" onclick="setTabAtivos('efetivados',this)">Efetivados</button>
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input class="search-input" type="text" id="f-busca" placeholder="Buscar por nome..." oninput="renderFuncs()">
+        </div>
+        <select class="form-select" id="f-setor" onchange="renderFuncs()" style="width:180px">
+          <option value="">Todos os setores</option>
+        </select>
         <select class="form-select" id="f-empresa" onchange="renderFuncs()" style="width:185px">
           <option value="">Todas as empresas</option>
           <option>RAGUIFE INDUSTRIA E COMERCIO DE RACOES LTDA</option>
@@ -373,9 +383,25 @@ function efetivados_mes(lista){
 }
 
 function renderFuncs(){
-  var emp=document.getElementById('f-empresa').value;
+  var emp    = document.getElementById('f-empresa').value;
+  var busca  = (document.getElementById('f-busca').value||'').toLowerCase().trim();
+  var setor  = document.getElementById('f-setor').value;
+
+  // Popular select de setores dinamicamente (só se ainda não populado)
+  var selSetor = document.getElementById('f-setor');
+  if (selSetor.options.length <= 1) {
+    var setores = {};
+    _funcs.forEach(function(f){ if (f.departamento) setores[f.departamento] = 1; });
+    Object.keys(setores).sort().forEach(function(s){
+      var o = document.createElement('option'); o.value = s; o.textContent = s; selSetor.appendChild(o);
+    });
+  }
+
   var lista=(_tabAtiva==='ativos'?getFuncsEmExp():getFuncsEfetivados()).filter(function(f){
-    return !emp||f.empresa===emp;
+    if (emp   && f.empresa !== emp) return false;
+    if (setor && (f.departamento||'') !== setor) return false;
+    if (busca && !(f.nome||'').toLowerCase().includes(busca)) return false;
+    return true;
   });
   lista.sort(function(a,b){return (a.admissao||'').localeCompare(b.admissao||'');});
 

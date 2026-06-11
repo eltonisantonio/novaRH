@@ -759,6 +759,8 @@ function iniciarListeners() {
         tel: d2.telefone||'', email: d2.email||'',
         status: p.status==='concluido' ? 'ativo' : 'em_admissao',
         desligado: !!p.desligado,
+        brigadista: p.brigadista||null,
+        cipa: p.cipa||null,
       };
     });
     // Funcionários manuais

@@ -438,6 +438,10 @@ function prazoInfo(deslig){
 function getItensParaPerfil(proc){
   var perf=_perfis.find(function(p){return p.id===proc.perfil;});
   var todos=(_itens.length?_itens:ITENS_DEFAULT);
+  // Filtrar por setor do usuário logado (exceto RH que vê tudo)
+  if(_setor&&_setor!=='rh'){
+    todos=todos.filter(function(it){return it.sector===_setor;});
+  }
   if(!perf)return todos;
   // Novo modelo: vínculo direto por lista itens[]
   if(perf.itens&&perf.itens.length){

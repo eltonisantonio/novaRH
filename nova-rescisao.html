@@ -447,27 +447,41 @@ function prazoInfo(deslig){
   return{cls:'b-lime al-green',lbl:'Prazo: '+fmtDate(lim)};
 }
 
-function getItensParaPerfil(proc){
+// Resolve a lista COMPLETA de itens do perfil (todos os setores), na ordem do perfil — usada para snapshot
+function resolverItensFull(proc){
   var perf=_perfis.find(function(p){return p.id===proc.perfil;});
   var todos=(_itens.length?_itens:ITENS_DEFAULT);
-  // Filtrar por setor do usuário logado (exceto RH que vê tudo)
-  if(_setor&&_setor!=='rh'){
-    todos=todos.filter(function(it){return it.sector===_setor;});
-  }
-  if(!perf)return todos;
-  // Novo modelo: vínculo direto por lista itens[] — respeita a ordem salva
+  if(!perf)return todos.slice();
   if(perf.itens&&perf.itens.length){
     var filtrados=todos.filter(function(it){return perf.itens.indexOf(it.id)!==-1;});
     filtrados.sort(function(a,b){return perf.itens.indexOf(a.id)-perf.itens.indexOf(b.id);});
     return filtrados;
   }
-  // Fallback legado: condicional
   var conds=perf.conds||[];
   return todos.filter(function(it){
     if(!it.conditional)return true;
     var cs=String(it.conditional).split(',').map(function(x){return x.trim();});
     return cs.some(function(c){return conds.indexOf(c)!==-1;});
   });
+}
+function snapshotIds(proc){ return resolverItensFull(proc).map(function(it){return it.id;}); }
+
+function getItensParaPerfil(proc){
+  var todos=(_itens.length?_itens:ITENS_DEFAULT);
+  var lista;
+  // Processo finalizado COM snapshot: lista congelada (não recebe itens novos do perfil)
+  if(proc.finalizado && proc.itensSnapshot && proc.itensSnapshot.length){
+    var byId={}; todos.forEach(function(it){byId[it.id]=it;});
+    lista=proc.itensSnapshot.map(function(id){return byId[id];}).filter(Boolean);
+  } else {
+    // Em andamento (ou legado sem snapshot): resolve do perfil ao vivo
+    lista=resolverItensFull(proc);
+  }
+  // Filtra pelo setor do usuário logado (RH vê tudo)
+  if(_setor&&_setor!=='rh'){
+    lista=lista.filter(function(it){return it.sector===_setor;});
+  }
+  return lista;
 }
 
 function progress(proc){
@@ -532,6 +546,8 @@ function iniciarListeners(){
       _itens.forEach(function(it){batch.set(db.collection('rescisao_itens').doc(it.id),it);});
       batch.commit();
     }
+    if(document.getElementById('view-lista').style.display!=='none')renderLista();
+    if(document.getElementById('view-check').style.display!=='none'&&_procAtual)renderChecklist();
   });
   db.collection('rescisao_perfis').onSnapshot(function(snap){
     _perfis=snap.docs.map(function(d){return d.data();});
@@ -542,6 +558,8 @@ function iniciarListeners(){
       batch.commit();
     }
     popularSelectPerfis();
+    if(document.getElementById('view-lista').style.display!=='none')renderLista();
+    if(document.getElementById('view-check').style.display!=='none'&&_procAtual)renderChecklist();
   });
 }
 
@@ -632,6 +650,12 @@ function abrirChecklist(id){
   _procAtual=_processos.find(function(p){return p.id===id;});
   if(!_procAtual)return;
   _setorTab=_setor;
+  // Processo antigo já finalizado sem snapshot: congela uma vez no estado atual
+  if(_procAtual.finalizado && !(_procAtual.itensSnapshot&&_procAtual.itensSnapshot.length) && (_itens.length||_perfis.length)){
+    var snapLegado=snapshotIds(_procAtual);
+    _procAtual.itensSnapshot=snapLegado;
+    db.collection('rescisao_processos').doc(_procAtual.id).update({itensSnapshot:snapLegado});
+  }
   document.getElementById('view-lista').style.display='none';
   document.getElementById('view-check').style.display='block';
   document.getElementById('topbar-title').textContent=_procAtual.nome;
@@ -822,11 +846,15 @@ function finalizarProcesso(){
   var hom=p.homologacao||{};
   var now=new Date().toISOString();
 
+  // Congela a checklist exatamente como está agora — itens novos no perfil não entram mais
+  var snapFinal = (p.itensSnapshot&&p.itensSnapshot.length) ? p.itensSnapshot : snapshotIds(p);
+
   // Buscar funcionário no Dossiê pelo nome
   db.collection('rescisao_processos').doc(p.id).update({
-    finalizado:true, finalizadoEm:now
+    finalizado:true, finalizadoEm:now, itensSnapshot:snapFinal
   }).then(function(){
     _procAtual.finalizado=true;
+    _procAtual.itensSnapshot=snapFinal;
 
     // Criar evento no Dossiê — buscar por nome na adm_processos
     var nomeBusca=(p.nome||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -996,6 +1024,7 @@ function criarProcesso(){
   }
   var deslig=document.getElementById('np2-deslig').value;
   if(!nome||!deslig){toast('Selecione o funcionário e informe a data de desligamento.','err');return;}
+  var perfilId=document.getElementById('np2-perfil').value;
   var docRef=db.collection('rescisao_processos').doc();
   docRef.set({
     id:docRef.id,
@@ -1005,7 +1034,8 @@ function criarProcesso(){
     empresa:document.getElementById('np2-empresa').value,
     deslig:deslig,
     tipo:document.getElementById('np2-tipo').value,
-    perfil:document.getElementById('np2-perfil').value,
+    perfil:perfilId,
+    itensSnapshot:snapshotIds({perfil:perfilId}),
     checks:{},
     homologacao:{},
     finalizado:false,

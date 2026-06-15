@@ -94,6 +94,12 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .check-box i{font-size:12px;}
 .check-text{flex:1;}
 .check-label{font-size:13px;font-weight:500;line-height:1.4;}
+.check-item.na{background:#f7f5f0;}
+.check-item.na .check-box{background:#eceae3;border-color:var(--border2);}
+.check-label.na{text-decoration:line-through;color:var(--text3);}
+.btn-na{font-size:10px;font-weight:700;padding:3px 9px;border-radius:12px;border:1px solid var(--border2);background:var(--white);color:var(--text2);cursor:pointer;flex-shrink:0;font-family:'Inter',sans-serif;}
+.btn-na:hover{border-color:var(--black);}
+.btn-na.active{background:var(--text2);color:var(--white);border-color:var(--text2);}
 .check-label.optional{color:var(--text2);}
 .check-value{font-size:11px;font-weight:700;margin-top:3px;}
 .check-value.ok{color:#1a5c35;}
@@ -701,12 +707,29 @@ function getItensParaPerfil(perfilId) {
   });
 }
 
+// Congela a lista resolvida do perfil (itens + obrigatoriedade) para gravar no processo
+function snapshotItensAdmissao(perfilId) {
+  return getItensParaPerfil(perfilId).map(function(it){
+    return {id:it.id, secao:it.secao, texto:it.texto, opcional:!!it.opcional, campoAuto:it.campoAuto||'', condicional:it.condicional||[]};
+  });
+}
+// Itens de um processo: usa o snapshot congelado se existir; senão resolve ao vivo (legado)
+function resolverItensAdmissao(proc) {
+  if (proc && proc.itensSnapshot && proc.itensSnapshot.length) return proc.itensSnapshot;
+  return getItensParaPerfil(proc ? (proc.perfil||'geral') : 'geral');
+}
+
 function calcProgresso(proc) {
-  var itens = getItensParaPerfil(proc.perfil||'geral');
+  var itens = resolverItensAdmissao(proc);
   var obrig = itens.filter(function(it){return !it.opcional;});
   var feitos = obrig.filter(function(it){
-    // Considerar feito se: marcado manualmente OU campo auto preenchido E sem alerta
-    if (proc.checks && proc.checks[it.id] === true) return true;
+    // N/A conta como resolvido
+    if (proc.checks && proc.checks[it.id] === 'na') return true;
+    // Marcado manualmente (true ou objeto {done:true})
+    if (proc.checks && proc.checks[it.id]) {
+      var ck = proc.checks[it.id];
+      if (ck === true || (typeof ck === 'object' && ck.done)) return true;
+    }
     if (it.campoAuto && proc.dados && proc.dados[it.campoAuto]) {
       var regra = _regras.find(function(r){ return r.perfil===proc.perfil && r.campo===it.campoAuto; });
       if (regra) {
@@ -894,6 +917,7 @@ function processarFO1029(file) {
           criadoEm: new Date().toISOString(),
           status: 'em_andamento',
           perfil: 'geral',
+          itensSnapshot: snapshotItensAdmissao('geral'),
           dados: dados,
           checks: {},
           obs: '',
@@ -927,6 +951,11 @@ function processarFO1029(file) {
 function abrirProcesso(id) {
   _procAtual = _processos.find(function(p){ return p.id===id; });
   if (!_procAtual) return;
+  // Processo antigo sem snapshot: congela a lista atual de itens/obrigatoriedade (mudanças futuras não o afetam)
+  if (!(_procAtual.itensSnapshot && _procAtual.itensSnapshot.length) && (_itens.length || _perfis.length)) {
+    _procAtual.itensSnapshot = snapshotItensAdmissao(_procAtual.perfil||'geral');
+    db.collection('adm_processos').doc(_procAtual.id).update({itensSnapshot:_procAtual.itensSnapshot}).catch(function(){});
+  }
   var d = _procAtual.dados||{};
   document.getElementById('mp-title').textContent = d.nome||'Processo';
   document.getElementById('mp-sub').textContent   = (d.empresa||'')+(d.cargo?' · '+d.cargo:'')+(d.admissao?' · Admissão: '+fmtDate(d.admissao):'');
@@ -1032,6 +1061,8 @@ function updateDados(el) {
 function mudarPerfil(val) {
   if (!_procAtual) return;
   _procAtual.perfil = val;
+  // Trocar o perfil deliberadamente re-congela a lista de itens com a config atual do novo perfil
+  _procAtual.itensSnapshot = snapshotItensAdmissao(val);
   renderFormDados();
   renderChecklist();
 }
@@ -1041,13 +1072,15 @@ function mudarPerfil(val) {
 // ════════════════════════════════════════════
 function renderChecklist() {
   if (!_procAtual) return;
-  var itens = getItensParaPerfil(_procAtual.perfil||'geral');
+  var itens = resolverItensAdmissao(_procAtual);
   var d = _procAtual.dados||{};
   var checks = _procAtual.checks||{};
   var regras = _regras.filter(function(r){ return r.perfil===_procAtual.perfil; });
 
   // Calcular status de cada item
   function itemStatus(it) {
+    // Marcado como Não Aplicável
+    if (checks[it.id] === 'na') return {status:'na'};
     // Item com campoAuto: verificar se o campo está preenchido
     if (it.campoAuto && d[it.campoAuto]) {
       // Verificar se há regra de validação para este campo
@@ -1077,7 +1110,7 @@ function renderChecklist() {
   var doneObrig  = itens.filter(function(it){
     if (it.opcional) return false;
     var st = itemStatus(it);
-    return st.status === 'ok' || st.status === 'auto_ok';
+    return st.status === 'ok' || st.status === 'auto_ok' || st.status === 'na';
   }).length;
   var alertCount = itens.filter(function(it){ return itemStatus(it).status==='alert'; }).length;
   var pendCount  = itens.filter(function(it){
@@ -1095,7 +1128,7 @@ function renderChecklist() {
   var html = '';
   Object.values(secoes).forEach(function(sec) {
     if (!sec.items.length) return;
-    var doneCount = sec.items.filter(function(x){ return x.st.status==='ok'||x.st.status==='auto_ok'; }).length;
+    var doneCount = sec.items.filter(function(x){ return x.st.status==='ok'||x.st.status==='auto_ok'||x.st.status==='na'; }).length;
     html += '<div class="checklist-section">'
       +'<div class="checklist-section-header" onclick="toggleSecao(this)">'
       +'<span class="checklist-section-title"><i class="ti '+sec.icon+'" style="margin-right:6px"></i>'+sec.label+'</span>'
@@ -1106,14 +1139,16 @@ function renderChecklist() {
       var it = entry.item, st = entry.st;
       var isOk    = st.status==='ok'||st.status==='auto_ok';
       var isAlert = st.status==='alert';
-      var cls = isOk?'check-item ok':(isAlert?'check-item alert':'check-item');
-      var boxIcon = isOk ? '<i class="ti ti-check" style="color:var(--black)"></i>' : (isAlert?'<i class="ti ti-alert-triangle" style="color:#e05252"></i>':'');
-      var canToggle = st.status==='pending'||st.status==='ok'; // auto_ok e alert não toggleam manualmente
+      var isNA    = st.status==='na';
+      var cls = isNA?'check-item na':(isOk?'check-item ok':(isAlert?'check-item alert':'check-item'));
+      var boxIcon = isNA ? '<i class="ti ti-minus" style="font-size:11px;color:var(--text3)"></i>' : (isOk ? '<i class="ti ti-check" style="color:var(--black)"></i>' : (isAlert?'<i class="ti ti-alert-triangle" style="color:#e05252"></i>':''));
+      var canToggle = st.status==='pending'||st.status==='ok'; // auto_ok, alert e na não toggleam pela caixa
+      var canNA = st.status==='pending'||st.status==='ok'||st.status==='na'; // N/A só faz sentido em itens manuais
       html += '<div class="'+cls+'" id="ck-'+it.id+'">'
         +'<div class="check-box" onclick="'+(canToggle?'toggleCheck(\''+it.id+'\')':'')+'">'
         +boxIcon+'</div>'
         +'<div class="check-text">'
-        +'<div class="check-label'+(it.opcional?' optional':'')+'">'+it.texto+(it.opcional?' <span style="color:var(--text3);font-size:10px">(opcional)</span>':'')+'</div>'
+        +'<div class="check-label'+(isNA?' na':'')+(it.opcional?' optional':'')+'">'+it.texto+(it.opcional?' <span style="color:var(--text3);font-size:10px">(opcional)</span>':'')+'</div>'
         +(st.status==='auto_ok'?'<div class="check-value ok"><i class="ti ti-check" style="font-size:10px"></i> '+escHtml(st.valor)+'</div>':'')
         +(st.status==='alert'?
             '<div style="display:flex;flex-direction:column;gap:3px;margin-top:4px">'
@@ -1123,6 +1158,7 @@ function renderChecklist() {
             +'<i class="ti ti-check"></i> ESPERADO ('+(_procAtual&&_procAtual.perfil||'perfil').toUpperCase()+'): '+escHtml(st.esperado)+'</div>'
             +'<div style="font-size:10px;color:#8b1c1c;font-weight:600">Campo: '+FO_LABELS[it.campoAuto||'']+'</div>'
             +'</div>':'')
+        +(isNA?'<div class="check-value empty">Não aplicável a este processo</div>':'')
         +(st.status==='pending'&&!it.campoAuto?'<div class="check-value empty">Aguardando confirmação manual</div>':'')
         +(st.status==='pending'&&it.campoAuto?'<div class="check-value empty">Campo não preenchido no FO1029</div>':'')
         +(st.status==='ok'&&_procAtual.checks&&typeof _procAtual.checks[it.id]==='object'&&_procAtual.checks[it.id].resp
@@ -1131,7 +1167,9 @@ function renderChecklist() {
             +' · <i class="ti ti-user" style="font-size:10px;vertical-align:-1px"></i> '+_procAtual.checks[it.id].resp
             +(_procAtual.checks[it.id].obs?' · '+_procAtual.checks[it.id].obs:'')
             +'</div>':'')
-        +'</div></div>';
+        +'</div>'
+        +(canNA?'<button class="btn-na'+(isNA?' active':'')+'" onclick="toggleNA(\''+it.id+'\')" title="Não Aplicável">'+(isNA?'✕ N/A':'N/A')+'</button>':'')
+        +'</div>';
     });
     html += '</div></div>';
   });
@@ -1145,12 +1183,37 @@ function toggleSecao(header) {
 
 var _ckItemPendente = null;
 
+// Persiste os checks do processo atual no Firestore imediatamente
+function persistChecksAdmissao() {
+  if (!_procAtual) return;
+  var pg = calcProgresso(_procAtual);
+  _procAtual.status = pg.pct===100 ? 'concluido' : 'em_andamento';
+  db.collection('adm_processos').doc(_procAtual.id).update({
+    checks: _procAtual.checks || {},
+    status: _procAtual.status,
+    atualizadoEm: new Date().toISOString()
+  }).catch(function(e){ toast('Erro ao salvar marcação: '+e.message, 'err'); });
+}
+
+function toggleNA(itemId) {
+  if (!_procAtual) return;
+  if (!_procAtual.checks) _procAtual.checks = {};
+  if (_procAtual.checks[itemId] === 'na') {
+    delete _procAtual.checks[itemId];
+  } else {
+    _procAtual.checks[itemId] = 'na';
+  }
+  persistChecksAdmissao();
+  renderChecklist();
+}
+
 function toggleCheck(itemId) {
   if (!_procAtual) return;
   if (!_procAtual.checks) _procAtual.checks = {};
   // Se já marcado, desmarcar
   if (_procAtual.checks[itemId]) {
-    _procAtual.checks[itemId] = false;
+    delete _procAtual.checks[itemId];
+    persistChecksAdmissao();
     renderChecklist();
     return;
   }
@@ -1177,6 +1240,7 @@ function confirmarCkItem() {
     obs: (document.getElementById('cki-obs').value||'').trim()
   };
   _ckItemPendente = null;
+  persistChecksAdmissao();
   closeModal('modal-ck-item');
   renderChecklist();
   toast('Item confirmado!','ok');
@@ -1205,6 +1269,7 @@ function salvarProcesso() {
     dados:   _procAtual.dados,
     checks:  _procAtual.checks,
     perfil:  _procAtual.perfil,
+    itensSnapshot: _procAtual.itensSnapshot || snapshotItensAdmissao(_procAtual.perfil||'geral'),
     status:  _procAtual.status,
     lancadoPor: resp.trim()||_procAtual.lancadoPor||'RH',
     historico: _procAtual.historico,
@@ -1221,7 +1286,7 @@ function criarEventoAdmissaoDossie(proc) {
   var nome = (d.nome||'').toUpperCase();
   if (!nome) return;
   var funcId = 'adm_'+proc.id;
-  var todos = _itens.length ? _itens : ITENS_DEFAULT;
+  var todos = resolverItensAdmissao(proc);
   var secNames = {documentos:'Documentos',cadastro:'Cadastro',integracao:'Integração'};
   var checks = proc.checks||{};
   var linhas = [];
@@ -1645,7 +1710,7 @@ function processarLote(file) {
         });
         if (!dados.nome) return;
         var docRef = db.collection('adm_processos').doc();
-        batch.set(docRef, {id:docRef.id, criadoEm:new Date().toISOString(), status:'importado', fonte:'importacao', perfil:'geral', dados:dados, checks:{}, obs:'', lancadoPor:resp.trim()||'RH', historico:[{dt:new Date().toISOString(),acao:'IMPORTADO_EM_LOTE',por:resp.trim()||'RH'}]});
+        batch.set(docRef, {id:docRef.id, criadoEm:new Date().toISOString(), status:'importado', fonte:'importacao', perfil:'geral', itensSnapshot:snapshotItensAdmissao('geral'), dados:dados, checks:{}, obs:'', lancadoPor:resp.trim()||'RH', historico:[{dt:new Date().toISOString(),acao:'IMPORTADO_EM_LOTE',por:resp.trim()||'RH'}]});
         criados++;
       });
       batch.commit().then(function(){

@@ -337,13 +337,30 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           </select></div>
         <div class="fg"><label class="fl">Data de Desligamento <span style="color:#c0392b">*</span></label><input class="fi" type="date" id="np2-deslig"></div>
         <div class="fg"><label class="fl">Tipo de Desligamento</label>
-          <select class="fs" id="np2-tipo">
+          <select class="fs" id="np2-tipo" onchange="onTipoDesligChange()">
             <option value="pedido_demissao">Pedido de Demissão</option>
             <option value="demissao_sem_justa">Demissão Sem Justa Causa</option>
             <option value="demissao_justa">Demissão Por Justa Causa</option>
             <option value="acordo">Acordo (§484-A CLT)</option>
             <option value="termino_contrato">Término de Contrato</option>
+            <option value="termino_experiencia">Término de Experiência</option>
           </select></div>
+        <div class="fg" id="bloco-exp" style="grid-column:1/-1;display:none">
+          <div style="background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;display:grid;grid-template-columns:1fr 1fr;gap:12px">
+            <div><label class="fl">Tipo <span style="color:#c0392b">*</span></label>
+              <select class="fs" id="np2-exp-tipo">
+                <option value="">Selecione</option>
+                <option value="normal">Normal</option>
+                <option value="antecipado">Antecipado</option>
+              </select></div>
+            <div><label class="fl">Iniciativa <span style="color:#c0392b">*</span></label>
+              <select class="fs" id="np2-exp-iniciativa">
+                <option value="">Selecione</option>
+                <option value="empregado">Empregado</option>
+                <option value="empregador">Empregador</option>
+              </select></div>
+          </div>
+        </div>
         <div class="fg"><label class="fl">Perfil</label>
           <select class="fs" id="np2-perfil"><option value="">Selecione</option></select></div>
         <div class="fg"><label class="fl">Criado por</label><input class="fi" type="text" id="np2-resp" placeholder="Seu nome"></div>
@@ -680,7 +697,9 @@ function renderChecklist(){
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
     +'<div><div class="proc-nome-det">'+p.nome+'</div>'
     +'<div class="proc-meta-det">'+(p.cargo||'')+(p.empresa?' · '+p.empresa:'')+'</div>'
-    +'<div class="proc-meta-det">Desligamento: '+fmtDate(p.deslig)+' · Tipo: '+(p.tipo||'—').replace(/_/g,' ')+'</div></div>'
+    +'<div class="proc-meta-det">Desligamento: '+fmtDate(p.deslig)+' · Tipo: '+(p.tipo||'—').replace(/_/g,' ')+'</div>'
+    +(p.tipo==='termino_experiencia'&&(p.expTipo||p.expIniciativa)?'<div class="proc-meta-det"><span class="badge b-amber" style="margin-right:6px">Experiência: '+(p.expTipo==='antecipado'?'Antecipado':'Normal')+'</span><span class="badge b-gray">Iniciativa: '+(p.expIniciativa==='empregado'?'Empregado':'Empregador')+'</span></div>':'')
+    +'</div>'
     +'<div style="text-align:right"><div style="font-size:28px;font-weight:900;color:var(--lime)">'+pr.pct+'%</div>'
     +'<div style="font-size:11px;color:rgba(242,238,229,.6)">'+pr.done+'/'+pr.total+' itens</div></div></div>'
     +'<span class="prazo-badge '+pi.cls+'">'+pi.lbl+'</span>'
@@ -881,6 +900,7 @@ function finalizarProcesso(){
         // ── Evento 1: Desligamento ──
         var ev1 = db.collection('dossie_eventos').doc();
         var obsDeslig = 'Tipo: '+(p.tipo||'—').replace(/_/g,' ')
+          +(p.tipo==='termino_experiencia'?' ('+(p.expTipo==='antecipado'?'Antecipado':'Normal')+' / iniciativa do '+(p.expIniciativa==='empregado'?'empregado':'empregador')+')':'')
           +' | Data desligamento: '+fmtDate(p.deslig)
           +(hom.data?' | Data homologação: '+fmtDate(hom.data):'')
           +(hom.local?' | Local: '+hom.local:'')
@@ -995,6 +1015,9 @@ function openNovoProcesso(){
   ['np2-cargo','np2-obs','np2-resp'].forEach(function(id){document.getElementById(id).value='';});
   document.getElementById('np2-empresa').value='';
   document.getElementById('np2-tipo').value='pedido_demissao';
+  document.getElementById('np2-exp-tipo').value='';
+  document.getElementById('np2-exp-iniciativa').value='';
+  onTipoDesligChange();
   document.getElementById('np2-perfil').value='';
   document.getElementById('np2-deslig').value=today();
   openModal('modal-proc');
@@ -1013,6 +1036,11 @@ function preencherDadosFunc(val){
   document.getElementById('np2-empresa').value=f.empresa||'';
 }
 
+function onTipoDesligChange(){
+  var t=document.getElementById('np2-tipo').value;
+  document.getElementById('bloco-exp').style.display = t==='termino_experiencia' ? 'block' : 'none';
+}
+
 function criarProcesso(){
   var funcVal=document.getElementById('np2-func').value;
   var nome='';
@@ -1024,6 +1052,13 @@ function criarProcesso(){
   }
   var deslig=document.getElementById('np2-deslig').value;
   if(!nome||!deslig){toast('Selecione o funcionário e informe a data de desligamento.','err');return;}
+  var tipoDeslig=document.getElementById('np2-tipo').value;
+  var expTipo='', expIniciativa='';
+  if(tipoDeslig==='termino_experiencia'){
+    expTipo=document.getElementById('np2-exp-tipo').value;
+    expIniciativa=document.getElementById('np2-exp-iniciativa').value;
+    if(!expTipo||!expIniciativa){toast('Informe o Tipo e a Iniciativa do término de experiência.','err');return;}
+  }
   var perfilId=document.getElementById('np2-perfil').value;
   var docRef=db.collection('rescisao_processos').doc();
   docRef.set({
@@ -1033,7 +1068,9 @@ function criarProcesso(){
     cargo:(document.getElementById('np2-cargo').value||'').trim().toUpperCase(),
     empresa:document.getElementById('np2-empresa').value,
     deslig:deslig,
-    tipo:document.getElementById('np2-tipo').value,
+    tipo:tipoDeslig,
+    expTipo:expTipo,
+    expIniciativa:expIniciativa,
     perfil:perfilId,
     itensSnapshot:snapshotIds({perfil:perfilId}),
     checks:{},

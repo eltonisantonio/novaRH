@@ -129,6 +129,26 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .cfg-table th{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
 .cfg-table td{font-size:13px;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
 .cfg-table tr:last-child td{border-bottom:none;}
+/* BLOCOS EXTRAS DO MODAL */
+.extra-block{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:14px;}
+.extra-block-title{font-size:12px;font-weight:800;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.checkbox-row{display:flex;align-items:center;gap:8px;font-size:13px;}
+.checkbox-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--black);cursor:pointer;}
+.checkbox-row label{cursor:pointer;font-weight:500;}
+/* BADGES CLICÁVEIS DO HEADER */
+.hbadge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--white);color:var(--text2);transition:all .15s;user-select:none;}
+.hbadge:hover{box-shadow:0 2px 8px rgba(0,0,0,.08);}
+.hbadge.on-brig{background:#fdeaea;color:#b03030;border-color:#f5c6c6;}
+.hbadge.on-cipa{background:#e8f8ef;color:#2e7d32;border-color:#a8d8b8;}
+.hbadge.on-mult{background:#e8f0fa;color:#1a5276;border-color:#b8d0ea;}
+/* SUB-TABS CFG */
+.cfg-tabs{display:flex;gap:6px;margin-bottom:18px;border-bottom:1px solid var(--border);}
+.cfg-tab{padding:9px 16px;font-size:12px;font-weight:700;cursor:pointer;color:var(--text2);border-bottom:2px solid transparent;margin-bottom:-1px;}
+.cfg-tab.active{color:var(--black);border-bottom-color:var(--black);}
+/* CARD ADIANTAMENTO / STRIP DISCIPLINAR */
+.ev-extra{margin-top:10px;border-radius:var(--r);padding:10px 12px;font-size:12px;}
+.barra{height:6px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:6px;}
+.barra > div{height:100%;border-radius:3px;}
 </style>
 </head>
 <body>
@@ -199,6 +219,14 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         <button class="btn btn-sm" onclick="showTab('lista')"><i class="ti ti-arrow-left"></i> Voltar</button>
       </div>
 
+      <div class="cfg-tabs">
+        <div class="cfg-tab active" id="cfgtab-tipos" onclick="showCfgTab('tipos')">Tipos de Evento</div>
+        <div class="cfg-tab" id="cfgtab-trein" onclick="showCfgTab('trein')">Relatório de Treinamentos</div>
+        <div class="cfg-tab" id="cfgtab-adiant" onclick="showCfgTab('adiant')">Relatório de Adiantamentos</div>
+        <div class="cfg-tab" id="cfgtab-disc" onclick="showCfgTab('disc')">Medidas Disciplinares</div>
+      </div>
+
+      <div id="cfgview-tipos">
       <div class="cfg-section">
         <div style="font-size:13px;font-weight:800;margin-bottom:4px">Tipos de Evento</div>
         <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Personalize os tipos de evento disponíveis no dossiê.</div>
@@ -216,6 +244,40 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           <tbody id="tb-tipos"></tbody>
         </table>
       </div>
+      </div>
+
+      <div id="cfgview-trein" style="display:none">
+        <div class="cfg-section">
+          <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Competência</label>
+              <input class="fi" type="month" id="rel-trein-comp" style="width:170px" onchange="renderRelTreinamento()"></div>
+            <label class="checkbox-row" style="margin-bottom:8px"><input type="checkbox" id="rel-trein-rem" onchange="renderRelTreinamento()"> Somente remunerados</label>
+          </div>
+          <div id="rel-trein-corpo"></div>
+        </div>
+      </div>
+
+      <div id="cfgview-adiant" style="display:none">
+        <div class="cfg-section">
+          <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Situação</label>
+              <select class="fs" id="rel-adiant-sit" style="width:180px" onchange="renderRelAdiantamento()">
+                <option value="">Todas</option><option value="aberto">Em aberto</option><option value="quitado">Quitado</option></select></div>
+          </div>
+          <div id="rel-adiant-corpo"></div>
+        </div>
+      </div>
+
+      <div id="cfgview-disc" style="display:none">
+        <div class="cfg-section">
+          <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Situação</label>
+              <select class="fs" id="rel-disc-sit" style="width:200px" onchange="renderRelDisciplinar()">
+                <option value="">Todas</option><option value="pendente">Aguardando recebimento</option><option value="recebido">Recebidas pelo RH</option></select></div>
+          </div>
+          <div id="rel-disc-corpo"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -226,13 +288,41 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
     <div class="modal-h"><span class="modal-title" id="ev-modal-title">Novo Evento</span><button class="btn-icon" onclick="closeModal('modal-ev')"><i class="ti ti-x"></i></button></div>
     <div class="modal-b">
       <div class="fg"><label class="fl">Tipo de Evento <span style="color:#c0392b">*</span></label>
-        <select class="fs" id="ev-tipo"><option value="">Selecione</option></select></div>
+        <select class="fs" id="ev-tipo" onchange="onTipoChange()"><option value="">Selecione</option></select></div>
       <div class="fg"><label class="fl">Título / Assunto <span style="color:#c0392b">*</span></label>
         <input class="fi" type="text" id="ev-titulo" placeholder="Descreva brevemente o evento"></div>
       <div class="fg"><label class="fl">Data <span style="color:#c0392b">*</span></label>
         <input class="fi" type="date" id="ev-data"></div>
       <div class="fg"><label class="fl">Observações / Detalhes</label>
         <textarea class="ft" id="ev-obs" rows="4" placeholder="Descreva os detalhes do evento..."></textarea></div>
+
+      <!-- EXTRA: Treinamento -->
+      <div class="extra-block" id="extra-trein" style="display:none">
+        <div class="extra-block-title"><i class="ti ti-certificate" style="color:#9b72cf"></i> Informações do Treinamento</div>
+        <div class="fg" style="margin-bottom:10px"><label class="fl">Carga horária (horas)</label>
+          <input class="fi" type="number" id="ev-trein-carga" placeholder="Ex: 8" min="0" step="0.5"></div>
+        <div class="checkbox-row">
+          <input type="checkbox" id="ev-trein-rem" onchange="document.getElementById('extra-trein-rem').style.display=this.checked?'block':'none'">
+          <label for="ev-trein-rem">Treinamento Remunerado (gera verba Horas Treinamento)</label>
+        </div>
+        <div id="extra-trein-rem" style="display:none;margin-top:10px">
+          <div class="fg" style="margin-bottom:0"><label class="fl">Tipo de remuneração</label>
+            <select class="fs" id="ev-trein-tipo-rem">
+              <option value="horas_treinamento">Horas Treinamento (padrão)</option>
+              <option value="gratificacao_cargo">Gratificação de Cargo de Confiança</option>
+              <option value="abono">ABONO (em horário de trabalho)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- EXTRA: Adiantamento por Afastamento -->
+      <div class="extra-block" id="extra-adiant" style="display:none">
+        <div class="extra-block-title"><i class="ti ti-cash" style="color:#2196a0"></i> Adiantamento por Afastamento</div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Valor adiantado (R$) <span style="color:#c0392b">*</span></label>
+          <input class="fi" type="number" id="ev-adiant-valor" placeholder="0,00" min="0" step="0.01"></div>
+        <div style="margin-top:8px;font-size:11px;color:var(--text2)"><i class="ti ti-info-circle" style="font-size:11px;margin-right:3px"></i>As devoluções serão registradas separadamente no card do dossiê.</div>
+      </div>
       <div class="fg"><label class="fl">Responsável pelo registro</label>
         <input class="fi" type="text" id="ev-resp" placeholder="Seu nome"></div>
     </div>
@@ -282,6 +372,110 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- MODAL MULTIPLICADOR -->
+<div class="overlay" id="modal-mult">
+  <div class="modal">
+    <div class="modal-h"><span class="modal-title" id="mult-modal-title">Multiplicador</span><button class="btn-icon" onclick="closeModal('modal-mult')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <!-- Ativando -->
+      <div id="mult-ativando">
+        <div style="font-size:13px;color:var(--text2);margin-bottom:16px" id="mult-desc-on">Registrar como Multiplicador.</div>
+        <div class="fg"><label class="fl">Data de início <span style="color:#c0392b">*</span></label>
+          <input class="fi" type="date" id="mult-data-ini"></div>
+        <div class="fg"><label class="fl">Nível inicial</label>
+          <select class="fs" id="mult-nivel-ini"><option value="1">Nível 1</option><option value="2">Nível 2</option><option value="3">Nível 3</option></select></div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Observações</label>
+          <input class="fi" type="text" id="mult-obs-ini" placeholder="Ex: Certificado SENAI, área de atuação..."></div>
+      </div>
+      <!-- Ativo: ajuste de pontuação/nível -->
+      <div id="mult-ativo" style="display:none">
+        <div style="display:flex;gap:10px;margin-bottom:18px">
+          <div class="stat" style="flex:1"><div class="stat-v" style="color:#1a5276" id="mult-pts-atual">—</div><div class="stat-l">Pontuação atual</div></div>
+          <div class="stat" style="flex:1"><div class="stat-v" id="mult-nivel-atual">—</div><div class="stat-l">Nível atual</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="fg"><label class="fl">Ajuste de pontos</label>
+            <input class="fi" type="number" id="mult-pts-ajuste" placeholder="Ex: +10 ou -5" step="1">
+            <div style="font-size:11px;color:var(--text3)">Use negativo para remover.</div></div>
+          <div class="fg"><label class="fl">Novo nível</label>
+            <select class="fs" id="mult-nivel-novo"><option value="">Manter atual</option><option value="1">Nível 1</option><option value="2">Nível 2</option><option value="3">Nível 3</option></select></div>
+        </div>
+        <div class="fg"><label class="fl">Data do registro <span style="color:#c0392b">*</span></label>
+          <input class="fi" type="date" id="mult-data-ajuste"></div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Observações</label>
+          <input class="fi" type="text" id="mult-obs-ajuste" placeholder="Motivo do ajuste..."></div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn btn-danger btn-sm" id="mult-btn-desativar" style="display:none;margin-right:auto" onclick="desativarMult()"><i class="ti ti-star-off"></i> Remover</button>
+      <button class="btn" onclick="closeModal('modal-mult')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarMult()"><i class="ti ti-device-floppy"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL DEVOLUÇÃO -->
+<div class="overlay" id="modal-devolucao">
+  <div class="modal" style="width:440px">
+    <div class="modal-h"><span class="modal-title">Registrar Devolução</span><button class="btn-icon" onclick="closeModal('modal-devolucao')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div id="dev-saldo-info" style="background:var(--s2);border-radius:var(--r);padding:10px 12px;font-size:12px;margin-bottom:14px;color:var(--text2)"></div>
+      <div class="fg"><label class="fl">Valor desta devolução (R$) <span style="color:#c0392b">*</span></label>
+        <input class="fi" type="number" id="dev-valor" placeholder="0,00" min="0" step="0.01" oninput="onDevValorChange()"></div>
+      <div id="dev-aviso" style="display:none;font-size:11px;color:#8b1c1c;margin-top:-8px;margin-bottom:12px"></div>
+      <div class="fg"><label class="fl">Data <span style="color:#c0392b">*</span></label>
+        <input class="fi" type="date" id="dev-data"></div>
+      <div class="fg" style="margin-bottom:0"><label class="fl">Recebido por</label>
+        <input class="fi" type="text" id="dev-resp" placeholder="Quem registrou"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-devolucao')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarDevolucao()"><i class="ti ti-device-floppy"></i> Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PROMOÇÃO / MOVIMENTAÇÃO -->
+<div class="overlay" id="modal-promocao">
+  <div class="modal">
+    <div class="modal-h"><span class="modal-title">Promoção / Movimentação</span><button class="btn-icon" onclick="closeModal('modal-promocao')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Atualiza o cargo/setor do funcionário e registra um evento no histórico.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div class="fg"><label class="fl">Cargo atual</label><input class="fi" id="promo-cargo-atual" disabled style="background:var(--s2)"></div>
+        <div class="fg"><label class="fl">Setor atual</label><input class="fi" id="promo-setor-atual" disabled style="background:var(--s2)"></div>
+        <div class="fg"><label class="fl">Novo cargo</label><input class="fi upper" id="promo-cargo-novo" placeholder="Manter se vazio"></div>
+        <div class="fg"><label class="fl">Novo setor</label><input class="fi upper" id="promo-setor-novo" placeholder="Manter se vazio"></div>
+      </div>
+      <div class="fg"><label class="fl">Tipo de movimentação</label>
+        <select class="fs" id="promo-tipo"><option value="Promoção">Promoção</option><option value="Mudança de setor">Mudança de setor</option><option value="Ajuste salarial">Ajuste salarial</option><option value="Movimentação interna">Movimentação interna</option></select></div>
+      <div class="fg"><label class="fl">Data <span style="color:#c0392b">*</span></label><input class="fi" type="date" id="promo-data"></div>
+      <div class="fg"><label class="fl">Responsável</label><input class="fi" id="promo-resp" placeholder="Seu nome"></div>
+      <div class="fg" style="margin-bottom:0"><label class="fl">Observações</label><textarea class="ft" id="promo-obs" rows="2" placeholder="Detalhes da movimentação..."></textarea></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-promocao')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarPromocao()"><i class="ti ti-device-floppy"></i> Registrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL BADGE (Brigadista / CIPA) -->
+<div class="overlay" id="modal-badge">
+  <div class="modal" style="width:400px">
+    <div class="modal-h"><span class="modal-title" id="badge-modal-title">—</span><button class="btn-icon" onclick="closeModal('modal-badge')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div id="badge-desc" style="font-size:13px;color:var(--text2);margin-bottom:16px"></div>
+      <div class="fg" style="margin-bottom:0"><label class="fl" id="badge-data-label">Data <span style="color:#c0392b">*</span></label>
+        <input class="fi" type="date" id="badge-data"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-badge')">Cancelar</button>
+      <button class="btn btn-primary" id="badge-btn-ok" onclick="confirmarBadge()"><i class="ti ti-check"></i> Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL EVENTO EM GRUPO -->
 <div class="overlay" id="modal-grupo">
@@ -361,6 +555,9 @@ var TIPOS_DEFAULT = [
   {id:'trein', nome:'Treinamento',                          cor:'#9b72cf', icon:'ti-certificate'},
   {id:'feed',  nome:'Feedback',                             cor:'#4a7fc1', icon:'ti-message'},
   {id:'adv',   nome:'Advertência',                          cor:'#e05252', icon:'ti-file-alert'},
+  {id:'suspensao', nome:'Suspensão',                         cor:'#b03030', icon:'ti-ban'},
+  {id:'orientacao_corretiva', nome:'Orientação Corretiva',   cor:'#d4762a', icon:'ti-message-report'},
+  {id:'adiant_afastamento', nome:'Adiantamento por Afastamento', cor:'#2196a0', icon:'ti-cash'},
   {id:'elogio',nome:'Elogio / Reconhecimento',              cor:'#8ab800', icon:'ti-award'},
   {id:'aval',  nome:'Avaliação de Desempenho',              cor:'#4caf80', icon:'ti-chart-bar'},
   {id:'exp',   nome:'Avaliação Período de Experiência',     cor:'#b6904a', icon:'ti-clock'},
@@ -394,8 +591,24 @@ function iniciais(nome) {
   var p = String(nome||'').split(' ');
   return ((p[0]||'')[0]||'')+(p.length>1?(p[p.length-1][0]||''):'');
 }
+// Tipos de eventos gerados pelo sistema (não aparecem nos selects, mas precisam de cor/ícone)
+var TIPOS_ESPECIAIS = {
+  multiplicador:        {nome:'Multiplicador',          cor:'#1a5276', icon:'ti-star-filled'},
+  multiplicador_ajuste: {nome:'Multiplicador',          cor:'#1a5276', icon:'ti-star'},
+  multiplicador_fim:    {nome:'Multiplicador',          cor:'#6b6558', icon:'ti-star-off'},
+  brigadista_ini:       {nome:'Brigadista',             cor:'#c0392b', icon:'ti-flame'},
+  brigadista_fim:       {nome:'Brigadista',             cor:'#6b6558', icon:'ti-flame'},
+  cipa_ini:             {nome:'CIPA',                   cor:'#2e7d32', icon:'ti-shield-check'},
+  cipa_fim:             {nome:'CIPA',                   cor:'#6b6558', icon:'ti-shield-check'},
+  promocao:             {nome:'Promoção / Movimentação', cor:'#7b5ea7', icon:'ti-arrow-up-circle'},
+};
 function getTipo(id) {
-  return _tipos.find(function(t){return t.id===id;}) || {nome:id, cor:'#a09890', icon:'ti-dots'};
+  return _tipos.find(function(t){return t.id===id;})
+    || TIPOS_ESPECIAIS[id]
+    || {nome:id, cor:'#a09890', icon:'ti-dots'};
+}
+function fmtVal(v) {
+  return 'R$ ' + (Number(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
 function iniciarListeners() {
@@ -417,6 +630,9 @@ function iniciarListeners() {
         tel: d2.telefone||'', email: d2.email||'',
         status: p.status==='concluido' ? 'ativo' : 'em_admissao',
         desligado: !!p.desligado,
+        multiplicador: p.multiplicador||null,
+        brigadista: p.brigadista||null,
+        cipa: p.cipa||null,
       };
     });
     // Funcionários manuais
@@ -485,7 +701,7 @@ function showTab(t) {
   if (t==='cfg') {
     tb.innerHTML = 'Configurações do Dossiê';
     ta.innerHTML = '<button class="btn btn-sm" onclick="showTab(\'lista\')"><i class="ti ti-arrow-left"></i> Voltar</button>';
-    renderCfg();
+    showCfgTab('tipos');
   }
 }
 
@@ -558,11 +774,15 @@ function renderDossie(f) {
     +'<div style="flex:1">'
     +'<div class="dossie-nome">'+f.nome+'</div>'
     +'<div class="dossie-meta">'+(f.cargo||'')+(f.empresa?' · '+f.empresa:'')+(f.departamento?' · '+f.departamento:'')+(f.admissao?' · Admissão: '+fmtDate(f.admissao):'')+'</div>'
-    +'<div style="display:flex;gap:6px;margin-top:8px">'
+    +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
     +(isDeslig?'<span class="badge b-red">Desligado</span>':'<span class="badge b-green">Ativo</span>')
     +(f.matricula?'<span class="badge b-gray">Mat. '+f.matricula+'</span>':'')
     +(f.cpf?'<span class="badge b-gray">CPF: '+f.cpf+'</span>':'')
-    +'</div></div>';
+    +'</div>'
+    +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
+    + badgeBrig(f) + badgeCipa(f) + badgeMult(f)
+    +'</div></div>'
+    +'<div class="dossie-actions"><button class="btn btn-sm" onclick="openPromocao()"><i class="ti ti-arrow-up-circle"></i> Promoção / Movimentação</button></div>';
 
   // Stats
   var evs = _eventos.filter(function(ev){ return ev.funcId===f.id; });
@@ -592,6 +812,52 @@ function renderDossie(f) {
   }
   document.getElementById('timeline').innerHTML = filtrados.map(function(ev) {
     var tp = getTipo(ev.tipoId);
+    var extraHtml = '';
+
+    // Treinamento — carga horária e remuneração
+    if (ev.tipoId === 'trein' && (ev.treinCarga || ev.treinRemunerado)) {
+      var tagsT = '';
+      if (ev.treinCarga) tagsT += '<span class="badge b-gray"><i class="ti ti-clock" style="font-size:11px"></i> '+ev.treinCarga+'h</span> ';
+      if (ev.treinRemunerado) {
+        var rotRem = {horas_treinamento:'Horas Treinamento', gratificacao_cargo:'Gratificação de Cargo', abono:'ABONO'}[ev.treinTipoRem] || 'Remunerado';
+        tagsT += '<span class="badge b-amber"><i class="ti ti-cash" style="font-size:11px"></i> Remunerado · '+rotRem+'</span>';
+      }
+      extraHtml += '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'+tagsT+'</div>';
+    }
+
+    // Adiantamento por Afastamento — card com saldo e devoluções
+    if (ev.tipoId === 'adiant_afastamento' && ev.adiantValor) {
+      var devTotal = ev.adiantDevTotal || 0;
+      var saldo    = Math.max(0, ev.adiantValor - devTotal);
+      var quitado  = ev.adiantStatus === 'quitado' || saldo <= 0;
+      var pct      = Math.min(100, Math.round((devTotal / ev.adiantValor) * 100));
+      extraHtml += '<div class="ev-extra" style="background:'+(quitado?'#e8f8ef':'#e8f0fa')+';border:1px solid '+(quitado?'#a8d8b8':'#b8d0ea')+'">'
+        +'<div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">'
+        +'<span><strong>Adiantado:</strong> '+fmtVal(ev.adiantValor)+'</span>'
+        +'<span><strong>Devolvido:</strong> '+fmtVal(devTotal)+'</span>'
+        +'<span style="font-weight:800;color:'+(quitado?'#1a5c35':'#1a5276')+'">'+(quitado?'Quitado':'Saldo: '+fmtVal(saldo))+'</span>'
+        +'</div>'
+        +'<div class="barra"><div style="width:'+pct+'%;background:'+(quitado?'#4caf80':'#4a7fc1')+'"></div></div>'
+        +(quitado?'':'<button class="btn btn-sm" style="margin-top:10px" onclick="openDevolucao(\''+ev.id+'\')"><i class="ti ti-arrow-back-up"></i> Registrar devolução</button>')
+        +'</div>';
+    }
+
+    // Medida disciplinar — controle de devolução ao RH
+    if (ev.tipoId==='adv' || ev.tipoId==='suspensao' || ev.tipoId==='orientacao_corretiva') {
+      if (ev.discRecebido) {
+        extraHtml += '<div class="ev-extra" style="background:#e8f8ef;border:1px solid #a8d8b8;color:#1a5c35">'
+          +'<i class="ti ti-checkbox" style="margin-right:4px"></i><strong>Documento recebido pelo RH</strong>'
+          +' · '+fmtDate(ev.discRecebidoData)+(ev.discRecebidoHora?' às '+ev.discRecebidoHora:'')
+          +(ev.discRecebidoResp?' · '+ev.discRecebidoResp:'')
+          +'</div>';
+      } else {
+        extraHtml += '<div class="ev-extra" style="background:#fef8ec;border:1px solid #f0d080;color:#7d4e00;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">'
+          +'<span><i class="ti ti-clock-exclamation" style="margin-right:4px"></i>Aguardando recebimento do documento assinado pelo RH</span>'
+          +'<button class="btn btn-sm" onclick="marcarDiscRecebido(\''+ev.id+'\')"><i class="ti ti-check"></i> Marcar recebido</button>'
+          +'</div>';
+      }
+    }
+
     return '<div class="ev-item">'
       +'<div class="ev-dot" style="background:'+tp.cor+';border-color:var(--cream)"></div>'
       +'<div class="ev-card">'
@@ -603,6 +869,7 @@ function renderDossie(f) {
       +'</div></div>'
       +'<div class="ev-titulo">'+ev.titulo+'</div>'
       +(ev.obs?'<div class="ev-obs">'+ev.obs+'</div>':'')
+      +extraHtml
       +(ev.resp?'<div class="ev-resp"><i class="ti ti-user" style="font-size:11px;vertical-align:-2px"></i> '+ev.resp+'</div>':'')
       +'</div></div>';
   }).join('');
@@ -621,7 +888,20 @@ function openNovoEvento() {
   document.getElementById('ev-resp').value = '';
   document.getElementById('ev-tipo').value = '';
   document.getElementById('ev-data').value = new Date().toISOString().split('T')[0];
+  // Resetar extras
+  document.getElementById('ev-trein-carga').value = '';
+  document.getElementById('ev-trein-rem').checked = false;
+  document.getElementById('extra-trein-rem').style.display = 'none';
+  document.getElementById('ev-trein-tipo-rem').value = 'horas_treinamento';
+  document.getElementById('ev-adiant-valor').value = '';
+  onTipoChange();
   openModal('modal-ev');
+}
+
+function onTipoChange() {
+  var tipoId = document.getElementById('ev-tipo').value;
+  document.getElementById('extra-trein').style.display  = tipoId==='trein' ? 'block' : 'none';
+  document.getElementById('extra-adiant').style.display = tipoId==='adiant_afastamento' ? 'block' : 'none';
 }
 
 function salvarEvento() {
@@ -629,9 +909,8 @@ function salvarEvento() {
   var titulo = (document.getElementById('ev-titulo').value||'').trim();
   var data   = document.getElementById('ev-data').value;
   if (!tipoId||!titulo||!data) { toast('Preencha tipo, título e data.','err'); return; }
-  var docRef = db.collection('dossie_eventos').doc();
-  docRef.set({
-    id: docRef.id,
+
+  var payload = {
     funcId: _funcAtivo.id,
     tipoId: tipoId,
     titulo: titulo,
@@ -639,7 +918,34 @@ function salvarEvento() {
     obs: (document.getElementById('ev-obs').value||'').trim(),
     resp: (document.getElementById('ev-resp').value||'').trim(),
     criadoEm: new Date().toISOString(),
-  }).then(function(){
+  };
+
+  // Extra: Treinamento
+  if (tipoId === 'trein') {
+    var carga = parseFloat(document.getElementById('ev-trein-carga').value||'0');
+    if (carga > 0) payload.treinCarga = carga;
+    var rem = document.getElementById('ev-trein-rem').checked;
+    payload.treinRemunerado = rem;
+    if (rem) payload.treinTipoRem = document.getElementById('ev-trein-tipo-rem').value;
+  }
+
+  // Extra: Adiantamento por Afastamento
+  if (tipoId === 'adiant_afastamento') {
+    var val = parseFloat(document.getElementById('ev-adiant-valor').value||'0');
+    if (!val || val <= 0) { toast('Informe o valor adiantado.','err'); return; }
+    payload.adiantValor    = val;
+    payload.adiantDevTotal = 0;
+    payload.adiantStatus   = 'aberto'; // aberto | quitado
+  }
+
+  // Medida disciplinar — inicia controle de devolução ao RH
+  if (tipoId==='adv' || tipoId==='suspensao' || tipoId==='orientacao_corretiva') {
+    payload.discRecebido = false;
+  }
+
+  var docRef = db.collection('dossie_eventos').doc();
+  payload.id = docRef.id;
+  docRef.set(payload).then(function(){
     toast('Evento registrado!','ok');
     closeModal('modal-ev');
   }).catch(function(e){ toast('Erro: '+e.message,'err'); });
@@ -818,6 +1124,101 @@ function renderCfg() {
   }).join('') || '<tr><td colspan="3" style="color:var(--text3);font-size:12px;padding:16px">Nenhum tipo.</td></tr>';
 }
 
+function funcNome(id){ var f=_funcs.find(function(x){return x.id===id;}); return f?f.nome:'(funcionário removido)'; }
+
+function showCfgTab(tab){
+  ['tipos','trein','adiant','disc'].forEach(function(t){
+    document.getElementById('cfgview-'+t).style.display = (t===tab)?'block':'none';
+    document.getElementById('cfgtab-'+t).classList.toggle('active', t===tab);
+  });
+  if (tab==='tipos')  renderCfg();
+  if (tab==='trein')  { var c=document.getElementById('rel-trein-comp'); if(!c.value) c.value=new Date().toISOString().slice(0,7); renderRelTreinamento(); }
+  if (tab==='adiant') renderRelAdiantamento();
+  if (tab==='disc')   renderRelDisciplinar();
+}
+
+function renderRelTreinamento(){
+  var comp = document.getElementById('rel-trein-comp').value; // yyyy-mm
+  var soRem = document.getElementById('rel-trein-rem').checked;
+  var evs = _eventos.filter(function(ev){
+    if (ev.tipoId!=='trein') return false;
+    if (comp && String(ev.data||'').slice(0,7)!==comp) return false;
+    if (soRem && !ev.treinRemunerado) return false;
+    return true;
+  });
+  evs.sort(function(a,b){ return (a.data||'').localeCompare(b.data||''); });
+  var totalH = evs.reduce(function(s,ev){ return s+(ev.treinCarga||0); }, 0);
+  var corpo = document.getElementById('rel-trein-corpo');
+  if (!evs.length) { corpo.innerHTML = '<div class="empty" style="padding:24px 0"><i class="ti ti-certificate"></i><p>Nenhum treinamento na competência.</p></div>'; return; }
+  var rotRem = {horas_treinamento:'Horas Treinamento', gratificacao_cargo:'Gratificação de Cargo', abono:'ABONO'};
+  corpo.innerHTML = '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+evs.length+' registro(s) · '+totalH+'h no total</div>'
+    +'<table class="cfg-table"><thead><tr><th>Data</th><th>Funcionário</th><th>Treinamento</th><th>Carga</th><th>Remuneração</th></tr></thead><tbody>'
+    + evs.map(function(ev){
+        return '<tr><td style="white-space:nowrap">'+fmtDate(ev.data)+'</td>'
+          +'<td style="font-weight:600">'+funcNome(ev.funcId)+'</td>'
+          +'<td>'+ev.titulo+'</td>'
+          +'<td>'+(ev.treinCarga?ev.treinCarga+'h':'—')+'</td>'
+          +'<td>'+(ev.treinRemunerado?'<span class="badge b-amber">'+(rotRem[ev.treinTipoRem]||'Sim')+'</span>':'<span style="color:var(--text3)">—</span>')+'</td></tr>';
+      }).join('')
+    +'</tbody></table>';
+}
+
+function renderRelAdiantamento(){
+  var sit = document.getElementById('rel-adiant-sit').value;
+  var evs = _eventos.filter(function(ev){
+    if (ev.tipoId!=='adiant_afastamento' || !ev.adiantValor) return false;
+    var st = (ev.adiantStatus==='quitado' || (ev.adiantValor-(ev.adiantDevTotal||0))<=0.001) ? 'quitado' : 'aberto';
+    if (sit && st!==sit) return false;
+    return true;
+  });
+  evs.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+  var tAd=0,tDe=0,tSa=0;
+  evs.forEach(function(ev){ tAd+=ev.adiantValor; tDe+=(ev.adiantDevTotal||0); tSa+=Math.max(0,ev.adiantValor-(ev.adiantDevTotal||0)); });
+  var corpo = document.getElementById('rel-adiant-corpo');
+  if (!evs.length) { corpo.innerHTML='<div class="empty" style="padding:24px 0"><i class="ti ti-cash"></i><p>Nenhum adiantamento.</p></div>'; return; }
+  corpo.innerHTML = '<div class="stats-row" style="margin-bottom:16px">'
+    +'<div class="stat"><div class="stat-v">'+fmtVal(tAd)+'</div><div class="stat-l">Adiantado</div></div>'
+    +'<div class="stat"><div class="stat-v" style="color:#1a5c35">'+fmtVal(tDe)+'</div><div class="stat-l">Devolvido</div></div>'
+    +'<div class="stat"><div class="stat-v" style="color:#1a5276">'+fmtVal(tSa)+'</div><div class="stat-l">Saldo em aberto</div></div></div>'
+    +'<table class="cfg-table"><thead><tr><th>Data</th><th>Funcionário</th><th>Adiantado</th><th>Devolvido</th><th>Saldo</th><th>Situação</th></tr></thead><tbody>'
+    + evs.map(function(ev){
+        var saldo=Math.max(0,ev.adiantValor-(ev.adiantDevTotal||0));
+        var quitado=ev.adiantStatus==='quitado'||saldo<=0.001;
+        return '<tr><td style="white-space:nowrap">'+fmtDate(ev.data)+'</td>'
+          +'<td style="font-weight:600">'+funcNome(ev.funcId)+'</td>'
+          +'<td>'+fmtVal(ev.adiantValor)+'</td><td>'+fmtVal(ev.adiantDevTotal||0)+'</td><td>'+fmtVal(saldo)+'</td>'
+          +'<td>'+(quitado?'<span class="badge b-green">Quitado</span>':'<span class="badge b-amber">Em aberto</span>')+'</td></tr>';
+      }).join('')
+    +'</tbody></table>';
+}
+
+function renderRelDisciplinar(){
+  var sit = document.getElementById('rel-disc-sit').value;
+  var evs = _eventos.filter(function(ev){
+    if (ev.tipoId!=='adv' && ev.tipoId!=='suspensao' && ev.tipoId!=='orientacao_corretiva') return false;
+    if (sit==='pendente' && ev.discRecebido) return false;
+    if (sit==='recebido' && !ev.discRecebido) return false;
+    return true;
+  });
+  evs.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+  var corpo = document.getElementById('rel-disc-corpo');
+  if (!evs.length) { corpo.innerHTML='<div class="empty" style="padding:24px 0"><i class="ti ti-file-alert"></i><p>Nenhuma medida disciplinar.</p></div>'; return; }
+  var pend = evs.filter(function(e){return !e.discRecebido;}).length;
+  corpo.innerHTML = '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+evs.length+' registro(s) · '+pend+' aguardando recebimento</div>'
+    +'<table class="cfg-table"><thead><tr><th>Data</th><th>Funcionário</th><th>Tipo</th><th>Assunto</th><th>Recebimento</th></tr></thead><tbody>'
+    + evs.map(function(ev){
+        var tp=getTipo(ev.tipoId);
+        var rec = ev.discRecebido
+          ? '<span class="badge b-green"><i class="ti ti-check" style="font-size:11px"></i> '+fmtDate(ev.discRecebidoData)+(ev.discRecebidoResp?' · '+ev.discRecebidoResp:'')+'</span>'
+          : '<span class="badge b-amber">Aguardando</span>';
+        return '<tr><td style="white-space:nowrap">'+fmtDate(ev.data)+'</td>'
+          +'<td style="font-weight:600">'+funcNome(ev.funcId)+'</td>'
+          +'<td style="color:'+tp.cor+';font-weight:600">'+tp.nome+'</td>'
+          +'<td>'+ev.titulo+'</td><td>'+rec+'</td></tr>';
+      }).join('')
+    +'</tbody></table>';
+}
+
 
 // ════ EVENTO EM GRUPO ════
 var _egSelecionados = {};
@@ -921,6 +1322,279 @@ function salvarEventoGrupo(){
     closeModal('modal-grupo');
     _egSelecionados={};
   }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ════ HELPERS DE REFERÊNCIA ════
+function funcRef(f) {
+  return f.fonte==='manual'
+    ? db.collection('dossie_funcs').doc(f.id)
+    : db.collection('adm_processos').doc(f._admId);
+}
+function registrarEventoEspecial(batch, funcId, tipoId, titulo, data, obs) {
+  var evRef = db.collection('dossie_eventos').doc();
+  batch.set(evRef, {id:evRef.id, funcId:funcId, tipoId:tipoId, titulo:titulo, data:data, obs:obs||'', resp:'', criadoEm:new Date().toISOString(), especial:true});
+}
+
+// ════ BADGES DO HEADER ════
+function badgeBrig(f){
+  var b=f.brigadista||{};
+  return b.ativo
+    ? '<span class="hbadge on-brig" onclick="toggleBrigadista()" title="Brigadista desde '+fmtDate(b.inicio)+' — clique para encerrar"><i class="ti ti-flame"></i> Brigadista</span>'
+    : '<span class="hbadge" onclick="toggleBrigadista()" title="Marcar como brigadista"><i class="ti ti-flame"></i> Brigadista</span>';
+}
+function badgeCipa(f){
+  var c=f.cipa||{};
+  return c.ativo
+    ? '<span class="hbadge on-cipa" onclick="toggleCipa()" title="CIPA desde '+fmtDate(c.inicio)+' — clique para encerrar"><i class="ti ti-shield-check"></i> CIPA</span>'
+    : '<span class="hbadge" onclick="toggleCipa()" title="Marcar como CIPA"><i class="ti ti-shield-check"></i> CIPA</span>';
+}
+function badgeMult(f){
+  var m=f.multiplicador||{};
+  return m.ativo
+    ? '<span class="hbadge on-mult" onclick="openMult()" title="Clique para ajustar pontuação/nível"><i class="ti ti-star-filled"></i> Multiplicador · N'+(m.nivel||1)+' · '+(m.pontos||0)+' pts</span>'
+    : '<span class="hbadge" onclick="openMult()" title="Registrar como multiplicador"><i class="ti ti-star"></i> Multiplicador</span>';
+}
+
+// ════ BADGE BRIGADISTA / CIPA ════
+var _badgeKind = null, _badgeAction = null;
+function toggleBrigadista(){ abrirBadge('brig'); }
+function toggleCipa(){ abrirBadge('cipa'); }
+function abrirBadge(kind){
+  if (!_funcAtivo) return;
+  _badgeKind = kind;
+  var atual = (kind==='brig'?_funcAtivo.brigadista:_funcAtivo.cipa) || {};
+  _badgeAction = atual.ativo ? 'off' : 'on';
+  var nome = kind==='brig'?'Brigadista':'CIPA';
+  document.getElementById('badge-modal-title').textContent = nome;
+  if (_badgeAction==='on') {
+    document.getElementById('badge-desc').textContent = 'Marcar '+_funcAtivo.nome+' como '+nome+'. Informe a data de início.';
+    document.getElementById('badge-data-label').innerHTML = 'Data de início <span style="color:#c0392b">*</span>';
+    document.getElementById('badge-btn-ok').innerHTML = '<i class="ti ti-check"></i> Confirmar';
+  } else {
+    document.getElementById('badge-desc').textContent = 'Encerrar a participação de '+_funcAtivo.nome+' na '+(kind==='brig'?'brigada':'CIPA')+'. Informe a data de saída.';
+    document.getElementById('badge-data-label').innerHTML = 'Data de saída <span style="color:#c0392b">*</span>';
+    document.getElementById('badge-btn-ok').innerHTML = '<i class="ti ti-x"></i> Encerrar';
+  }
+  document.getElementById('badge-data').value = new Date().toISOString().split('T')[0];
+  openModal('modal-badge');
+}
+function confirmarBadge(){
+  if (!_funcAtivo || !_badgeKind) return;
+  var data = document.getElementById('badge-data').value;
+  if (!data) { toast('Informe a data.','err'); return; }
+  var kind = _badgeKind, nome = kind==='brig'?'Brigadista':'CIPA';
+  var campo = kind==='brig'?'brigadista':'cipa';
+  var tipoIni = kind==='brig'?'brigadista_ini':'cipa_ini';
+  var tipoFim = kind==='brig'?'brigadista_fim':'cipa_fim';
+  var batch = db.batch();
+  var ref = funcRef(_funcAtivo);
+  var now = new Date().toISOString();
+  if (_badgeAction==='on') {
+    var dados = {ativo:true, inicio:data, atualizadoEm:now};
+    var upd = {}; upd[campo] = dados;
+    batch.update(ref, upd);
+    registrarEventoEspecial(batch, _funcAtivo.id, tipoIni, 'Passou a integrar a '+(kind==='brig'?'Brigada de Incêndio':'CIPA'), data);
+    batch.commit().then(function(){
+      _funcAtivo[campo]=dados; toast(nome+' registrado!','ok'); closeModal('modal-badge'); renderDossie(_funcAtivo);
+    }).catch(function(e){ toast('Erro: '+e.message,'err'); });
+  } else {
+    var atual = _funcAtivo[campo]||{};
+    var dadosF = Object.assign({}, atual, {ativo:false, fim:data, atualizadoEm:now});
+    var updF = {}; updF[campo] = dadosF;
+    batch.update(ref, updF);
+    registrarEventoEspecial(batch, _funcAtivo.id, tipoFim, 'Deixou de integrar a '+(kind==='brig'?'Brigada de Incêndio':'CIPA'), data);
+    batch.commit().then(function(){
+      _funcAtivo[campo]=dadosF; toast(nome+' encerrado.','warn'); closeModal('modal-badge'); renderDossie(_funcAtivo);
+    }).catch(function(e){ toast('Erro: '+e.message,'err'); });
+  }
+}
+
+// ════ MULTIPLICADOR ════
+function openMult(){
+  if (!_funcAtivo) return;
+  var m = _funcAtivo.multiplicador||{};
+  var isAtivo = !!m.ativo;
+  document.getElementById('mult-modal-title').textContent = 'Multiplicador';
+  document.getElementById('mult-ativando').style.display = isAtivo?'none':'block';
+  document.getElementById('mult-ativo').style.display    = isAtivo?'block':'none';
+  document.getElementById('mult-btn-desativar').style.display = isAtivo?'inline-flex':'none';
+  if (!isAtivo) {
+    document.getElementById('mult-desc-on').textContent = 'Registrar '+_funcAtivo.nome+' como Multiplicador.';
+    document.getElementById('mult-data-ini').value = new Date().toISOString().split('T')[0];
+    document.getElementById('mult-nivel-ini').value = '1';
+    document.getElementById('mult-obs-ini').value = '';
+  } else {
+    document.getElementById('mult-pts-atual').textContent = m.pontos||0;
+    document.getElementById('mult-nivel-atual').textContent = 'Nível '+(m.nivel||1);
+    document.getElementById('mult-pts-ajuste').value = '';
+    document.getElementById('mult-nivel-novo').value = '';
+    document.getElementById('mult-data-ajuste').value = new Date().toISOString().split('T')[0];
+    document.getElementById('mult-obs-ajuste').value = '';
+  }
+  openModal('modal-mult');
+}
+function salvarMult(){
+  if (!_funcAtivo) return;
+  var m = _funcAtivo.multiplicador||{};
+  var isAtivo = !!m.ativo;
+  var now = new Date().toISOString();
+  var ref = funcRef(_funcAtivo);
+  if (!isAtivo) {
+    var ini = document.getElementById('mult-data-ini').value;
+    var nivel = parseInt(document.getElementById('mult-nivel-ini').value)||1;
+    var obs = (document.getElementById('mult-obs-ini').value||'').trim();
+    if (!ini) { toast('Informe a data de início.','err'); return; }
+    var dados = {ativo:true, inicio:ini, nivel:nivel, pontos:0, obs:obs, atualizadoEm:now};
+    var batch = db.batch();
+    batch.update(ref, {multiplicador:dados});
+    registrarEventoEspecial(batch, _funcAtivo.id, 'multiplicador', 'Passou a ser Multiplicador — Nível '+nivel, ini, obs);
+    batch.commit().then(function(){
+      _funcAtivo.multiplicador=dados; toast('Multiplicador ativado!','ok'); closeModal('modal-mult'); renderDossie(_funcAtivo);
+    }).catch(function(e){ toast('Erro: '+e.message,'err'); });
+  } else {
+    var ajuste = parseInt(document.getElementById('mult-pts-ajuste').value||'0');
+    var novoNivel = document.getElementById('mult-nivel-novo').value;
+    var dataAj = document.getElementById('mult-data-ajuste').value;
+    var obsAj = (document.getElementById('mult-obs-ajuste').value||'').trim();
+    if (!ajuste && !novoNivel) { toast('Informe o ajuste de pontos ou o novo nível.','err'); return; }
+    if (!dataAj) { toast('Informe a data.','err'); return; }
+    var novoPts = Math.max(0, (m.pontos||0)+ajuste);
+    var nivelFinal = novoNivel ? parseInt(novoNivel) : (m.nivel||1);
+    var dados2 = Object.assign({}, m, {pontos:novoPts, nivel:nivelFinal, atualizadoEm:now});
+    var titulo = ajuste!==0
+      ? ('Pontuação ajustada: '+(ajuste>0?'+':'')+ajuste+' pts → '+novoPts+' pts'+(novoNivel?' · Nível '+nivelFinal:''))
+      : ('Nível atualizado para Nível '+nivelFinal);
+    var batch2 = db.batch();
+    batch2.update(ref, {multiplicador:dados2});
+    registrarEventoEspecial(batch2, _funcAtivo.id, 'multiplicador_ajuste', titulo, dataAj, obsAj);
+    batch2.commit().then(function(){
+      _funcAtivo.multiplicador=dados2; toast('Atualizado!','ok'); closeModal('modal-mult'); renderDossie(_funcAtivo);
+    }).catch(function(e){ toast('Erro: '+e.message,'err'); });
+  }
+}
+function desativarMult(){
+  if (!_funcAtivo) return;
+  if (!confirm('Remover '+_funcAtivo.nome+' como Multiplicador?')) return;
+  var m = _funcAtivo.multiplicador||{};
+  var now = new Date().toISOString();
+  var dados = Object.assign({}, m, {ativo:false, fim:now.split('T')[0], atualizadoEm:now});
+  var batch = db.batch();
+  batch.update(funcRef(_funcAtivo), {multiplicador:dados});
+  registrarEventoEspecial(batch, _funcAtivo.id, 'multiplicador_fim', 'Saiu do programa Multiplicador (pontuação final: '+(m.pontos||0)+' pts)', now.split('T')[0]);
+  batch.commit().then(function(){
+    _funcAtivo.multiplicador=dados; toast('Multiplicador removido.','warn'); closeModal('modal-mult'); renderDossie(_funcAtivo);
+  }).catch(function(e){ toast('Erro: '+e.message,'err'); });
+}
+
+// ════ DEVOLUÇÃO DE ADIANTAMENTO ════
+var _devEventoId = null;
+function openDevolucao(eventoId){
+  var ev = _eventos.find(function(e){ return e.id===eventoId; });
+  if (!ev) return;
+  _devEventoId = eventoId;
+  var saldo = Math.max(0, ev.adiantValor - (ev.adiantDevTotal||0));
+  document.getElementById('dev-saldo-info').innerHTML =
+    'Adiantado: <strong>'+fmtVal(ev.adiantValor)+'</strong> · Devolvido: <strong>'+fmtVal(ev.adiantDevTotal||0)+'</strong><br>Saldo em aberto: <strong style="color:#1a5276">'+fmtVal(saldo)+'</strong>';
+  document.getElementById('dev-valor').value = '';
+  document.getElementById('dev-aviso').style.display = 'none';
+  document.getElementById('dev-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('dev-resp').value = '';
+  openModal('modal-devolucao');
+}
+function onDevValorChange(){
+  var ev = _eventos.find(function(e){ return e.id===_devEventoId; });
+  if (!ev) return;
+  var saldo = Math.max(0, ev.adiantValor - (ev.adiantDevTotal||0));
+  var v = parseFloat(document.getElementById('dev-valor').value||'0');
+  var aviso = document.getElementById('dev-aviso');
+  if (v > saldo) { aviso.style.display='block'; aviso.textContent='Valor maior que o saldo em aberto ('+fmtVal(saldo)+').'; }
+  else aviso.style.display='none';
+}
+function salvarDevolucao(){
+  var ev = _eventos.find(function(e){ return e.id===_devEventoId; });
+  if (!ev) return;
+  var valor = parseFloat(document.getElementById('dev-valor').value||'0');
+  var data  = document.getElementById('dev-data').value;
+  var resp  = (document.getElementById('dev-resp').value||'').trim();
+  if (!valor || valor<=0) { toast('Informe o valor da devolução.','err'); return; }
+  if (!data) { toast('Informe a data.','err'); return; }
+  var saldoAtual = Math.max(0, ev.adiantValor - (ev.adiantDevTotal||0));
+  if (valor > saldoAtual + 0.001) { toast('Valor maior que o saldo em aberto.','err'); return; }
+  var novoDevTotal = (ev.adiantDevTotal||0) + valor;
+  var novoStatus = (novoDevTotal >= ev.adiantValor - 0.001) ? 'quitado' : 'aberto';
+  var now = new Date().toISOString();
+  var batch = db.batch();
+  var devRef = db.collection('dossie_adiant_dev').doc();
+  batch.set(devRef, {id:devRef.id, eventoId:ev.id, funcId:ev.funcId, valor:valor, data:data, resp:resp, criadoEm:now});
+  batch.update(db.collection('dossie_eventos').doc(ev.id), {adiantDevTotal:novoDevTotal, adiantStatus:novoStatus});
+  batch.commit().then(function(){
+    toast(novoStatus==='quitado'?'Adiantamento quitado!':'Devolução registrada!','ok');
+    closeModal('modal-devolucao');
+  }).catch(function(e){ toast('Erro: '+e.message,'err'); });
+}
+
+// ════ PROMOÇÃO / MOVIMENTAÇÃO ════
+function openPromocao(){
+  if (!_funcAtivo) return;
+  document.getElementById('promo-cargo-atual').value = _funcAtivo.cargo||'';
+  document.getElementById('promo-setor-atual').value = _funcAtivo.departamento||'';
+  document.getElementById('promo-cargo-novo').value = '';
+  document.getElementById('promo-setor-novo').value = '';
+  document.getElementById('promo-tipo').value = 'Promoção';
+  document.getElementById('promo-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('promo-resp').value = '';
+  document.getElementById('promo-obs').value = '';
+  openModal('modal-promocao');
+}
+function salvarPromocao(){
+  if (!_funcAtivo) return;
+  var cargoNovo = (document.getElementById('promo-cargo-novo').value||'').trim().toUpperCase();
+  var setorNovo = (document.getElementById('promo-setor-novo').value||'').trim().toUpperCase();
+  var tipo = document.getElementById('promo-tipo').value;
+  var data = document.getElementById('promo-data').value;
+  var resp = (document.getElementById('promo-resp').value||'').trim();
+  var obs  = (document.getElementById('promo-obs').value||'').trim();
+  if (!data) { toast('Informe a data.','err'); return; }
+  if (!cargoNovo && !setorNovo && tipo!=='Ajuste salarial') { toast('Informe o novo cargo ou setor.','err'); return; }
+
+  var partes = [];
+  if (cargoNovo && cargoNovo!==(_funcAtivo.cargo||'').toUpperCase()) partes.push('Cargo: '+(_funcAtivo.cargo||'—')+' → '+cargoNovo);
+  if (setorNovo && setorNovo!==(_funcAtivo.departamento||'').toUpperCase()) partes.push('Setor: '+(_funcAtivo.departamento||'—')+' → '+setorNovo);
+  var titulo = tipo + (partes.length?' · '+partes.join(' · '):'');
+
+  var now = new Date().toISOString();
+  var batch = db.batch();
+  var upd = {atualizadoEm:now};
+  if (cargoNovo) upd.cargo = cargoNovo;
+  if (setorNovo) upd.departamento = setorNovo;
+
+  // Só atualiza dados cadastrais de funcionários manuais (os da Admissão vivem no módulo Admissão)
+  if (_funcAtivo.fonte==='manual') {
+    batch.set(db.collection('dossie_funcs').doc(_funcAtivo.id), upd, {merge:true});
+  }
+  var evRef = db.collection('dossie_eventos').doc();
+  batch.set(evRef, {id:evRef.id, funcId:_funcAtivo.id, tipoId:'promocao', titulo:titulo, data:data, obs:obs, resp:resp, criadoEm:now, especial:true});
+  batch.commit().then(function(){
+    if (cargoNovo) _funcAtivo.cargo = cargoNovo;
+    if (setorNovo) _funcAtivo.departamento = setorNovo;
+    toast('Movimentação registrada!','ok');
+    closeModal('modal-promocao');
+    renderDossie(_funcAtivo);
+    if (_funcAtivo.fonte!=='manual') toast('Cargo/setor atualizados apenas no histórico (funcionário da Admissão).','warn');
+  }).catch(function(e){ toast('Erro: '+e.message,'err'); });
+}
+
+// ════ RECEBIMENTO DE MEDIDA DISCIPLINAR ════
+function marcarDiscRecebido(eventoId){
+  var resp = prompt('Quem está confirmando o recebimento do documento assinado?', '');
+  if (resp===null) return;
+  var agora = new Date();
+  db.collection('dossie_eventos').doc(eventoId).update({
+    discRecebido: true,
+    discRecebidoData: agora.toISOString().split('T')[0],
+    discRecebidoHora: agora.toTimeString().slice(0,5),
+    discRecebidoResp: (resp||'').trim(),
+  }).then(function(){ toast('Recebimento confirmado!','ok'); }).catch(function(e){ toast('Erro: '+e.message,'err'); });
 }
 
 document.querySelectorAll('.overlay').forEach(function(el){

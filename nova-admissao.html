@@ -637,6 +637,33 @@ var _regras    = [];
 var _procAtual = null;
 
 // ════════════════════════════════════════════
+// IDENTIDADE / ANTI-DUPLICAÇÃO
+// ════════════════════════════════════════════
+// CPF só com dígitos
+function _cpfDigits(s){ return String(s||'').replace(/\D/g,''); }
+// Nome normalizado (sem acento, maiúsculas, espaços colapsados)
+function _normNomeAdm(s){
+  return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toUpperCase().replace(/\s+/g,' ').trim();
+}
+// Chave de identidade da pessoa: CPF quando houver, senão nome
+function _chavePessoa(dados){
+  var cpf = _cpfDigits(dados && dados.cpf);
+  if (cpf) return 'cpf:'+cpf;
+  var nome = _normNomeAdm(dados && dados.nome);
+  return nome ? 'nome:'+nome : null;
+}
+// Mapa das pessoas que já possuem processo em adm_processos
+function _chavesExistentes(){
+  var set = {};
+  _processos.forEach(function(p){
+    var k = _chavePessoa(p.dados||{});
+    if (k) set[k] = true;
+  });
+  return set;
+}
+
+// ════════════════════════════════════════════
 // LISTENERS
 // ════════════════════════════════════════════
 function iniciarListeners() {
@@ -893,6 +920,9 @@ function processarFO1029(file) {
 
       // Processar cada funcionário (normalmente 1 por arquivo, mas pode ter mais)
       var criados = 0;
+      var ignorados = 0;
+      var nomesIgnorados = [];
+      var existentes = _chavesExistentes(); // pessoas que já têm processo
       var batch = db.batch();
       dataRows.forEach(function(row) {
         var dados = {};
@@ -909,6 +939,11 @@ function processarFO1029(file) {
         });
 
         if (!dados.nome) return; // linha vazia
+
+        // Anti-duplicação: se a pessoa já tem processo (ou repete no arquivo), pula
+        var chave = _chavePessoa(dados);
+        if (chave && existentes[chave]) { ignorados++; nomesIgnorados.push(dados.nome); return; }
+        if (chave) existentes[chave] = true;
 
         var docRef = db.collection('adm_processos').doc();
         var resp = (document.getElementById('inp-responsavel')||{}).value||'RH';
@@ -927,8 +962,17 @@ function processarFO1029(file) {
         criados++;
       });
 
+      if (!criados && ignorados) {
+        status.textContent = ignorados + ' processo(s) já existia(m) — nada foi importado.';
+        status.style.color = '#8b6d1c';
+        toast('Já cadastrado: '+nomesIgnorados.join(', '), 'warn');
+        return;
+      }
+
       batch.commit().then(function() {
-        status.textContent = criados + ' processo(s) criado(s) com sucesso!';
+        var msg = criados + ' processo(s) criado(s) com sucesso!';
+        if (ignorados) msg += ' ('+ignorados+' já existia(m) e foi(ram) ignorado(s))';
+        status.textContent = msg;
         status.style.color = '#1a5c35';
         toast(criados+' processo(s) criado(s)!', 'ok');
         setTimeout(function() { closeModal('modal-upload'); }, 1500);
@@ -1702,6 +1746,8 @@ function processarLote(file) {
       var resp = (document.getElementById('inp-responsavel')||{}).value||'RH';
       var batch = db.batch();
       var criados = 0;
+      var ignorados = 0;
+      var existentes = _chavesExistentes(); // pessoas que já têm processo
       dataRows.forEach(function(row) {
         var dados = {};
         Object.keys(FO_MAP).forEach(function(label) {
@@ -1709,12 +1755,24 @@ function processarLote(file) {
           if (val!==undefined&&val!=='') dados[FO_MAP[label]] = val instanceof Date ? val.toISOString().split('T')[0] : String(val).trim();
         });
         if (!dados.nome) return;
+        // Anti-duplicação: pula quem já tem processo (ou repete no próprio lote)
+        var chave = _chavePessoa(dados);
+        if (chave && existentes[chave]) { ignorados++; return; }
+        if (chave) existentes[chave] = true;
         var docRef = db.collection('adm_processos').doc();
         batch.set(docRef, {id:docRef.id, criadoEm:new Date().toISOString(), status:'importado', fonte:'importacao', perfil:'geral', itensSnapshot:snapshotItensAdmissao('geral'), dados:dados, checks:{}, obs:'', lancadoPor:resp.trim()||'RH', historico:[{dt:new Date().toISOString(),acao:'IMPORTADO_EM_LOTE',por:resp.trim()||'RH'}]});
         criados++;
       });
+      if (!criados && ignorados) {
+        status.textContent = ignorados+' já existia(m) — nada foi importado.';
+        status.style.color='#8b6d1c';
+        toast(ignorados+' já cadastrado(s), ignorado(s).','warn');
+        return;
+      }
       batch.commit().then(function(){
-        status.textContent = criados+' funcionário(s) importado(s) com sucesso!';
+        var msg = criados+' funcionário(s) importado(s) com sucesso!';
+        if (ignorados) msg += ' ('+ignorados+' já existia(m), ignorado(s))';
+        status.textContent = msg;
         status.style.color = '#1a5c35';
         toast(criados+' importado(s)!','ok');
       }).catch(function(err){ status.textContent='Erro: '+err.message; status.style.color='#8b1c1c'; });

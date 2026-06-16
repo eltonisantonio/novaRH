@@ -611,6 +611,58 @@ function fmtVal(v) {
   return 'R$ ' + (Number(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
+// ════ DEDUPLICAÇÃO DE FUNCIONÁRIOS ════
+// Normaliza nome: remove acentos, maiúsculas, colapsa espaços
+function _normNome(s){
+  return String(s||'')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toUpperCase().replace(/\s+/g,' ').trim();
+}
+// Chave de agrupamento: CPF (só dígitos) tem prioridade; senão, nome normalizado
+function _keyFunc(f){
+  var cpf = String(f.cpf||'').replace(/\D/g,'');
+  if (cpf) return 'cpf:'+cpf;
+  var nome = _normNome(f.nome);
+  return nome ? 'nome:'+nome : 'id:'+f.id; // sem CPF nem nome → não agrupa
+}
+// Pontuação para escolher o registro "primário" do grupo (maior = melhor)
+function _scoreFunc(f){
+  var s = 0;
+  if (f.fonte==='admissao') s += 100;                  // admissão tem dados estruturados
+  if (!(f.desligado||f.status==='desligado')) s += 40; // vínculo ativo prevalece sobre desligado
+  var d = String(f.admissao||'').replace(/\D/g,'');    // admissão mais recente desempata
+  if (d) s += (Number(d)||0)/1e9;
+  return s;
+}
+var _CAMPOS_MERGE = ['cpf','matricula','cargo','empresa','departamento','admissao','tel','email','nome'];
+// Mescla a lista combinada (admissão + manuais) em um registro por pessoa
+function dedupFuncs(arr){
+  var grupos = {};
+  arr.forEach(function(f){
+    var k = _keyFunc(f);
+    (grupos[k] = grupos[k] || []).push(f);
+  });
+  return Object.keys(grupos).map(function(k){
+    var membros = grupos[k].slice().sort(function(a,b){ return _scoreFunc(b)-_scoreFunc(a); });
+    var primario = Object.assign({}, membros[0]);
+    // preenche campos vazios do primário a partir dos demais membros
+    membros.slice(1).forEach(function(m){
+      _CAMPOS_MERGE.forEach(function(c){
+        if ((primario[c]===undefined || primario[c]==='' || primario[c]===null) && m[c]) primario[c] = m[c];
+      });
+    });
+    // guarda TODOS os ids do grupo → eventos de qualquer duplicata continuam aparecendo
+    primario._ids = membros.map(function(m){ return m.id; });
+    primario._dups = membros.length;
+    return primario;
+  });
+}
+// Retorna os eventos de um funcionário considerando todos os seus ids mesclados
+function eventosDoFunc(f){
+  var ids = (f && f._ids) ? f._ids : (f ? [f.id] : []);
+  return _eventos.filter(function(ev){ return ids.indexOf(ev.funcId) !== -1; });
+}
+
 function iniciarListeners() {
   // Funcionários da Admissão
   db.collection('adm_processos').onSnapshot(function(snap) {
@@ -638,14 +690,13 @@ function iniciarListeners() {
     // Funcionários manuais
     db.collection('dossie_funcs').get().then(function(s2) {
       var manuais = s2.docs.map(function(d) { return Object.assign({id:d.id, fonte:'manual'}, d.data()); });
-      // Mesclar sem duplicar por CPF
-      var todos = admFuncs.slice();
-      manuais.forEach(function(m) {
-        var cpf = String(m.cpf||'').replace(/\D/g,'');
-        var jaExiste = cpf && admFuncs.find(function(f){ return String(f.cpf||'').replace(/\D/g,'')===cpf; });
-        if (!jaExiste) todos.push(m);
-      });
-      _funcs = todos;
+      // Mescla admissão + manuais em UM registro por pessoa (por CPF ou nome),
+      // agrupando inclusive múltiplos processos de admissão da mesma pessoa.
+      _funcs = dedupFuncs(admFuncs.concat(manuais));
+      if (_funcAtivo) { // mantém o dossiê aberto apontando para o registro mesclado
+        var atual = _funcs.find(function(f){ return (f._ids||[]).indexOf(_funcAtivo.id) !== -1; });
+        if (atual) _funcAtivo = atual;
+      }
       renderLista();
     });
   });
@@ -740,7 +791,7 @@ function renderLista() {
   };
 
   el.innerHTML = lista.map(function(f) {
-    var evCount = _eventos.filter(function(ev){ return ev.funcId===f.id; }).length;
+    var evCount = eventosDoFunc(f).length;
     var isAdm = f.fonte==='admissao';
     return '<div class="func-card" data-func-id="'+f.id+'">'
       +'<div class="func-avatar">'+iniciais(f.nome)+'</div>'
@@ -785,7 +836,7 @@ function renderDossie(f) {
     +'<div class="dossie-actions"><button class="btn btn-sm" onclick="openPromocao()"><i class="ti ti-arrow-up-circle"></i> Promoção / Movimentação</button></div>';
 
   // Stats
-  var evs = _eventos.filter(function(ev){ return ev.funcId===f.id; });
+  var evs = eventosDoFunc(f);
   var adv = evs.filter(function(ev){ return ev.tipoId==='adv'; }).length;
   var elo = evs.filter(function(ev){ return ev.tipoId==='elogio'; }).length;
   document.getElementById('dossie-stats').innerHTML =
@@ -1032,7 +1083,7 @@ function excluirFunc() {
 function exportarDossie() {
   if (!_funcAtivo) return;
   var f = _funcAtivo;
-  var evs = _eventos.filter(function(ev){ return ev.funcId===f.id; });
+  var evs = eventosDoFunc(f);
   evs.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
 
   var linhas = evs.map(function(ev) {

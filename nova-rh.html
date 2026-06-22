@@ -290,16 +290,25 @@ async function getUsuarios(){return await FDB.users.getAll();}
 async function saveUsuarios(d){await FDB.users.saveAll(d);}
 
 async function initAuth(){
-  var users = (await getUsuarios());
-  var adminIdx = users.findIndex(function(u){return u.id==='u_admin';});
+  // SEGURANÇA: nunca regravar a lista inteira no boot.
+  // Apenas garantir que o admin exista, mexendo SÓ no doc dele.
+  // Se a leitura falhar (rede/offline), NÃO apaga nada — apenas aborta.
   var allMods = Object.keys(MODS);
-  if(adminIdx>=0){
-    users[adminIdx].senha='nova2025';
-    users[adminIdx].modulos=allMods;
-  } else {
-    users.unshift({id:'u_admin',nome:'Administrador',login:'admin',senha:'nova2025',perfil:'admin',modulos:allMods});
+  var admin = null;
+  try {
+    admin = await FDB.users.get('u_admin');
+  } catch(e){
+    console.warn('[initAuth] leitura do admin falhou — abortando sem alterar dados', e);
+    return; // falha de leitura nunca dispara escrita
   }
-  await saveUsuarios(users);
+  if(!admin){
+    // cria APENAS o documento do admin, sem tocar em nenhum outro usuário
+    await FDB.users.add({
+      id:'u_admin', nome:'Administrador', login:'admin',
+      senha:'nova2025', perfil:'admin', modulos:allMods
+    });
+  }
+  // admin já existe: não sobrescreve senha nem módulos (preserva alterações)
 }
 
 async function doLogin(){
@@ -499,8 +508,8 @@ async function addUsuario(){
 
   var mods=Array.prototype.slice.call(document.querySelectorAll('#nu-modulos input:checked')).map(function(i){return i.value;});
 
-  users.push({id:'u_'+Date.now(),nome,login,senha,perfil,modulos:perfil==='admin'?Object.keys(MODS):mods});
-  await saveUsuarios(users);
+  // grava APENAS o novo documento (sem apagar/recriar a coleção)
+  await FDB.users.add({id:'u_'+Date.now(),nome,login,senha,perfil,modulos:perfil==='admin'?Object.keys(MODS):mods});
   toast('Usuário adicionado!','ok');
   document.getElementById('nu-nome').value='';
   document.getElementById('nu-login').value='';
@@ -510,8 +519,9 @@ async function addUsuario(){
 
 async function removerUsuario(id){
   if(!confirm('Remover este usuário?'))return;
-  var users=(await getUsuarios()).filter(function(u){return u.id!==id;});
-  await saveUsuarios(users);
+  if(id==='u_admin'){toast('O admin master não pode ser removido.','err');return;}
+  // apaga APENAS o documento alvo (sem tocar nos demais)
+  await FDB.users.remove(id);
   toast('Usuário removido.');
   renderUsuarios();
 }

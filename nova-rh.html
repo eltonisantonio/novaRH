@@ -133,6 +133,7 @@ iframe{flex:1;border:none;width:100%;height:100%;}
 })();
 </script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="firebase-db.js"></script>
 </head>
 <body>
@@ -143,8 +144,8 @@ iframe{flex:1;border:none;width:100%;height:100%;}
     <div class="login-logo"><span class="login-logo-text">NOVA</span><span class="login-logo-dot"></span></div>
     <div class="login-sub">Sistema de RH</div>
     <div class="login-group">
-      <label class="login-label">Usuário</label>
-      <input class="login-input" type="text" id="inp-login" placeholder="usuário" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+      <label class="login-label">E-mail</label>
+      <input class="login-input" type="email" id="inp-login" placeholder="nome@grupoambaramaral.com.br" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div class="login-group">
       <label class="login-label">Senha</label>
@@ -209,7 +210,7 @@ iframe{flex:1;border:none;width:100%;height:100%;}
         <div class="section-card-title"><i class="ti ti-user-plus" style="color:var(--text2);font-size:16px"></i> Novo Usuário</div>
         <div class="form-inline" id="form-novo-usuario">
           <div class="form-group-sm"><label class="form-label-sm">Nome</label><input class="form-input-sm" type="text" id="nu-nome" placeholder="Nome Completo"></div>
-          <div class="form-group-sm"><label class="form-label-sm">Login</label><input class="form-input-sm" type="text" id="nu-login" placeholder="usuario"></div>
+          <div class="form-group-sm"><label class="form-label-sm">E-mail (login)</label><input class="form-input-sm" type="email" id="nu-login" placeholder="nome@grupoambaramaral.com.br"></div>
           <div class="form-group-sm"><label class="form-label-sm">Senha</label><input class="form-input-sm" type="text" id="nu-senha" placeholder="senha123"></div>
           <div class="form-group-sm"><label class="form-label-sm">Perfil</label>
             <select class="form-select-sm" id="nu-perfil"><option value="user">Usuário</option><option value="admin">Admin</option></select>
@@ -312,20 +313,48 @@ async function initAuth(){
 }
 
 async function doLogin(){
-  var login = (document.getElementById('inp-login').value||'').trim();
+  // O usuário digita o E-MAIL (mesmo cadastrado no Authentication) + senha.
+  var email = (document.getElementById('inp-login').value||'').trim().toLowerCase();
   var senha = (document.getElementById('inp-senha').value||'').trim();
-  var users  = (await getUsuarios());
-  var u      = users.find(function(x){return x.login===login&&x.senha===senha;});
-  if(!u){
-    document.getElementById('login-err').style.display='block';
+  var errEl = document.getElementById('login-err');
+
+  // 1) Autentica na "portaria" (Firebase Authentication)
+  try {
+    await firebase.auth().signInWithEmailAndPassword(email, senha);
+  } catch(e){
+    console.warn('[login] auth falhou', e.code);
+    errEl.style.display='block';
     return;
   }
-  sessionStorage.setItem(SESSION_KEY,JSON.stringify({id:u.id,nome:u.nome,perfil:u.perfil,modulos:u.modulos||[]}));
-  document.getElementById('login-err').style.display='none';
+
+  // 2) Busca o perfil no "RH" (Firestore users), casando pelo e-mail (campo login)
+  var users;
+  try {
+    users = (await getUsuarios());
+  } catch(e){
+    errEl.style.display='block';
+    await firebase.auth().signOut();
+    return;
+  }
+  var u = users.find(function(x){return (x.login||'').toLowerCase()===email;});
+  if(!u){
+    // Autenticou, mas não há perfil cadastrado para este e-mail
+    errEl.textContent = 'Acesso autenticado, mas sem perfil cadastrado. Avise o administrador.';
+    errEl.style.display='block';
+    await firebase.auth().signOut();
+    return;
+  }
+
+  sessionStorage.setItem(SESSION_KEY,JSON.stringify({
+    id:u.id, nome:u.nome, perfil:u.perfil,
+    modulos:u.modulos||[], setorRescisao:u.setorRescisao||''
+  }));
+  errEl.style.display='none';
   startShell(u);
 }
 
 function doLogout(){
+  try{ firebase.auth().signOut(); }catch(e){}
   sessionStorage.removeItem(SESSION_KEY);
   usuarioAtivo=null;
   document.getElementById('shell').style.display='none';

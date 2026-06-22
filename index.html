@@ -141,8 +141,8 @@ iframe{flex:1;border:none;width:100%;height:100%;}
     <div class="login-logo"><span class="login-logo-text">NOVA</span><span class="login-logo-dot"></span></div>
     <div class="login-sub">Sistema de RH</div>
     <div class="login-group">
-      <label class="login-label">Usuário</label>
-      <input class="login-input" type="text" id="inp-login" placeholder="usuário" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+      <label class="login-label">E-mail</label>
+      <input class="login-input" type="email" id="inp-login" placeholder="nome@grupoambaramaral.com.br" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div class="login-group">
       <label class="login-label">Senha</label>
@@ -218,8 +218,8 @@ iframe{flex:1;border:none;width:100%;height:100%;}
         <div class="section-card-title"><i class="ti ti-user-plus" style="color:var(--text2);font-size:16px"></i> Novo Usuário</div>
         <div class="form-inline" id="form-novo-usuario" style="grid-template-columns:1fr 1fr 1fr 1fr auto">
           <div class="form-group-sm"><label class="form-label-sm">Nome</label><input class="form-input-sm" type="text" id="nu-nome" placeholder="Nome Completo"></div>
-          <div class="form-group-sm"><label class="form-label-sm">Login</label><input class="form-input-sm" type="text" id="nu-login" placeholder="usuario"></div>
-          <div class="form-group-sm"><label class="form-label-sm">Senha</label><input class="form-input-sm" type="text" id="nu-senha" placeholder="senha123"></div>
+          <div class="form-group-sm"><label class="form-label-sm">E-mail (login)</label><input class="form-input-sm" type="email" id="nu-login" placeholder="nome@grupoambaramaral.com.br"></div>
+          <div class="form-group-sm"><label class="form-label-sm">Senha (criar no Auth)</label><input class="form-input-sm" type="text" id="nu-senha" placeholder="definida no Firebase"></div>
           <div class="form-group-sm"><label class="form-label-sm">Perfil</label>
             <select class="form-select-sm" id="nu-perfil"><option value="user">Usuário</option><option value="admin">Admin</option></select>
           </div>
@@ -286,6 +286,7 @@ iframe{flex:1;border:none;width:100%;height:100%;}
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 // ────────────────────────────────────────────────
 // FIREBASE
@@ -325,52 +326,63 @@ var SOL_KEY     = 'nova_solicitacoes_v1';
 var usuarioAtivo = null;
 
 function getUsuarios(){
-  return _db.collection('rh_users').get().then(function(snap){
+  return _db.collection('users').get().then(function(snap){
     return snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
   });
 }
 function saveUsuarios(lista){
+  // SEGURANÇA: NUNCA apaga a coleção. Apenas grava/atualiza cada documento.
   var batch = _db.batch();
-  // Deletar todos e recriar (lista pequena)
-  return _db.collection('rh_users').get().then(function(snap){
-    snap.docs.forEach(function(d){batch.delete(d.ref);});
-    lista.forEach(function(u){
-      batch.set(_db.collection('rh_users').doc(u.id), u);
-    });
-    return batch.commit();
+  lista.forEach(function(u){
+    batch.set(_db.collection('users').doc(u.id), u, {merge:true});
   });
+  return batch.commit();
 }
 
 function initAuth(){
-  return getUsuarios().then(function(users){
-  var adminIdx = users.findIndex(function(u){return u.id==='u_admin';});
+  // SEGURANÇA: nunca regrava a lista no boot. Só garante que o admin exista,
+  // mexendo SÓ no doc dele. Se a leitura falhar, não altera nada.
   var allMods = Object.keys(MODS);
-  if(adminIdx>=0){
-    users[adminIdx].senha='nova2025';
-    users[adminIdx].modulos=allMods;
-  } else {
-    users.unshift({id:'u_admin',nome:'Administrador',login:'admin',senha:'nova2025',perfil:'admin',modulos:allMods});
-  }
-  return saveUsuarios(users);
+  return _db.collection('users').doc('u_admin').get().then(function(d){
+    if(!d.exists){
+      return _db.collection('users').doc('u_admin').set({
+        id:'u_admin',nome:'Administrador',login:'admin',perfil:'admin',modulos:allMods
+      });
+    }
+  }).catch(function(e){
+    console.warn('[initAuth] leitura falhou — nenhuma alteração feita', e);
   });
 }
 
 function doLogin(){
-  var login = (document.getElementById('inp-login').value||'').trim();
+  var email = (document.getElementById('inp-login').value||'').trim().toLowerCase();
   var senha = (document.getElementById('inp-senha').value||'').trim();
-  getUsuarios().then(function(users){
-  var u      = users.find(function(x){return x.login===login&&x.senha===senha;});
-  if(!u){
-    document.getElementById('login-err').style.display='block';
-    return;
-  }
+  var errEl = document.getElementById('login-err');
+  // 1) Autentica no Firebase Authentication
+  firebase.auth().signInWithEmailAndPassword(email, senha).then(function(){
+    // 2) Busca o perfil no Firestore, casando pelo e-mail (campo login)
+    return getUsuarios();
+  }).then(function(users){
+    if(!users) return;
+    var u = users.find(function(x){return (x.login||'').toLowerCase()===email;});
+    if(!u){
+      errEl.textContent='Acesso autenticado, mas sem perfil cadastrado. Avise o administrador.';
+      errEl.style.display='block';
+      firebase.auth().signOut();
+      return;
+    }
     sessionStorage.setItem(SESSION_KEY,JSON.stringify({id:u.id,nome:u.nome,perfil:u.perfil,modulos:u.modulos||[],setorRescisao:u.setorRescisao||''}));
-    document.getElementById('login-err').style.display='none';
+    errEl.style.display='none';
     startShell(u);
+  }).catch(function(e){
+    console.warn('[login] falhou', e.code||e);
+    errEl.textContent='Usuário ou senha incorretos.';
+    errEl.style.display='block';
   });
 }
 
 function doLogout(){
+  try{ firebase.auth().signOut(); }catch(e){}
   sessionStorage.removeItem(SESSION_KEY);
   usuarioAtivo=null;
   document.getElementById('shell').style.display='none';
@@ -546,55 +558,38 @@ function renderUsuarios(){
 function addUsuario(){
   var nome=(document.getElementById('nu-nome').value||'').trim();
   var login=(document.getElementById('nu-login').value||'').trim().toLowerCase();
-  var senha=(document.getElementById('nu-senha').value||'').trim();
   var perfil=document.getElementById('nu-perfil').value;
-  if(!nome||!login||!senha){toast('Preencha nome, login e senha.','err');return;}
+  if(!nome||!login){toast('Preencha nome e e-mail.','err');return;}
   getUsuarios().then(function(users){
-    if(users.find(function(u){return u.login===login;})){toast('Login já existe.','err');return;}
+    if(users.find(function(u){return (u.login||'').toLowerCase()===login;})){toast('E-mail já cadastrado.','err');return;}
     var mods=Array.prototype.slice.call(document.querySelectorAll('#nu-modulos input:checked')).map(function(i){return i.value;});
-    var setorResc=document.getElementById('nu-setor-rescisao').value;
-    users.push({id:'u_'+Date.now(),nome:nome,login:login,senha:senha,perfil:perfil,modulos:perfil==='admin'?Object.keys(MODS):mods,setorRescisao:setorResc});
-    saveUsuarios(users).then(function(){
-      toast('Usuário adicionado!','ok');
+    var setorEl=document.getElementById('nu-setor-rescisao');
+    var setorResc=setorEl?setorEl.value:'';
+    var id='u_'+Date.now();
+    var novo={id:id,nome:nome,login:login,perfil:perfil,modulos:perfil==='admin'?Object.keys(MODS):mods,setorRescisao:setorResc};
+    // grava APENAS o documento novo (sem apagar/recriar a coleção)
+    _db.collection('users').doc(id).set(novo).then(function(){
+      toast('Perfil criado! Agora crie a senha deste e-mail no Firebase Authentication.','ok');
       document.getElementById('nu-nome').value='';
       document.getElementById('nu-login').value='';
-      document.getElementById('nu-senha').value='';
+      var s=document.getElementById('nu-senha'); if(s) s.value='';
       renderUsuarios();
-    });
+    }).catch(function(e){toast('Erro: '+e.message,'err');});
   });
 }
 
 function alterarSenhaMaster(){
-  var s1=(document.getElementById('master-senha').value||'').trim();
-  var s2=(document.getElementById('master-senha2').value||'').trim();
-  if(!s1){toast('Informe a nova senha.','err');return;}
-  if(s1!==s2){toast('As senhas não conferem.','err');return;}
-  if(s1.length<4){toast('Senha muito curta (mínimo 4 caracteres).','err');return;}
-  getUsuarios().then(function(users){
-    var idx=users.findIndex(function(u){return u.id==='u_admin';});
-    if(idx<0){toast('Admin master não encontrado.','err');return;}
-    users[idx].senha=s1;
-    saveUsuarios(users).then(function(){
-      // Atualizar sessão
-      if(usuarioAtivo&&usuarioAtivo.id==='u_admin'){
-        usuarioAtivo.senha=s1;
-        sessionStorage.setItem('nova_rh_session_v1',JSON.stringify(usuarioAtivo));
-      }
-      document.getElementById('master-senha').value='';
-      document.getElementById('master-senha2').value='';
-      toast('Senha alterada com sucesso!','ok');
-    });
-  });
+  toast('A senha do admin agora é alterada no Firebase Authentication.','warn');
 }
 
 function removerUsuario(id){
+  if(id==='u_admin'){toast('O admin master não pode ser removido.','err');return;}
   if(!confirm('Remover este usuário?'))return;
-  getUsuarios().then(function(users){
-    saveUsuarios(users.filter(function(u){return u.id!==id;})).then(function(){
-      toast('Usuário removido.');
-      renderUsuarios();
-    });
-  });
+  // apaga APENAS o documento alvo (sem tocar nos demais)
+  _db.collection('users').doc(id).delete().then(function(){
+    toast('Perfil removido. Remova também a credencial no Firebase Authentication.','ok');
+    renderUsuarios();
+  }).catch(function(e){toast('Erro: '+e.message,'err');});
 }
 
 // ────────────────────────────────────────────────

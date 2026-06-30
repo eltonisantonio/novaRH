@@ -318,6 +318,13 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         <div class="extra-block-title"><i class="ti ti-certificate" style="color:#9b72cf"></i> Informações do Treinamento</div>
         <div class="fg" style="margin-bottom:10px"><label class="fl">Carga horária (horas)</label>
           <input class="fi" type="number" id="ev-trein-carga" placeholder="Ex: 8" min="0" step="0.5"></div>
+        <div class="fg" style="margin-bottom:10px"><label class="fl">Modalidade</label>
+          <select class="fs" id="ev-trein-modal">
+            <option value="">—</option>
+            <option value="Presencial">Presencial</option>
+            <option value="Online">Online (EAD)</option>
+            <option value="Híbrido">Híbrido</option>
+          </select></div>
         <div class="checkbox-row">
           <input type="checkbox" id="ev-trein-rem" onchange="document.getElementById('extra-trein-rem').style.display=this.checked?'block':'none'">
           <label for="ev-trein-rem">Treinamento Remunerado (gera verba Horas Treinamento)</label>
@@ -506,9 +513,22 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div>
         <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:12px">Dados do Evento</div>
         <div class="fg"><label class="fl">Tipo <span style="color:#c0392b">*</span></label>
-          <select class="fs" id="eg-tipo"><option value="">Selecione</option></select></div>
+          <select class="fs" id="eg-tipo" onchange="toggleEGTrein()"><option value="">Selecione</option></select></div>
         <div class="fg"><label class="fl">Título / Assunto <span style="color:#c0392b">*</span></label>
           <input class="fi" type="text" id="eg-titulo" placeholder="Descreva o evento"></div>
+        <div class="fg" id="eg-extra-trein" style="display:none">
+          <div style="display:flex;gap:10px">
+            <div style="flex:1"><label class="fl">Carga horária (h)</label>
+              <input class="fi" type="number" id="eg-trein-carga" placeholder="Ex: 8" min="0" step="0.5"></div>
+            <div style="flex:1"><label class="fl">Modalidade</label>
+              <select class="fs" id="eg-trein-modal">
+                <option value="">—</option>
+                <option value="Presencial">Presencial</option>
+                <option value="Online">Online (EAD)</option>
+                <option value="Híbrido">Híbrido</option>
+              </select></div>
+          </div>
+        </div>
         <div class="fg"><label class="fl">Data <span style="color:#c0392b">*</span></label>
           <input class="fi" type="date" id="eg-data"></div>
         <div class="fg"><label class="fl">Responsável <span style="color:#c0392b">*</span></label>
@@ -882,10 +902,11 @@ function renderDossie(f) {
     var tp = getTipo(ev.tipoId);
     var extraHtml = '';
 
-    // Treinamento — carga horária e remuneração
-    if (ev.tipoId === 'trein' && (ev.treinCarga || ev.treinRemunerado)) {
+    // Treinamento — carga horária, modalidade e remuneração
+    if (ev.tipoId === 'trein' && (ev.treinCarga || ev.treinModalidade || ev.treinRemunerado)) {
       var tagsT = '';
       if (ev.treinCarga) tagsT += '<span class="badge b-gray"><i class="ti ti-clock" style="font-size:11px"></i> '+ev.treinCarga+'h</span> ';
+      if (ev.treinModalidade) tagsT += '<span class="badge b-gray"><i class="ti ti-device-laptop" style="font-size:11px"></i> '+ev.treinModalidade+'</span> ';
       if (ev.treinRemunerado) {
         var rotRem = {horas_treinamento:'Horas Treinamento', gratificacao_cargo:'Gratificação de Cargo', abono:'ABONO'}[ev.treinTipoRem] || 'Remunerado';
         tagsT += '<span class="badge b-amber"><i class="ti ti-cash" style="font-size:11px"></i> Remunerado · '+rotRem+'</span>';
@@ -961,6 +982,7 @@ function openNovoEvento() {
   document.getElementById('ev-trein-rem').checked = false;
   document.getElementById('extra-trein-rem').style.display = 'none';
   document.getElementById('ev-trein-tipo-rem').value = 'horas_treinamento';
+  document.getElementById('ev-trein-modal').value = '';
   document.getElementById('ev-adiant-valor').value = '';
   onTipoChange();
   openModal('modal-ev');
@@ -992,6 +1014,8 @@ function salvarEvento() {
   if (tipoId === 'trein') {
     var carga = parseFloat(document.getElementById('ev-trein-carga').value||'0');
     if (carga > 0) payload.treinCarga = carga;
+    var modal = document.getElementById('ev-trein-modal').value;
+    if (modal) payload.treinModalidade = modal;
     var rem = document.getElementById('ev-trein-rem').checked;
     payload.treinRemunerado = rem;
     if (rem) payload.treinTipoRem = document.getElementById('ev-trein-tipo-rem').value;
@@ -1221,12 +1245,13 @@ function renderRelTreinamento(){
   if (!evs.length) { corpo.innerHTML = '<div class="empty" style="padding:24px 0"><i class="ti ti-certificate"></i><p>Nenhum treinamento na competência.</p></div>'; return; }
   var rotRem = {horas_treinamento:'Horas Treinamento', gratificacao_cargo:'Gratificação de Cargo', abono:'ABONO'};
   corpo.innerHTML = '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+evs.length+' registro(s) · '+totalH+'h no total</div>'
-    +'<table class="cfg-table"><thead><tr><th>Data</th><th>Funcionário</th><th>Treinamento</th><th>Carga</th><th>Remuneração</th></tr></thead><tbody>'
+    +'<table class="cfg-table"><thead><tr><th>Data</th><th>Funcionário</th><th>Treinamento</th><th>Carga</th><th>Modalidade</th><th>Remuneração</th></tr></thead><tbody>'
     + evs.map(function(ev){
         return '<tr><td style="white-space:nowrap">'+fmtDate(ev.data)+'</td>'
           +'<td style="font-weight:600">'+funcNome(ev.funcId)+'</td>'
           +'<td>'+ev.titulo+'</td>'
           +'<td>'+(ev.treinCarga?ev.treinCarga+'h':'—')+'</td>'
+          +'<td>'+(ev.treinModalidade||'<span style="color:var(--text3)">—</span>')+'</td>'
           +'<td>'+(ev.treinRemunerado?'<span class="badge b-amber">'+(rotRem[ev.treinTipoRem]||'Sim')+'</span>':'<span style="color:var(--text3)">—</span>')+'</td></tr>';
       }).join('')
     +'</tbody></table>';
@@ -1368,6 +1393,9 @@ function openEventoGrupo() {
   document.getElementById('eg-resp').value = '';
   document.getElementById('eg-data').value = new Date().toISOString().split('T')[0];
   document.getElementById('eg-busca').value = '';
+  document.getElementById('eg-trein-carga').value = '';
+  document.getElementById('eg-trein-modal').value = '';
+  document.getElementById('eg-extra-trein').style.display = 'none';
 
   // Popular selects de empresa e departamento
   var ativos = _funcs.filter(function(f){ return !f.desligado && f.status !== 'desligado'; });
@@ -1430,6 +1458,11 @@ function selecionarTodosEG(){
 }
 function limparEG(){ _egSelecionados={}; renderEGLista(); }
 
+function toggleEGTrein(){
+  var isTrein = document.getElementById('eg-tipo').value==='trein';
+  document.getElementById('eg-extra-trein').style.display = isTrein?'block':'none';
+}
+
 function salvarEventoGrupo(){
   var tipoId=document.getElementById('eg-tipo').value;
   var titulo=(document.getElementById('eg-titulo').value||'').trim();
@@ -1442,13 +1475,21 @@ function salvarEventoGrupo(){
   if(!resp){toast('Informe o responsável.','err');return;}
   var ids=Object.keys(_egSelecionados).filter(function(id){return _egSelecionados[id];});
   if(!ids.length){toast('Selecione ao menos um funcionário.','err');return;}
+  // Campos extras de treinamento (carga horária e modalidade)
+  var extra={};
+  if(tipoId==='trein'){
+    var carga=parseFloat(document.getElementById('eg-trein-carga').value||'0');
+    if(carga>0) extra.treinCarga=carga;
+    var modal=document.getElementById('eg-trein-modal').value;
+    if(modal) extra.treinModalidade=modal;
+  }
   var now=new Date().toISOString();
   var promises=[];
   for(var i=0;i<ids.length;i+=20){
     var batch=db.batch();
     ids.slice(i,i+20).forEach(function(funcId){
       var evRef=db.collection('dossie_eventos').doc();
-      batch.set(evRef,{id:evRef.id,funcId:funcId,tipoId:tipoId,titulo:titulo,data:data,obs:obs,resp:resp,criadoEm:now,grupo:true});
+      batch.set(evRef,Object.assign({id:evRef.id,funcId:funcId,tipoId:tipoId,titulo:titulo,data:data,obs:obs,resp:resp,criadoEm:now,grupo:true},extra));
     });
     promises.push(batch.commit());
   }

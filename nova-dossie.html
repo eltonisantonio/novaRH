@@ -224,6 +224,8 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         <div class="cfg-tab" id="cfgtab-trein" onclick="showCfgTab('trein')">Relatório de Treinamentos</div>
         <div class="cfg-tab" id="cfgtab-adiant" onclick="showCfgTab('adiant')">Relatório de Adiantamentos</div>
         <div class="cfg-tab" id="cfgtab-disc" onclick="showCfgTab('disc')">Medidas Disciplinares</div>
+        <div class="cfg-tab" id="cfgtab-badges" onclick="showCfgTab('badges')">Brigada · CIPA · Multiplicador</div>
+        <div class="cfg-tab" id="cfgtab-desig" onclick="showCfgTab('desig')">Brigada · CIPA · Mult.</div>
       </div>
 
       <div id="cfgview-tipos">
@@ -276,6 +278,20 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
                 <option value="">Todas</option><option value="pendente">Aguardando recebimento</option><option value="recebido">Recebidas pelo RH</option></select></div>
           </div>
           <div id="rel-disc-corpo"></div>
+        </div>
+      </div>
+
+      <div id="cfgview-badges" style="display:none">
+        <div class="cfg-section">
+          <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Tipo</label>
+              <select class="fs" id="rel-badge-tipo" style="width:180px" onchange="renderRelBadges()">
+                <option value="">Todos</option><option value="brig">Brigadista</option><option value="cipa">CIPA</option><option value="mult">Multiplicador</option></select></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Situação</label>
+              <select class="fs" id="rel-badge-sit" style="width:160px" onchange="renderRelBadges()">
+                <option value="">Todas</option><option value="ativo">Ativas</option><option value="encerrado">Encerradas</option></select></div>
+          </div>
+          <div id="rel-badge-corpo"></div>
         </div>
       </div>
     </div>
@@ -1178,7 +1194,7 @@ function renderCfg() {
 function funcNome(id){ var f=_funcs.find(function(x){return x.id===id;}); return f?f.nome:'(funcionário removido)'; }
 
 function showCfgTab(tab){
-  ['tipos','trein','adiant','disc'].forEach(function(t){
+  ['tipos','trein','adiant','disc','badges'].forEach(function(t){
     document.getElementById('cfgview-'+t).style.display = (t===tab)?'block':'none';
     document.getElementById('cfgtab-'+t).classList.toggle('active', t===tab);
   });
@@ -1186,6 +1202,7 @@ function showCfgTab(tab){
   if (tab==='trein')  { var c=document.getElementById('rel-trein-comp'); if(!c.value) c.value=new Date().toISOString().slice(0,7); renderRelTreinamento(); }
   if (tab==='adiant') renderRelAdiantamento();
   if (tab==='disc')   renderRelDisciplinar();
+  if (tab==='badges') renderRelBadges();
 }
 
 function renderRelTreinamento(){
@@ -1266,6 +1283,43 @@ function renderRelDisciplinar(){
           +'<td style="font-weight:600">'+funcNome(ev.funcId)+'</td>'
           +'<td style="color:'+tp.cor+';font-weight:600">'+tp.nome+'</td>'
           +'<td>'+ev.titulo+'</td><td>'+rec+'</td></tr>';
+      }).join('')
+    +'</tbody></table>';
+}
+// ════ RELATÓRIO BRIGADA / CIPA / MULTIPLICADOR ════
+function renderRelBadges(){
+  var tipo = document.getElementById('rel-badge-tipo').value; // '', brig, cipa, mult
+  var sit  = document.getElementById('rel-badge-sit').value;  // '', ativo, encerrado
+  var rows = [];
+  _funcs.forEach(function(f){
+    function push(kind, label, obj){
+      if(!obj || !obj.inicio) return;
+      rows.push({nome:f.nome, kind:kind, label:label, inicio:obj.inicio, fim:obj.fim||'', ativo:!!obj.ativo, nivel:obj.nivel, pontos:obj.pontos});
+    }
+    push('brig','Brigadista', f.brigadista);
+    push('cipa','CIPA', f.cipa);
+    push('mult','Multiplicador', f.multiplicador);
+  });
+  if(tipo) rows = rows.filter(function(r){return r.kind===tipo;});
+  if(sit==='ativo')     rows = rows.filter(function(r){return r.ativo;});
+  if(sit==='encerrado') rows = rows.filter(function(r){return !r.ativo;});
+  rows.sort(function(a,b){ return a.ativo===b.ativo ? (a.nome||'').localeCompare(b.nome||'') : (a.ativo?-1:1); });
+
+  var corpo = document.getElementById('rel-badge-corpo');
+  if(!rows.length){ corpo.innerHTML='<div class="empty" style="padding:24px 0"><i class="ti ti-award"></i><p>Nenhuma designação encontrada.</p></div>'; return; }
+  var nAtivos = rows.filter(function(r){return r.ativo;}).length;
+  var cores = {brig:'#c0392b', cipa:'#2e7d32', mult:'#1a5276'};
+  corpo.innerHTML = '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+rows.length+' registro(s) · '+nAtivos+' ativo(s)</div>'
+    +'<table class="cfg-table"><thead><tr><th>Funcionário</th><th>Designação</th><th>Início</th><th>Situação</th><th>Nível / Pontos</th></tr></thead><tbody>'
+    + rows.map(function(r){
+        var sitTxt = r.ativo ? '<span class="badge b-green">Ativo</span>'
+                             : '<span class="badge b-gray">Encerrado'+(r.fim?' · '+fmtDate(r.fim):'')+'</span>';
+        var np = r.kind==='mult' ? ('Nível '+(r.nivel||1)+' · '+(r.pontos||0)+' pts') : '<span style="color:var(--text3)">—</span>';
+        return '<tr><td style="font-weight:600">'+(r.nome||'—')+'</td>'
+          +'<td style="color:'+cores[r.kind]+';font-weight:700">'+r.label+'</td>'
+          +'<td style="white-space:nowrap">'+fmtDate(r.inicio)+'</td>'
+          +'<td>'+sitTxt+'</td>'
+          +'<td>'+np+'</td></tr>';
       }).join('')
     +'</tbody></table>';
 }

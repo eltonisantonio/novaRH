@@ -14,6 +14,7 @@
 <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css"></noscript>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -225,7 +226,6 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         <div class="cfg-tab" id="cfgtab-adiant" onclick="showCfgTab('adiant')">Relatório de Adiantamentos</div>
         <div class="cfg-tab" id="cfgtab-disc" onclick="showCfgTab('disc')">Medidas Disciplinares</div>
         <div class="cfg-tab" id="cfgtab-badges" onclick="showCfgTab('badges')">Brigada · CIPA · Multiplicador</div>
-        <div class="cfg-tab" id="cfgtab-desig" onclick="showCfgTab('desig')">Brigada · CIPA · Mult.</div>
       </div>
 
       <div id="cfgview-tipos">
@@ -290,6 +290,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
             <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Situação</label>
               <select class="fs" id="rel-badge-sit" style="width:160px" onchange="renderRelBadges()">
                 <option value="">Todas</option><option value="ativo">Ativas</option><option value="encerrado">Encerradas</option></select></div>
+            <div style="margin-left:auto"><button class="btn btn-primary" onclick="exportBadgesExcel()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button></div>
           </div>
           <div id="rel-badge-corpo"></div>
         </div>
@@ -1287,7 +1288,7 @@ function renderRelDisciplinar(){
     +'</tbody></table>';
 }
 // ════ RELATÓRIO BRIGADA / CIPA / MULTIPLICADOR ════
-function renderRelBadges(){
+function coletarBadges(){
   var tipo = document.getElementById('rel-badge-tipo').value; // '', brig, cipa, mult
   var sit  = document.getElementById('rel-badge-sit').value;  // '', ativo, encerrado
   var rows = [];
@@ -1304,7 +1305,11 @@ function renderRelBadges(){
   if(sit==='ativo')     rows = rows.filter(function(r){return r.ativo;});
   if(sit==='encerrado') rows = rows.filter(function(r){return !r.ativo;});
   rows.sort(function(a,b){ return a.ativo===b.ativo ? (a.nome||'').localeCompare(b.nome||'') : (a.ativo?-1:1); });
+  return rows;
+}
 
+function renderRelBadges(){
+  var rows = coletarBadges();
   var corpo = document.getElementById('rel-badge-corpo');
   if(!rows.length){ corpo.innerHTML='<div class="empty" style="padding:24px 0"><i class="ti ti-award"></i><p>Nenhuma designação encontrada.</p></div>'; return; }
   var nAtivos = rows.filter(function(r){return r.ativo;}).length;
@@ -1322,6 +1327,31 @@ function renderRelBadges(){
           +'<td>'+np+'</td></tr>';
       }).join('')
     +'</tbody></table>';
+}
+
+function exportBadgesExcel(){
+  if(typeof XLSX==='undefined'){ toast('Biblioteca de exportação ainda carregando, tente novamente.','err'); return; }
+  var rows = coletarBadges();
+  if(!rows.length){ toast('Nada para exportar com os filtros atuais.','warn'); return; }
+  var aoa = [['Funcionário','Designação','Início','Situação','Data Fim','Nível','Pontos']];
+  rows.forEach(function(r){
+    aoa.push([
+      r.nome||'',
+      r.label,
+      fmtDate(r.inicio),
+      r.ativo?'Ativo':'Encerrado',
+      r.fim?fmtDate(r.fim):'',
+      r.kind==='mult'?(r.nivel||1):'',
+      r.kind==='mult'?(r.pontos||0):''
+    ]);
+  });
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:34},{wch:16},{wch:12},{wch:12},{wch:12},{wch:8},{wch:8}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Designações');
+  var dt = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, 'designacoes_brigada_cipa_mult_'+dt+'.xlsx');
+  toast('Planilha gerada!','ok');
 }
 
 

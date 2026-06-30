@@ -52,6 +52,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .stats-row{display:grid;gap:12px;}
 .stats-4{grid-template-columns:repeat(4,1fr);}
 .stats-3{grid-template-columns:repeat(3,1fr);}
+.stats-2{grid-template-columns:repeat(2,1fr);}
 .stats-5{grid-template-columns:repeat(5,1fr);}
 .stat{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:16px 20px;position:relative;overflow:hidden;transition:box-shadow .15s,transform .15s;}
 .stat:hover{box-shadow:0 4px 16px rgba(14,15,18,.06);transform:translateY(-1px);}
@@ -145,14 +146,20 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         <span class="topbar-tag">Visão Geral</span>
       </div>
       <div class="filters">
-        <select class="form-select" id="f-periodo" onchange="recarregar()">
+        <select class="form-select" id="f-periodo" onchange="onPresetChange()">
           <option value="30">Últimos 30 dias</option>
           <option value="60">Últimos 60 dias</option>
           <option value="90">Últimos 90 dias</option>
           <option value="180">Últimos 6 meses</option>
           <option value="365">Último ano</option>
           <option value="0">Todo o período</option>
+          <option value="custom">Personalizado</option>
         </select>
+        <div id="f-datas" style="display:none;align-items:center;gap:6px">
+          <input class="form-select" type="date" id="f-data-ini" onchange="recarregar()" style="width:150px">
+          <span style="font-size:12px;color:var(--text2);font-weight:600">até</span>
+          <input class="form-select" type="date" id="f-data-fim" onchange="recarregar()" style="width:150px">
+        </div>
         <select class="form-select" id="f-empresa" onchange="recarregar()" style="width:190px">
           <option value="">Todas as empresas</option>
         </select>
@@ -207,8 +214,28 @@ function subDays(n){var d=new Date();d.setDate(d.getDate()-n);return d.toISOStri
 function meslabel(dt){var p=dt.split('-');var nomes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return nomes[parseInt(p[1])-1]+'/'+p[0].slice(2);}
 
 function getDataInicio(){
-  var dias=parseInt(document.getElementById('f-periodo').value);
+  var v=document.getElementById('f-periodo').value;
+  if(v==='custom'){var di=document.getElementById('f-data-ini').value;return di?normDate(di):'2020-01-01';}
+  var dias=parseInt(v);
   return dias===0?'2020-01-01':subDays(dias);
+}
+function getDataFim(){
+  var v=document.getElementById('f-periodo').value;
+  if(v==='custom'){var df=document.getElementById('f-data-fim').value;return df?normDate(df):today();}
+  return today();
+}
+function onPresetChange(){
+  var v=document.getElementById('f-periodo').value;
+  var box=document.getElementById('f-datas');
+  if(v==='custom'){
+    box.style.display='flex';
+    var di=document.getElementById('f-data-ini'),df=document.getElementById('f-data-fim');
+    if(!di.value)di.value=subDays(30);
+    if(!df.value)df.value=today();
+  }else{
+    box.style.display='none';
+  }
+  recarregar();
 }
 function getEmpresa(){return document.getElementById('f-empresa').value;}
 
@@ -290,10 +317,12 @@ function popularEmpresaSelect(){
 // ════ FILTROS COMUNS ════
 function filtrarPorPeriodoeEmpresa(lista, dtField, empField){
   var dtInicio = getDataInicio();
+  var dtFim = getDataFim();
   var emp = getEmpresa();
   return lista.filter(function(item){
     var dt = normDate(item[dtField]||'');
     if(dtField && dt && dt < dtInicio) return false;
+    if(dtField && dt && dt > dtFim) return false;
     if(emp && empField && (item[empField]||'') !== emp) return false;
     return true;
   });
@@ -332,6 +361,9 @@ function renderDash(){
   // ── Experiência ──
   html += renderSecaoExperiencia();
 
+  // ── Movimentações Internas ──
+  html += renderSecaoMovimentacoes();
+
   // ── Rescisão ──
   html += renderSecaoRescisao();
 
@@ -367,11 +399,14 @@ function statCard(label, value, sub, color, icon){
 // ════ R&S ════
 function renderSecaoRS(){
   var dtInicio = getDataInicio();
+  var dtFim = getDataFim();
   var emp = getEmpresa();
   var vagas = _dados.vagas.filter(function(v){
     if(v.isBancoTalentos) return false;
     if(emp && v.empresa !== emp) return false;
-    if(v.criadoEm && normDate(v.criadoEm.split('T')[0]) < dtInicio) return false;
+    var vc = v.criadoEm ? normDate(v.criadoEm.split('T')[0]) : '';
+    if(vc && vc < dtInicio) return false;
+    if(vc && vc > dtFim) return false;
     return true;
   });
 
@@ -420,7 +455,7 @@ function renderSecaoRS(){
   var eventosRS = _dados.eventos.filter(function(e){
     if(emp && e.empresa !== emp) return false;
     var dt = normDate((e.dt||'').split('T')[0]);
-    return dt >= dtInicio;
+    return dt >= dtInicio && dt <= dtFim;
   });
   var entrevistas = eventosRS.filter(function(e){return (e.tipo||'').includes('ENTREVISTA');}).length;
   var testes      = eventosRS.filter(function(e){return (e.tipo||'').includes('TESTE');}).length;
@@ -468,12 +503,6 @@ function renderSecaoRS(){
 
     +'<div class="chart-card"><div class="chart-title">Motivos de Reprovação</div><div class="chart-sub">Top motivos no período</div>'
     +'<div class="chart-wrap" style="height:200px"><canvas id="chart-motivos"></canvas></div></div>'
-    +'</div>'
-
-    +'<div class="charts-row charts-2">'
-    +'<div class="chart-card"><div class="chart-title">Vagas por Empresa</div><div class="chart-sub">Total no período selecionado</div>'
-    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-empresas-rs"></canvas></div></div>'
-    +'<div class="chart-card"></div>'
     +'</div>'
     +'</div>';
 
@@ -541,13 +570,6 @@ function renderGraficosRS(){
   var etapaColors = ['#b0c8e4','#4a7fc1','#4a7fc1','#9b72cf','#9b72cf','#4caf80','#4caf80','#8ab800','#e05252'];
   renderBarChart('chart-etapas', etapaLabels, etapaCounts, etapaColors, true);
 
-  // Vagas por empresa
-  var empMap = {};
-  vagas.filter(function(v){return v.status==='aberta';}).forEach(function(v){
-    var e=v.empresa||'Outros'; empMap[e]=(empMap[e]||0)+1;
-  });
-  renderDoughnutChart('chart-empresas-rs', Object.keys(empMap), Object.values(empMap));
-
   // Motivos reprovação
   var mot = _dados._rs ? _dados._rs.motivos : {};
   var mKeys = Object.keys(mot).sort(function(a,b){return mot[b]-mot[a];}).slice(0,6);
@@ -562,11 +584,13 @@ function renderGraficosRS(){
 // ════ ADMISSÃO ════
 function renderSecaoAdmissao(){
   var dtInicio = getDataInicio();
+  var dtFim = getDataFim();
   var emp = getEmpresa();
   var procs = _dados.processos.filter(function(p){
     if(p.fonte==='importacao') return false;
     var adm = normDate((p.dados||{}).admissao||p.criadoEm||'');
     if(adm && adm < dtInicio) return false;
+    if(adm && adm > dtFim) return false;
     if(emp && (p.dados||{}).empresa !== emp) return false;
     return true;
   });
@@ -645,6 +669,19 @@ function renderSecaoExperiencia(){
     return adm && addDays(adm,90)<today();
   });
 
+  // Taxa de efetivação no período: dos que completaram (ou deveriam) os 90 dias
+  // dentro do período selecionado, quantos % foram efetivados (não desligados)
+  var dtInicio = getDataInicio();
+  var dtFim = getDataFim();
+  var venceuNoPeriodo = procs.filter(function(p){
+    var adm=normDate((p.dados||{}).admissao||'');
+    if(!adm) return false;
+    var fim=addDays(adm,90);
+    return fim<today() && fim>=dtInicio && fim<=dtFim;
+  });
+  var efetivadosPeriodo = venceuNoPeriodo.filter(function(p){ return !p.desligado; });
+  var taxaEfet = venceuNoPeriodo.length ? Math.round(efetivadosPeriodo.length/venceuNoPeriodo.length*100) : null;
+
   // Pendências
   var comPendencia = emExp.filter(function(p){
     var exp = _dados.expData.find(function(e){return e.id==='adm_'+p.id||e.funcId==='adm_'+p.id;})||{checks:{}};
@@ -663,9 +700,10 @@ function renderSecaoExperiencia(){
 
   return '<div class="dash-section">'
     +'<div class="section-title"><i class="ti ti-clock"></i> Período de Experiência</div>'
-    +'<div class="stats-row stats-4" style="margin-bottom:16px">'
+    +'<div class="stats-row stats-5" style="margin-bottom:16px">'
     +statCard('Em Experiência', emExp.length, 'dentro dos 90 dias', 'gold', 'ti-clock')
     +statCard('Efetivados', efetivados.length, 'completaram os 90 dias', 'green', 'ti-user-check')
+    +statCard('Taxa de Efetivação', taxaEfet!==null?taxaEfet+'%':'—', taxaEfet!==null?efetivadosPeriodo.length+'/'+venceuNoPeriodo.length+' no período':'sem dados no período', taxaEfet===null?'blue':taxaEfet>=80?'green':taxaEfet>=60?'gold':'red', 'ti-percentage')
     +statCard('Com Pendências', comPendencia, 'feedbacks atrasados', 'red', 'ti-alert-triangle')
     +statCard('Efetivações no Mês', efetPorMes[today().slice(0,7)]||0, 'este mês', 'lime', 'ti-calendar-check')
     +'</div>'
@@ -674,13 +712,51 @@ function renderSecaoExperiencia(){
     +'</div>';
 }
 
+// ════ MOVIMENTAÇÕES INTERNAS ════
+function renderSecaoMovimentacoes(){
+  var dtInicio = getDataInicio();
+  var dtFim = getDataFim();
+  var emp = getEmpresa();
+  var movs = _dados.dossieEventos.filter(function(ev){
+    if(ev.tipoId !== 'promocao') return false;
+    var dt = normDate(ev.data||'');
+    if(dt && dt < dtInicio) return false;
+    if(dt && dt > dtFim) return false;
+    if(emp){
+      var func = _dados.dossieFuncs.find(function(f){return f.id===ev.funcId;});
+      if(!func || (func.empresa||'') !== emp) return false;
+    }
+    return true;
+  });
+  function subtipo(ev){ return String(ev.titulo||'').split(' · ')[0].trim(); }
+  var promocoes = movs.filter(function(ev){return subtipo(ev)==='Promoção';}).length;
+  var ajustes   = movs.filter(function(ev){return subtipo(ev)==='Ajuste salarial';}).length;
+  var setores   = movs.filter(function(ev){return subtipo(ev)==='Mudança de setor';}).length;
+  var internas  = movs.filter(function(ev){return subtipo(ev)==='Movimentação interna';}).length;
+  var totalFuncs = _dados.dossieFuncs.filter(function(f){return !f.desligado&&f.status!=='desligado';}).length;
+  var pctPromo = totalFuncs ? Math.round(promocoes/totalFuncs*100) : 0;
+
+  return '<div class="dash-section">'
+    +'<div class="section-title"><i class="ti ti-arrow-up-circle"></i> Movimentações Internas</div>'
+    +'<div class="stats-row stats-5" style="margin-bottom:16px">'
+    +statCard('Promoções', promocoes, pctPromo+'% do quadro ativo', 'green', 'ti-arrow-up-circle')
+    +statCard('Ajustes Salariais', ajustes, 'no período', 'blue', 'ti-cash')
+    +statCard('Mudanças de Setor', setores, 'no período', 'gold', 'ti-replace')
+    +statCard('Movimentações Internas', internas, 'no período', 'purple', 'ti-switch-horizontal')
+    +statCard('Total', movs.length, 'movimentações no período', 'lime', 'ti-list-check')
+    +'</div>'
+    +'</div>';
+}
+
 // ════ RESCISÃO ════
 function renderSecaoRescisao(){
   var dtInicio = getDataInicio();
+  var dtFim = getDataFim();
   var emp = getEmpresa();
   var rescs = _dados.rescisoes.filter(function(r){
     var dt=normDate(r.deslig||r.criadoEm||'');
     if(dt&&dt<dtInicio) return false;
+    if(dt&&dt>dtFim) return false;
     if(emp && (r.empresa||'') !== emp) return false;
     return true;
   });
@@ -692,6 +768,16 @@ function renderSecaoRescisao(){
     var lim=addDays(r.deslig,10);
     return lim<today();
   }).length;
+
+  // Turnover: voluntário x involuntário
+  function isVoluntario(r){
+    if(r.tipo==='pedido_demissao') return true;
+    if(r.tipo==='termino_experiencia' && r.expIniciativa==='empregado') return true;
+    return false;
+  }
+  var voluntarios   = rescs.filter(isVoluntario).length;
+  var involuntarios = rescs.length - voluntarios;
+  var pctVol = rescs.length ? Math.round(voluntarios/rescs.length*100) : 0;
 
   // Por tipo
   var tipoMap = {};
@@ -714,6 +800,10 @@ function renderSecaoRescisao(){
     +statCard('Finalizados', finalizados, 'homologação concluída', 'green', 'ti-check')
     +statCard('Prazo Vencido', vencidos, 'homologação atrasada', 'red', 'ti-alert-triangle')
     +'</div>'
+    +'<div class="stats-row stats-2" style="margin-bottom:16px">'
+    +statCard('Turnover Voluntário', voluntarios, 'pedido de demissão · '+pctVol+'% do total', 'amber', 'ti-user-minus')
+    +statCard('Turnover Involuntário', involuntarios, 'dispensas pela empresa · '+(100-pctVol)+'% do total', 'red', 'ti-user-x')
+    +'</div>'
     +'<div class="charts-row charts-2">'
     +'<div class="chart-card"><div class="chart-title">Desligamentos por Tipo</div><div class="chart-sub">No período selecionado</div>'
     +'<div class="chart-wrap" style="height:200px"><canvas id="chart-resc-tipo"></canvas></div></div>'
@@ -735,10 +825,12 @@ function renderGraficosRescisao(){
 // ════ SOLICITAÇÕES ════
 function renderSecaoSolicitacoes(){
   var dtInicio = getDataInicio();
+  var dtFim = getDataFim();
   var emp = getEmpresa();
   var sols = _dados.solicitacoes.filter(function(s){
     var dt=normDate((s.criadoEm||'').split('T')[0]);
     if(dt&&dt<dtInicio) return false;
+    if(dt&&dt>dtFim) return false;
     if(emp && s.empresa!==emp) return false;
     return true;
   });
@@ -768,42 +860,24 @@ function renderSecaoSolicitacoes(){
     +statCard('Reprovadas', reprovadas, 'não aprovadas', 'red', 'ti-x')
     +statCard('Tempo Médio', tempoMedio+'d', 'para aprovação', 'gold', 'ti-clock')
     +'</div>'
-    +'<div class="charts-row charts-2">'
-    +'<div class="chart-card"><div class="chart-title">Status das Solicitações</div><div class="chart-sub">Distribuição no período</div>'
-    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-sol-status"></canvas></div></div>'
-    +'<div class="chart-card"><div class="chart-title">Solicitações por Empresa</div><div class="chart-sub">Volume no período</div>'
-    +'<div class="chart-wrap" style="height:200px"><canvas id="chart-sol-emp"></canvas></div></div>'
-    +'</div>'
     +'</div>';
 }
 
 function renderGraficosSolicitacoes(){
-  var dados = _dados._sol;
-  if(!dados) return;
-  var status = {
-    'Pendentes': _dados.solicitacoes.filter(function(s){return s.status==='pendente';}).length,
-    'Com N2':    _dados.solicitacoes.filter(function(s){return s.status==='com_n2'||s.status==='aprovado_n2';}).length,
-    'Aprovadas': _dados.solicitacoes.filter(function(s){return s.status==='aprovado';}).length,
-    'Reprovadas':_dados.solicitacoes.filter(function(s){return s.status==='reprovado'||s.status==='reprovado_n2';}).length,
-  };
-  var sKeys = Object.keys(status).filter(function(k){return status[k]>0;});
-  if(sKeys.length){
-    renderDoughnutChart('chart-sol-status', sKeys, sKeys.map(function(k){return status[k];}),
-      ['#d4a020','#4a7fc1','#4caf80','#e05252']);
-  }
-  var eKeys = Object.keys(dados.empMap);
-  if(eKeys.length) renderDoughnutChart('chart-sol-emp', eKeys, eKeys.map(function(k){return dados.empMap[k];}));
+  // Gráficos de Status e por Empresa removidos a pedido — sem renderização.
 }
 
 // ════ TREINAMENTOS ════
 function renderSecaoTreinamentos(){
   var dtInicio = getDataInicio();
+  var dtFim = getDataFim();
   var emp = getEmpresa();
 
   var treinamentos = _dados.dossieEventos.filter(function(ev){
     if(ev.tipoId !== 'trein') return false;
     var dt = normDate(ev.data||'');
     if(dt && dt < dtInicio) return false;
+    if(dt && dt > dtFim) return false;
     if(emp){
       var func = _dados.dossieFuncs.find(function(f){return f.id===ev.funcId;});
       if(!func || (func.empresa||'') !== emp) return false;

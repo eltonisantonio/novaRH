@@ -1624,7 +1624,7 @@ function salvarPromocao(){
     batch.set(db.collection('dossie_funcs').doc(_funcAtivo.id), upd, {merge:true});
   }
   var evRef = db.collection('dossie_eventos').doc();
-  batch.set(evRef, {id:evRef.id, funcId:_funcAtivo.id, tipoId:'promocao', titulo:titulo, data:data, obs:obs, resp:resp, criadoEm:now, especial:true});
+  batch.set(evRef, {id:evRef.id, funcId:_funcAtivo.id, tipoId:'promocao', titulo:titulo, data:data, obs:obs, resp:resp, criadoEm:now, especial:true, cargoNovo:cargoNovo||'', setorNovo:setorNovo||''});
   batch.commit().then(function(){
     if (cargoNovo) _funcAtivo.cargo = cargoNovo;
     if (setorNovo) _funcAtivo.departamento = setorNovo;

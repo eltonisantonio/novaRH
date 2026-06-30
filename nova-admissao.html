@@ -106,6 +106,17 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .check-value.alert{color:#8b1c1c;}
 .check-value.empty{color:var(--text3);}
 .check-alert-msg{font-size:11px;color:#8b1c1c;font-weight:600;margin-top:2px;display:flex;align-items:center;gap:4px;}
+/* SELEÇÃO MÚLTIPLA CHECKLIST */
+.ck-sel{width:18px;height:18px;border-radius:4px;border:2px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:2px;transition:all .12s;background:var(--white);}
+.ck-sel:hover{border-color:var(--black);}
+.ck-sel.on{background:var(--text2);border-color:var(--text2);}
+.ck-sel.on i{font-size:11px;color:var(--white);}
+.ck-sel-spacer{width:18px;flex-shrink:0;}
+.check-item.sel{background:#eef4ff;}
+.btn-marcar-todos{font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px;border:1px solid var(--border2);background:var(--white);color:var(--text2);cursor:pointer;font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:4px;}
+.btn-marcar-todos:hover{border-color:var(--black);color:var(--black);}
+.ck-batch-bar{position:sticky;bottom:0;z-index:5;display:flex;align-items:center;gap:12px;padding:12px 16px;margin-top:14px;background:var(--white);border:1px solid var(--border2);border-radius:var(--rl);box-shadow:0 -2px 12px rgba(0,0,0,.06);}
+.ck-batch-count{font-size:13px;font-weight:800;color:var(--text);}
 /* FORM */
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 .form-grid-3{grid-template-columns:1fr 1fr 1fr;}
@@ -717,7 +728,7 @@ function toast(msg, tipo) {
   el.classList.add('show');
   setTimeout(function(){el.classList.remove('show');}, 2800);
 }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); if(id==='modal-proc') _procAtual=null; }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); if(id==='modal-proc'){ _procAtual=null; _ckSel={}; } if(id==='modal-ck-item') _ckBatchMode=false; }
 function openModal(id)  { document.getElementById(id).classList.add('open'); }
 function fmtDate(s) {
   if (!s) return '';
@@ -995,6 +1006,7 @@ function processarFO1029(file) {
 function abrirProcesso(id) {
   _procAtual = _processos.find(function(p){ return p.id===id; });
   if (!_procAtual) return;
+  _ckSel = {}; _ckBatchMode = false;
   // Processo antigo sem snapshot: congela a lista atual de itens/obrigatoriedade (mudanças futuras não o afetam)
   if (!(_procAtual.itensSnapshot && _procAtual.itensSnapshot.length) && (_itens.length || _perfis.length)) {
     _procAtual.itensSnapshot = snapshotItensAdmissao(_procAtual.perfil||'geral');
@@ -1170,13 +1182,18 @@ function renderChecklist() {
   document.getElementById('ck-pendentes-badge').textContent = pendCount+' pendente'+(pendCount!==1?'s':'');
 
   var html = '';
-  Object.values(secoes).forEach(function(sec) {
+  Object.keys(secoes).forEach(function(secKey) {
+    var sec = secoes[secKey];
     if (!sec.items.length) return;
     var doneCount = sec.items.filter(function(x){ return x.st.status==='ok'||x.st.status==='auto_ok'||x.st.status==='na'; }).length;
+    var pendNaSec = sec.items.filter(function(x){ return x.st.status==='pending'; }).length;
     html += '<div class="checklist-section">'
       +'<div class="checklist-section-header" onclick="toggleSecao(this)">'
       +'<span class="checklist-section-title"><i class="ti '+sec.icon+'" style="margin-right:6px"></i>'+sec.label+'</span>'
+      +'<span style="display:flex;align-items:center;gap:10px">'
+      +(pendNaSec?'<button class="btn-marcar-todos" onclick="event.stopPropagation();marcarTodosSecao(\''+secKey+'\')"><i class="ti ti-checkbox" style="font-size:12px"></i> Marcar todos</button>':'')
       +'<span class="checklist-section-count">'+doneCount+'/'+sec.items.length+'</span>'
+      +'</span>'
       +'</div><div class="checklist-body">';
 
     sec.items.forEach(function(entry) {
@@ -1185,10 +1202,16 @@ function renderChecklist() {
       var isAlert = st.status==='alert';
       var isNA    = st.status==='na';
       var cls = isNA?'check-item na':(isOk?'check-item ok':(isAlert?'check-item alert':'check-item'));
+      var isSelectable = st.status==='pending';
+      var selOn = isSelectable && !!_ckSel[it.id];
+      if (selOn) cls += ' sel';
       var boxIcon = isNA ? '<i class="ti ti-minus" style="font-size:11px;color:var(--text3)"></i>' : (isOk ? '<i class="ti ti-check" style="color:var(--black)"></i>' : (isAlert?'<i class="ti ti-alert-triangle" style="color:#e05252"></i>':''));
       var canToggle = st.status==='pending'||st.status==='ok'; // auto_ok, alert e na não toggleam pela caixa
       var canNA = st.status==='pending'||st.status==='ok'||st.status==='na'; // N/A só faz sentido em itens manuais
       html += '<div class="'+cls+'" id="ck-'+it.id+'">'
+        +(isSelectable
+            ? '<div class="ck-sel'+(selOn?' on':'')+'" onclick="toggleCkSel(\''+it.id+'\')">'+(selOn?'<i class="ti ti-check"></i>':'')+'</div>'
+            : '<div class="ck-sel-spacer"></div>')
         +'<div class="check-box" onclick="'+(canToggle?'toggleCheck(\''+it.id+'\')':'')+'">'
         +boxIcon+'</div>'
         +'<div class="check-text">'
@@ -1217,6 +1240,15 @@ function renderChecklist() {
     });
     html += '</div></div>';
   });
+  var selCount = Object.keys(_ckSel).filter(function(id){ return _ckSel[id]; }).length;
+  if (selCount) {
+    html += '<div class="ck-batch-bar">'
+      +'<span class="ck-batch-count"><i class="ti ti-list-check" style="vertical-align:-2px;margin-right:4px"></i>'+selCount+' item'+(selCount>1?'s':'')+' selecionado'+(selCount>1?'s':'')+'</span>'
+      +'<div style="flex:1"></div>'
+      +'<button class="btn btn-sm" onclick="limparCkSel()">Limpar</button>'
+      +'<button class="btn btn-primary btn-sm" onclick="abrirConfirmacaoLote()"><i class="ti ti-check"></i> Confirmar selecionados</button>'
+      +'</div>';
+  }
   document.getElementById('checklist-container').innerHTML = html;
 }
 
@@ -1226,6 +1258,49 @@ function toggleSecao(header) {
 }
 
 var _ckItemPendente = null;
+var _ckSel = {};
+var _ckBatchMode = false;
+
+// Um item é "pendente" (selecionável em lote) se não está marcado, não é N/A
+// e não tem campoAuto já preenchido (auto_ok/alert não entram no lote)
+function ckIsPending(it) {
+  if (!_procAtual) return false;
+  var checks = _procAtual.checks||{}, d = _procAtual.dados||{};
+  if (checks[it.id] === 'na') return false;
+  if (it.campoAuto && d[it.campoAuto]) return false;
+  if (checks[it.id]) return false;
+  return true;
+}
+
+function toggleCkSel(id) {
+  if (_ckSel[id]) delete _ckSel[id]; else _ckSel[id] = true;
+  renderChecklist();
+}
+
+function marcarTodosSecao(secao) {
+  if (!_procAtual) return;
+  var itens = resolverItensAdmissao(_procAtual);
+  var pend = itens.filter(function(it){ return it.secao===secao && ckIsPending(it); });
+  if (!pend.length) return;
+  var todosSel = pend.every(function(it){ return _ckSel[it.id]; });
+  pend.forEach(function(it){ if (todosSel) delete _ckSel[it.id]; else _ckSel[it.id] = true; });
+  renderChecklist();
+}
+
+function limparCkSel() { _ckSel = {}; renderChecklist(); }
+
+function abrirConfirmacaoLote() {
+  var ids = Object.keys(_ckSel).filter(function(id){ return _ckSel[id]; });
+  if (!ids.length) return;
+  _ckBatchMode = true;
+  _ckItemPendente = null;
+  document.getElementById('cki-title').textContent = 'Confirmar '+ids.length+' iten'+(ids.length>1?'s':'');
+  document.getElementById('cki-desc').textContent = 'Os dados abaixo serão aplicados aos '+ids.length+' itens selecionados.';
+  document.getElementById('cki-data').value = new Date().toISOString().split('T')[0];
+  document.getElementById('cki-resp').value = (document.getElementById('inp-responsavel')||{}).value || '';
+  document.getElementById('cki-obs').value = '';
+  openModal('modal-ck-item');
+}
 
 // Persiste os checks do processo atual no Firestore imediatamente
 function persistChecksAdmissao() {
@@ -1253,6 +1328,7 @@ function toggleNA(itemId) {
 
 function toggleCheck(itemId) {
   if (!_procAtual) return;
+  _ckBatchMode = false;
   if (!_procAtual.checks) _procAtual.checks = {};
   // Se já marcado, desmarcar
   if (_procAtual.checks[itemId]) {
@@ -1279,9 +1355,22 @@ function confirmarCkItem() {
   if (!data) { toast('Informe a data.','err'); return; }
   if (!resp) { toast('Informe o responsável.','err'); return; }
   if (!_procAtual.checks) _procAtual.checks = {};
+  var obs = (document.getElementById('cki-obs').value||'').trim();
+  if (_ckBatchMode) {
+    var ids = Object.keys(_ckSel).filter(function(id){ return _ckSel[id]; });
+    ids.forEach(function(id){
+      _procAtual.checks[id] = { done:true, data:data, resp:resp, obs:obs };
+    });
+    _ckSel = {};
+    _ckBatchMode = false;
+    persistChecksAdmissao();
+    closeModal('modal-ck-item');
+    renderChecklist();
+    toast(ids.length+' itens confirmados!','ok');
+    return;
+  }
   _procAtual.checks[_ckItemPendente] = {
-    done: true, data: data, resp: resp,
-    obs: (document.getElementById('cki-obs').value||'').trim()
+    done: true, data: data, resp: resp, obs: obs
   };
   _ckItemPendente = null;
   persistChecksAdmissao();

@@ -231,6 +231,13 @@ tr:last-child td{border-bottom:none;}
       <div class="filters">
         <select class="fsel" id="rel-f-resp" onchange="renderRelatorios()"><option value="">Todos os colaboradores</option></select>
         <select class="fsel" id="rel-f-area" onchange="renderRelatorios()"><option value="">Todas as áreas</option></select>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);font-weight:600">De
+          <input class="fsel" type="date" id="rel-f-de" onchange="renderRelatorios()">
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);font-weight:600">Até
+          <input class="fsel" type="date" id="rel-f-ate" onchange="renderRelatorios()">
+        </label>
+        <button class="btn btn-sm" onclick="limparPeriodoRelatorio()"><i class="ti ti-x"></i> Limpar período</button>
       </div>
       <div class="card"><table>
         <thead><tr><th>Colaborador</th><th>Área</th><th>Demanda</th><th>Status</th><th>Concluído por</th><th>Data de conclusão</th></tr></thead>
@@ -714,9 +721,13 @@ function removerDemanda(id){
 function renderRelatorios(){
   var fResp = document.getElementById('rel-f-resp').value;
   var fArea = document.getElementById('rel-f-area').value;
+  var fDe = document.getElementById('rel-f-de').value;
+  var fAte = document.getElementById('rel-f-ate').value;
   var lista = DEMANDAS.filter(function(d){
     if(fResp && d.respId!==fResp) return false;
     if(fArea && colabArea(d.respId)!==fArea) return false;
+    if(fDe && d.dataPrevista<fDe) return false;
+    if(fAte && d.dataPrevista>fAte) return false;
     return true;
   });
   var el = document.getElementById('relatorios-body');
@@ -731,6 +742,12 @@ function renderRelatorios(){
       +'<td>'+formatBR(d.dataConclusao)+'</td>'
       +'</tr>';
   }).join('');
+}
+
+function limparPeriodoRelatorio(){
+  document.getElementById('rel-f-de').value='';
+  document.getElementById('rel-f-ate').value='';
+  renderRelatorios();
 }
 
 // ────────────────────────────────────────────────

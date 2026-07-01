@@ -14,7 +14,6 @@
 <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css"></noscript>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -223,9 +222,9 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="cfg-tabs">
         <div class="cfg-tab active" id="cfgtab-tipos" onclick="showCfgTab('tipos')">Tipos de Evento</div>
         <div class="cfg-tab" id="cfgtab-trein" onclick="showCfgTab('trein')">Relatório de Treinamentos</div>
+        <div class="cfg-tab" id="cfgtab-nr" onclick="showCfgTab('nr')">Vencimento NR</div>
         <div class="cfg-tab" id="cfgtab-adiant" onclick="showCfgTab('adiant')">Relatório de Adiantamentos</div>
         <div class="cfg-tab" id="cfgtab-disc" onclick="showCfgTab('disc')">Medidas Disciplinares</div>
-        <div class="cfg-tab" id="cfgtab-badges" onclick="showCfgTab('badges')">Brigada · CIPA · Multiplicador</div>
       </div>
 
       <div id="cfgview-tipos">
@@ -259,6 +258,23 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         </div>
       </div>
 
+      <div id="cfgview-nr" style="display:none">
+        <div class="cfg-section">
+          <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Norma</label>
+              <select class="fs" id="rel-nr-norma" style="width:180px" onchange="renderRelNR()"><option value="">Todas</option></select></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Situação</label>
+              <select class="fs" id="rel-nr-sit" style="width:180px" onchange="renderRelNR()">
+                <option value="">Todas</option>
+                <option value="vencido">Vencidos</option>
+                <option value="vencendo">Vencendo em 60 dias</option>
+                <option value="valido">Válidos</option>
+              </select></div>
+          </div>
+          <div id="rel-nr-corpo"></div>
+        </div>
+      </div>
+
       <div id="cfgview-adiant" style="display:none">
         <div class="cfg-section">
           <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
@@ -280,21 +296,6 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           <div id="rel-disc-corpo"></div>
         </div>
       </div>
-
-      <div id="cfgview-badges" style="display:none">
-        <div class="cfg-section">
-          <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
-            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Tipo</label>
-              <select class="fs" id="rel-badge-tipo" style="width:180px" onchange="renderRelBadges()">
-                <option value="">Todos</option><option value="brig">Brigadista</option><option value="cipa">CIPA</option><option value="mult">Multiplicador</option></select></div>
-            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Situação</label>
-              <select class="fs" id="rel-badge-sit" style="width:160px" onchange="renderRelBadges()">
-                <option value="">Todas</option><option value="ativo">Ativas</option><option value="encerrado">Encerradas</option></select></div>
-            <div style="margin-left:auto"><button class="btn btn-primary" onclick="exportBadgesExcel()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button></div>
-          </div>
-          <div id="rel-badge-corpo"></div>
-        </div>
-      </div>
     </div>
   </div>
 </div>
@@ -309,7 +310,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="fg"><label class="fl">Título / Assunto <span style="color:#c0392b">*</span></label>
         <input class="fi" type="text" id="ev-titulo" placeholder="Descreva brevemente o evento"></div>
       <div class="fg"><label class="fl">Data <span style="color:#c0392b">*</span></label>
-        <input class="fi" type="date" id="ev-data"></div>
+        <input class="fi" type="date" id="ev-data" onchange="atualizarVencimentoNR()"></div>
       <div class="fg"><label class="fl">Observações / Detalhes</label>
         <textarea class="ft" id="ev-obs" rows="4" placeholder="Descreva os detalhes do evento..."></textarea></div>
 
@@ -318,13 +319,6 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         <div class="extra-block-title"><i class="ti ti-certificate" style="color:#9b72cf"></i> Informações do Treinamento</div>
         <div class="fg" style="margin-bottom:10px"><label class="fl">Carga horária (horas)</label>
           <input class="fi" type="number" id="ev-trein-carga" placeholder="Ex: 8" min="0" step="0.5"></div>
-        <div class="fg" style="margin-bottom:10px"><label class="fl">Modalidade</label>
-          <select class="fs" id="ev-trein-modal">
-            <option value="">—</option>
-            <option value="Presencial">Presencial</option>
-            <option value="Online">Online (EAD)</option>
-            <option value="Híbrido">Híbrido</option>
-          </select></div>
         <div class="checkbox-row">
           <input type="checkbox" id="ev-trein-rem" onchange="document.getElementById('extra-trein-rem').style.display=this.checked?'block':'none'">
           <label for="ev-trein-rem">Treinamento Remunerado (gera verba Horas Treinamento)</label>
@@ -347,6 +341,39 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           <input class="fi" type="number" id="ev-adiant-valor" placeholder="0,00" min="0" step="0.01"></div>
         <div style="margin-top:8px;font-size:11px;color:var(--text2)"><i class="ti ti-info-circle" style="font-size:11px;margin-right:3px"></i>As devoluções serão registradas separadamente no card do dossiê.</div>
       </div>
+
+      <!-- EXTRA: Treinamento NR -->
+      <div class="extra-block" id="extra-nr" style="display:none">
+        <div class="extra-block-title"><i class="ti ti-hard-hat" style="color:#d35400"></i> Treinamento NR</div>
+        <div class="fg" style="margin-bottom:10px"><label class="fl">Norma <span style="color:#c0392b">*</span></label>
+          <select class="fs" id="ev-nr-norma" onchange="onNrNormaChange()">
+            <option value="">Selecione</option>
+            <option value="NR-05">NR-05 · CIPA</option>
+            <option value="NR-06">NR-06 · EPI</option>
+            <option value="NR-10">NR-10 · Segurança em Instalações Elétricas</option>
+            <option value="NR-11">NR-11 · Operação de Empilhadeira</option>
+            <option value="NR-12">NR-12 · Máquinas e Equipamentos</option>
+            <option value="NR-17">NR-17 · Ergonomia</option>
+            <option value="NR-18">NR-18 · Construção Civil</option>
+            <option value="NR-20">NR-20 · Inflamáveis e Combustíveis</option>
+            <option value="NR-23">NR-23 · Combate a Incêndio</option>
+            <option value="NR-33">NR-33 · Espaço Confinado</option>
+            <option value="NR-35">NR-35 · Trabalho em Altura</option>
+            <option value="outra">Outra…</option>
+          </select></div>
+        <div class="fg" id="ev-nr-outra-wrap" style="display:none;margin-bottom:10px"><label class="fl">Especifique a norma</label>
+          <input class="fi" type="text" id="ev-nr-outra" placeholder="Ex: NR-13"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="fg" style="margin-bottom:0"><label class="fl">Validade (meses)</label>
+            <input class="fi" type="number" id="ev-nr-validade" min="0" step="1" placeholder="Ex: 12" onchange="atualizarVencimentoNR()"></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl">Carga horária (horas)</label>
+            <input class="fi" type="number" id="ev-nr-carga" min="0" step="0.5" placeholder="Ex: 8"></div>
+        </div>
+        <div class="fg" style="margin-bottom:10px"><label class="fl">Instrutor / Empresa certificadora</label>
+          <input class="fi" type="text" id="ev-nr-instrutor" placeholder="Opcional"></div>
+        <div id="ev-nr-vencimento-info" style="font-size:12px;color:var(--text2)"></div>
+      </div>
+
       <div class="fg"><label class="fl">Responsável pelo registro</label>
         <input class="fi" type="text" id="ev-resp" placeholder="Seu nome"></div>
     </div>
@@ -513,22 +540,9 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div>
         <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);margin-bottom:12px">Dados do Evento</div>
         <div class="fg"><label class="fl">Tipo <span style="color:#c0392b">*</span></label>
-          <select class="fs" id="eg-tipo" onchange="toggleEGTrein()"><option value="">Selecione</option></select></div>
+          <select class="fs" id="eg-tipo"><option value="">Selecione</option></select></div>
         <div class="fg"><label class="fl">Título / Assunto <span style="color:#c0392b">*</span></label>
           <input class="fi" type="text" id="eg-titulo" placeholder="Descreva o evento"></div>
-        <div class="fg" id="eg-extra-trein" style="display:none">
-          <div style="display:flex;gap:10px">
-            <div style="flex:1"><label class="fl">Carga horária (h)</label>
-              <input class="fi" type="number" id="eg-trein-carga" placeholder="Ex: 8" min="0" step="0.5"></div>
-            <div style="flex:1"><label class="fl">Modalidade</label>
-              <select class="fs" id="eg-trein-modal">
-                <option value="">—</option>
-                <option value="Presencial">Presencial</option>
-                <option value="Online">Online (EAD)</option>
-                <option value="Híbrido">Híbrido</option>
-              </select></div>
-          </div>
-        </div>
         <div class="fg"><label class="fl">Data <span style="color:#c0392b">*</span></label>
           <input class="fi" type="date" id="eg-data"></div>
         <div class="fg"><label class="fl">Responsável <span style="color:#c0392b">*</span></label>
@@ -590,6 +604,7 @@ var TIPOS_DEFAULT = [
   {id:'ddq',   nome:'DDQ - Diálogo de Qualidade',          cor:'#2196a0', icon:'ti-star'},
   {id:'notif', nome:'Notificação de Segurança',             cor:'#e05252', icon:'ti-alert-triangle'},
   {id:'trein', nome:'Treinamento',                          cor:'#9b72cf', icon:'ti-certificate'},
+  {id:'nr',    nome:'Treinamento NR (Norma Regulamentadora)', cor:'#d35400', icon:'ti-hard-hat'},
   {id:'feed',  nome:'Feedback',                             cor:'#4a7fc1', icon:'ti-message'},
   {id:'adv',   nome:'Advertência',                          cor:'#e05252', icon:'ti-file-alert'},
   {id:'suspensao', nome:'Suspensão',                         cor:'#b03030', icon:'ti-ban'},
@@ -646,6 +661,44 @@ function getTipo(id) {
 }
 function fmtVal(v) {
   return 'R$ ' + (Number(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+// ════ TREINAMENTO NR — VENCIMENTO ════
+var NR_VALIDADE_SUGERIDA = {'NR-05':12,'NR-06':12,'NR-10':24,'NR-11':12,'NR-12':12,'NR-17':0,'NR-18':12,'NR-20':12,'NR-23':12,'NR-33':12,'NR-35':24};
+function calcVencimentoNR(dataStr, meses) {
+  if (!dataStr || !meses) return '';
+  var p = String(dataStr).split('-');
+  if (p.length!==3) return '';
+  var d = new Date(Number(p[0]), Number(p[1])-1, Number(p[2]));
+  d.setMonth(d.getMonth() + Number(meses));
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function statusVencimentoNR(dataVenc) {
+  if (!dataVenc) return {label:'Sem vencimento', cls:'b-gray', dias:null};
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var v = String(dataVenc).split('-');
+  var dv = new Date(Number(v[0]), Number(v[1])-1, Number(v[2]));
+  var dias = Math.round((dv - hoje) / 86400000);
+  if (dias < 0) return {label:'Vencido há '+Math.abs(dias)+'d', cls:'b-red', dias:dias};
+  if (dias <= 60) return {label:'Vencendo em '+dias+'d', cls:'b-amber', dias:dias};
+  return {label:'Válido', cls:'b-green', dias:dias};
+}
+function onNrNormaChange() {
+  var norma = document.getElementById('ev-nr-norma').value;
+  document.getElementById('ev-nr-outra-wrap').style.display = norma==='outra' ? 'block' : 'none';
+  var sug = NR_VALIDADE_SUGERIDA[norma];
+  if (sug !== undefined) document.getElementById('ev-nr-validade').value = sug || '';
+  atualizarVencimentoNR();
+}
+function atualizarVencimentoNR() {
+  var data = document.getElementById('ev-data') ? document.getElementById('ev-data').value : '';
+  var validadeEl = document.getElementById('ev-nr-validade');
+  var meses = validadeEl ? validadeEl.value : '';
+  var info = document.getElementById('ev-nr-vencimento-info');
+  if (!info) return;
+  if (!meses || Number(meses)<=0) { info.innerHTML = '<i class="ti ti-info-circle" style="font-size:11px;margin-right:3px"></i>Sem validade definida — este treinamento não vencerá.'; return; }
+  var venc = calcVencimentoNR(data, meses);
+  if (!venc) { info.innerHTML = '<i class="ti ti-info-circle" style="font-size:11px;margin-right:3px"></i>Informe a data do treinamento para calcular o vencimento.'; return; }
+  info.innerHTML = '<i class="ti ti-calendar-due" style="font-size:11px;margin-right:3px"></i>Vencimento previsto: <strong>'+fmtDate(venc)+'</strong>';
 }
 
 // ════ DEDUPLICAÇÃO DE FUNCIONÁRIOS ════
@@ -902,16 +955,25 @@ function renderDossie(f) {
     var tp = getTipo(ev.tipoId);
     var extraHtml = '';
 
-    // Treinamento — carga horária, modalidade e remuneração
-    if (ev.tipoId === 'trein' && (ev.treinCarga || ev.treinModalidade || ev.treinRemunerado)) {
+    // Treinamento — carga horária e remuneração
+    if (ev.tipoId === 'trein' && (ev.treinCarga || ev.treinRemunerado)) {
       var tagsT = '';
       if (ev.treinCarga) tagsT += '<span class="badge b-gray"><i class="ti ti-clock" style="font-size:11px"></i> '+ev.treinCarga+'h</span> ';
-      if (ev.treinModalidade) tagsT += '<span class="badge b-gray"><i class="ti ti-device-laptop" style="font-size:11px"></i> '+ev.treinModalidade+'</span> ';
       if (ev.treinRemunerado) {
         var rotRem = {horas_treinamento:'Horas Treinamento', gratificacao_cargo:'Gratificação de Cargo', abono:'ABONO'}[ev.treinTipoRem] || 'Remunerado';
         tagsT += '<span class="badge b-amber"><i class="ti ti-cash" style="font-size:11px"></i> Remunerado · '+rotRem+'</span>';
       }
       extraHtml += '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'+tagsT+'</div>';
+    }
+
+    // Treinamento NR — norma, carga e vencimento
+    if (ev.tipoId === 'nr' && ev.nrNorma) {
+      var tagsNr = '<span class="badge b-gray"><i class="ti ti-hard-hat" style="font-size:11px"></i> '+ev.nrNorma+'</span> ';
+      if (ev.nrCarga) tagsNr += '<span class="badge b-gray"><i class="ti ti-clock" style="font-size:11px"></i> '+ev.nrCarga+'h</span> ';
+      var stNr = statusVencimentoNR(ev.nrDataVencimento);
+      tagsNr += '<span class="badge '+stNr.cls+'"><i class="ti ti-calendar-due" style="font-size:11px"></i> '+(ev.nrDataVencimento?stNr.label+' · '+fmtDate(ev.nrDataVencimento):'Sem vencimento')+'</span>';
+      extraHtml += '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'+tagsNr+'</div>';
+      if (ev.nrInstrutor) extraHtml += '<div class="ev-obs" style="margin-top:4px"><i class="ti ti-user-check" style="font-size:11px;margin-right:3px"></i>'+ev.nrInstrutor+'</div>';
     }
 
     // Adiantamento por Afastamento — card com saldo e devoluções
@@ -982,8 +1044,14 @@ function openNovoEvento() {
   document.getElementById('ev-trein-rem').checked = false;
   document.getElementById('extra-trein-rem').style.display = 'none';
   document.getElementById('ev-trein-tipo-rem').value = 'horas_treinamento';
-  document.getElementById('ev-trein-modal').value = '';
   document.getElementById('ev-adiant-valor').value = '';
+  document.getElementById('ev-nr-norma').value = '';
+  document.getElementById('ev-nr-outra').value = '';
+  document.getElementById('ev-nr-outra-wrap').style.display = 'none';
+  document.getElementById('ev-nr-validade').value = '';
+  document.getElementById('ev-nr-carga').value = '';
+  document.getElementById('ev-nr-instrutor').value = '';
+  document.getElementById('ev-nr-vencimento-info').innerHTML = '';
   onTipoChange();
   openModal('modal-ev');
 }
@@ -992,6 +1060,8 @@ function onTipoChange() {
   var tipoId = document.getElementById('ev-tipo').value;
   document.getElementById('extra-trein').style.display  = tipoId==='trein' ? 'block' : 'none';
   document.getElementById('extra-adiant').style.display = tipoId==='adiant_afastamento' ? 'block' : 'none';
+  document.getElementById('extra-nr').style.display     = tipoId==='nr' ? 'block' : 'none';
+  if (tipoId==='nr') atualizarVencimentoNR();
 }
 
 function salvarEvento() {
@@ -1014,8 +1084,6 @@ function salvarEvento() {
   if (tipoId === 'trein') {
     var carga = parseFloat(document.getElementById('ev-trein-carga').value||'0');
     if (carga > 0) payload.treinCarga = carga;
-    var modal = document.getElementById('ev-trein-modal').value;
-    if (modal) payload.treinModalidade = modal;
     var rem = document.getElementById('ev-trein-rem').checked;
     payload.treinRemunerado = rem;
     if (rem) payload.treinTipoRem = document.getElementById('ev-trein-tipo-rem').value;
@@ -1033,6 +1101,26 @@ function salvarEvento() {
   // Medida disciplinar — inicia controle de devolução ao RH
   if (tipoId==='adv' || tipoId==='suspensao' || tipoId==='orientacao_corretiva') {
     payload.discRecebido = false;
+  }
+
+  // Extra: Treinamento NR
+  if (tipoId === 'nr') {
+    var norma = document.getElementById('ev-nr-norma').value;
+    if (!norma) { toast('Selecione a norma (NR).','err'); return; }
+    if (norma === 'outra') {
+      var normaOutra = (document.getElementById('ev-nr-outra').value||'').trim();
+      if (!normaOutra) { toast('Especifique a norma.','err'); return; }
+      payload.nrNorma = normaOutra;
+    } else {
+      payload.nrNorma = norma;
+    }
+    var validadeMeses = parseInt(document.getElementById('ev-nr-validade').value||'0', 10);
+    payload.nrValidadeMeses = validadeMeses || 0;
+    payload.nrDataVencimento = validadeMeses>0 ? calcVencimentoNR(data, validadeMeses) : '';
+    var cargaNr = parseFloat(document.getElementById('ev-nr-carga').value||'0');
+    if (cargaNr>0) payload.nrCarga = cargaNr;
+    var instrutor = (document.getElementById('ev-nr-instrutor').value||'').trim();
+    if (instrutor) payload.nrInstrutor = instrutor;
   }
 
   var docRef = db.collection('dossie_eventos').doc();
@@ -1219,15 +1307,15 @@ function renderCfg() {
 function funcNome(id){ var f=_funcs.find(function(x){return x.id===id;}); return f?f.nome:'(funcionário removido)'; }
 
 function showCfgTab(tab){
-  ['tipos','trein','adiant','disc','badges'].forEach(function(t){
+  ['tipos','trein','nr','adiant','disc'].forEach(function(t){
     document.getElementById('cfgview-'+t).style.display = (t===tab)?'block':'none';
     document.getElementById('cfgtab-'+t).classList.toggle('active', t===tab);
   });
   if (tab==='tipos')  renderCfg();
   if (tab==='trein')  { var c=document.getElementById('rel-trein-comp'); if(!c.value) c.value=new Date().toISOString().slice(0,7); renderRelTreinamento(); }
+  if (tab==='nr')     renderRelNR();
   if (tab==='adiant') renderRelAdiantamento();
   if (tab==='disc')   renderRelDisciplinar();
-  if (tab==='badges') renderRelBadges();
 }
 
 function renderRelTreinamento(){
@@ -1245,14 +1333,58 @@ function renderRelTreinamento(){
   if (!evs.length) { corpo.innerHTML = '<div class="empty" style="padding:24px 0"><i class="ti ti-certificate"></i><p>Nenhum treinamento na competência.</p></div>'; return; }
   var rotRem = {horas_treinamento:'Horas Treinamento', gratificacao_cargo:'Gratificação de Cargo', abono:'ABONO'};
   corpo.innerHTML = '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+evs.length+' registro(s) · '+totalH+'h no total</div>'
-    +'<table class="cfg-table"><thead><tr><th>Data</th><th>Funcionário</th><th>Treinamento</th><th>Carga</th><th>Modalidade</th><th>Remuneração</th></tr></thead><tbody>'
+    +'<table class="cfg-table"><thead><tr><th>Data</th><th>Funcionário</th><th>Treinamento</th><th>Carga</th><th>Remuneração</th></tr></thead><tbody>'
     + evs.map(function(ev){
         return '<tr><td style="white-space:nowrap">'+fmtDate(ev.data)+'</td>'
           +'<td style="font-weight:600">'+funcNome(ev.funcId)+'</td>'
           +'<td>'+ev.titulo+'</td>'
           +'<td>'+(ev.treinCarga?ev.treinCarga+'h':'—')+'</td>'
-          +'<td>'+(ev.treinModalidade||'<span style="color:var(--text3)">—</span>')+'</td>'
           +'<td>'+(ev.treinRemunerado?'<span class="badge b-amber">'+(rotRem[ev.treinTipoRem]||'Sim')+'</span>':'<span style="color:var(--text3)">—</span>')+'</td></tr>';
+      }).join('')
+    +'</tbody></table>';
+}
+
+function renderRelNR(){
+  var normaSel = document.getElementById('rel-nr-norma');
+  if (!normaSel.dataset.pop) {
+    var normas = {};
+    _eventos.forEach(function(ev){ if (ev.tipoId==='nr' && ev.nrNorma) normas[ev.nrNorma]=true; });
+    Object.keys(normas).sort().forEach(function(n){
+      var o=document.createElement('option'); o.value=n; o.textContent=n; normaSel.appendChild(o);
+    });
+    normaSel.dataset.pop = '1';
+  }
+  var norma = normaSel.value;
+  var sit = document.getElementById('rel-nr-sit').value;
+  var evs = _eventos.filter(function(ev){
+    if (ev.tipoId!=='nr' || !ev.nrNorma) return false;
+    if (norma && ev.nrNorma!==norma) return false;
+    return true;
+  });
+  var comStatus = evs.map(function(ev){ return {ev:ev, st:statusVencimentoNR(ev.nrDataVencimento)}; });
+  if (sit) comStatus = comStatus.filter(function(x){
+    if (sit==='vencido') return x.st.dias!==null && x.st.dias<0;
+    if (sit==='vencendo') return x.st.dias!==null && x.st.dias>=0 && x.st.dias<=60;
+    if (sit==='valido') return x.st.dias===null || x.st.dias>60;
+    return true;
+  });
+  comStatus.sort(function(a,b){
+    var da = a.ev.nrDataVencimento||'9999-99-99', db_ = b.ev.nrDataVencimento||'9999-99-99';
+    return da.localeCompare(db_);
+  });
+  var corpo = document.getElementById('rel-nr-corpo');
+  if (!comStatus.length) { corpo.innerHTML = '<div class="empty" style="padding:24px 0"><i class="ti ti-hard-hat"></i><p>Nenhum treinamento NR encontrado.</p></div>'; return; }
+  var nVenc = comStatus.filter(function(x){return x.st.dias!==null && x.st.dias<0;}).length;
+  var nVence = comStatus.filter(function(x){return x.st.dias!==null && x.st.dias>=0 && x.st.dias<=60;}).length;
+  corpo.innerHTML = '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+comStatus.length+' registro(s) · <span style="color:#8b1c1c;font-weight:700">'+nVenc+' vencido(s)</span> · <span style="color:#7d4e00;font-weight:700">'+nVence+' vencendo em 60 dias</span></div>'
+    +'<table class="cfg-table"><thead><tr><th>Funcionário</th><th>Norma</th><th>Realização</th><th>Vencimento</th><th>Situação</th></tr></thead><tbody>'
+    + comStatus.map(function(x){
+        var ev=x.ev, st=x.st;
+        return '<tr><td style="font-weight:600">'+funcNome(ev.funcId)+'</td>'
+          +'<td>'+ev.nrNorma+'</td>'
+          +'<td style="white-space:nowrap">'+fmtDate(ev.data)+'</td>'
+          +'<td style="white-space:nowrap">'+(ev.nrDataVencimento?fmtDate(ev.nrDataVencimento):'—')+'</td>'
+          +'<td><span class="badge '+st.cls+'">'+st.label+'</span></td></tr>';
       }).join('')
     +'</tbody></table>';
 }
@@ -1312,72 +1444,6 @@ function renderRelDisciplinar(){
       }).join('')
     +'</tbody></table>';
 }
-// ════ RELATÓRIO BRIGADA / CIPA / MULTIPLICADOR ════
-function coletarBadges(){
-  var tipo = document.getElementById('rel-badge-tipo').value; // '', brig, cipa, mult
-  var sit  = document.getElementById('rel-badge-sit').value;  // '', ativo, encerrado
-  var rows = [];
-  _funcs.forEach(function(f){
-    function push(kind, label, obj){
-      if(!obj || !obj.inicio) return;
-      rows.push({nome:f.nome, kind:kind, label:label, inicio:obj.inicio, fim:obj.fim||'', ativo:!!obj.ativo, nivel:obj.nivel, pontos:obj.pontos});
-    }
-    push('brig','Brigadista', f.brigadista);
-    push('cipa','CIPA', f.cipa);
-    push('mult','Multiplicador', f.multiplicador);
-  });
-  if(tipo) rows = rows.filter(function(r){return r.kind===tipo;});
-  if(sit==='ativo')     rows = rows.filter(function(r){return r.ativo;});
-  if(sit==='encerrado') rows = rows.filter(function(r){return !r.ativo;});
-  rows.sort(function(a,b){ return a.ativo===b.ativo ? (a.nome||'').localeCompare(b.nome||'') : (a.ativo?-1:1); });
-  return rows;
-}
-
-function renderRelBadges(){
-  var rows = coletarBadges();
-  var corpo = document.getElementById('rel-badge-corpo');
-  if(!rows.length){ corpo.innerHTML='<div class="empty" style="padding:24px 0"><i class="ti ti-award"></i><p>Nenhuma designação encontrada.</p></div>'; return; }
-  var nAtivos = rows.filter(function(r){return r.ativo;}).length;
-  var cores = {brig:'#c0392b', cipa:'#2e7d32', mult:'#1a5276'};
-  corpo.innerHTML = '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+rows.length+' registro(s) · '+nAtivos+' ativo(s)</div>'
-    +'<table class="cfg-table"><thead><tr><th>Funcionário</th><th>Designação</th><th>Início</th><th>Situação</th><th>Nível / Pontos</th></tr></thead><tbody>'
-    + rows.map(function(r){
-        var sitTxt = r.ativo ? '<span class="badge b-green">Ativo</span>'
-                             : '<span class="badge b-gray">Encerrado'+(r.fim?' · '+fmtDate(r.fim):'')+'</span>';
-        var np = r.kind==='mult' ? ('Nível '+(r.nivel||1)+' · '+(r.pontos||0)+' pts') : '<span style="color:var(--text3)">—</span>';
-        return '<tr><td style="font-weight:600">'+(r.nome||'—')+'</td>'
-          +'<td style="color:'+cores[r.kind]+';font-weight:700">'+r.label+'</td>'
-          +'<td style="white-space:nowrap">'+fmtDate(r.inicio)+'</td>'
-          +'<td>'+sitTxt+'</td>'
-          +'<td>'+np+'</td></tr>';
-      }).join('')
-    +'</tbody></table>';
-}
-
-function exportBadgesExcel(){
-  if(typeof XLSX==='undefined'){ toast('Biblioteca de exportação ainda carregando, tente novamente.','err'); return; }
-  var rows = coletarBadges();
-  if(!rows.length){ toast('Nada para exportar com os filtros atuais.','warn'); return; }
-  var aoa = [['Funcionário','Designação','Início','Situação','Data Fim','Nível','Pontos']];
-  rows.forEach(function(r){
-    aoa.push([
-      r.nome||'',
-      r.label,
-      fmtDate(r.inicio),
-      r.ativo?'Ativo':'Encerrado',
-      r.fim?fmtDate(r.fim):'',
-      r.kind==='mult'?(r.nivel||1):'',
-      r.kind==='mult'?(r.pontos||0):''
-    ]);
-  });
-  var wb = XLSX.utils.book_new();
-  var ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [{wch:34},{wch:16},{wch:12},{wch:12},{wch:12},{wch:8},{wch:8}];
-  XLSX.utils.book_append_sheet(wb, ws, 'Designações');
-  var dt = new Date().toISOString().slice(0,10);
-  XLSX.writeFile(wb, 'designacoes_brigada_cipa_mult_'+dt+'.xlsx');
-  toast('Planilha gerada!','ok');
-}
 
 
 // ════ EVENTO EM GRUPO ════
@@ -1393,9 +1459,6 @@ function openEventoGrupo() {
   document.getElementById('eg-resp').value = '';
   document.getElementById('eg-data').value = new Date().toISOString().split('T')[0];
   document.getElementById('eg-busca').value = '';
-  document.getElementById('eg-trein-carga').value = '';
-  document.getElementById('eg-trein-modal').value = '';
-  document.getElementById('eg-extra-trein').style.display = 'none';
 
   // Popular selects de empresa e departamento
   var ativos = _funcs.filter(function(f){ return !f.desligado && f.status !== 'desligado'; });
@@ -1458,11 +1521,6 @@ function selecionarTodosEG(){
 }
 function limparEG(){ _egSelecionados={}; renderEGLista(); }
 
-function toggleEGTrein(){
-  var isTrein = document.getElementById('eg-tipo').value==='trein';
-  document.getElementById('eg-extra-trein').style.display = isTrein?'block':'none';
-}
-
 function salvarEventoGrupo(){
   var tipoId=document.getElementById('eg-tipo').value;
   var titulo=(document.getElementById('eg-titulo').value||'').trim();
@@ -1475,21 +1533,13 @@ function salvarEventoGrupo(){
   if(!resp){toast('Informe o responsável.','err');return;}
   var ids=Object.keys(_egSelecionados).filter(function(id){return _egSelecionados[id];});
   if(!ids.length){toast('Selecione ao menos um funcionário.','err');return;}
-  // Campos extras de treinamento (carga horária e modalidade)
-  var extra={};
-  if(tipoId==='trein'){
-    var carga=parseFloat(document.getElementById('eg-trein-carga').value||'0');
-    if(carga>0) extra.treinCarga=carga;
-    var modal=document.getElementById('eg-trein-modal').value;
-    if(modal) extra.treinModalidade=modal;
-  }
   var now=new Date().toISOString();
   var promises=[];
   for(var i=0;i<ids.length;i+=20){
     var batch=db.batch();
     ids.slice(i,i+20).forEach(function(funcId){
       var evRef=db.collection('dossie_eventos').doc();
-      batch.set(evRef,Object.assign({id:evRef.id,funcId:funcId,tipoId:tipoId,titulo:titulo,data:data,obs:obs,resp:resp,criadoEm:now,grupo:true},extra));
+      batch.set(evRef,{id:evRef.id,funcId:funcId,tipoId:tipoId,titulo:titulo,data:data,obs:obs,resp:resp,criadoEm:now,grupo:true});
     });
     promises.push(batch.commit());
   }
@@ -1749,7 +1799,7 @@ function salvarPromocao(){
     batch.set(db.collection('dossie_funcs').doc(_funcAtivo.id), upd, {merge:true});
   }
   var evRef = db.collection('dossie_eventos').doc();
-  batch.set(evRef, {id:evRef.id, funcId:_funcAtivo.id, tipoId:'promocao', titulo:titulo, data:data, obs:obs, resp:resp, criadoEm:now, especial:true, cargoNovo:cargoNovo||'', setorNovo:setorNovo||''});
+  batch.set(evRef, {id:evRef.id, funcId:_funcAtivo.id, tipoId:'promocao', titulo:titulo, data:data, obs:obs, resp:resp, criadoEm:now, especial:true});
   batch.commit().then(function(){
     if (cargoNovo) _funcAtivo.cargo = cargoNovo;
     if (setorNovo) _funcAtivo.departamento = setorNovo;

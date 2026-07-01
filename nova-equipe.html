@@ -14,6 +14,7 @@
 <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css"></noscript>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <style>
 :root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -93,6 +94,41 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .status-pill.concluido{background:#e8f8ef;color:#1a5c35;}
 .status-pill.pendente{background:#fef8ec;color:#7d4e00;}
 .status-pill.atrasado{background:#fdeaea;color:#8b1c1c;}
+.status-pill.concluido_atraso{background:#f6e2e2;color:#8b0000;}
+.pdot{display:inline-block;width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.rec-icon{font-size:11px;color:var(--text3);}
+/* KANBAN */
+.kanban-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);font-weight:600;margin-bottom:14px;}
+.kanban-toggle input{width:14px;height:14px;accent-color:var(--black);}
+.kanban-wrap{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px;}
+.kanban-col{background:var(--s2);border-radius:var(--rl);padding:12px;min-width:230px;flex:1;}
+.kanban-col-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 2px;}
+.kanban-col-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;}
+.kanban-col-count{font-size:10.5px;font-weight:700;color:var(--text3);background:var(--white);border-radius:20px;padding:1px 8px;}
+.kanban-card{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;margin-bottom:8px;border-left:3px solid;}
+.kanban-card-title{font-size:12.5px;font-weight:700;margin-bottom:4px;}
+.kanban-card-meta{font-size:10.5px;color:var(--text2);display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+.kanban-card-actions{display:flex;gap:4px;margin-top:8px;}
+.kanban-card-actions .btn-sm{padding:4px 8px;font-size:10.5px;}
+.kanban-empty{font-size:11px;color:var(--text3);text-align:center;padding:16px 0;}
+/* DASHBOARD KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;border-left:4px solid;}
+.kpi-card-label{font-size:10.5px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;}
+.kpi-card-num{font-size:24px;font-weight:900;margin:4px 0 2px;}
+.kpi-card-pct{font-size:11px;color:var(--text3);font-weight:600;}
+.atv-box{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:20px 22px;margin-bottom:20px;}
+.atv-top{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:12px;flex-wrap:wrap;gap:10px;}
+.atv-pct{font-size:32px;font-weight:900;}
+.atv-band{font-size:12px;font-weight:700;margin-top:2px;}
+.atv-sub{font-size:12px;color:var(--text2);}
+.th-track{position:relative;height:10px;border-radius:6px;background:var(--border);overflow:hidden;margin-bottom:6px;}
+.th-fill{height:100%;border-radius:6px;transition:width .3s;}
+.th-marks{display:flex;justify-content:space-between;font-size:10px;color:var(--text3);font-weight:700;}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.chart-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:18px;}
+.chart-card-title{font-size:12px;font-weight:800;margin-bottom:12px;}
+.chart-card canvas{max-height:220px;}
 .obs{font-size:11.5px;color:var(--text3);margin-top:2px;}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text3);}
 .empty-state i{font-size:32px;display:block;margin-bottom:8px;}
@@ -110,6 +146,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .cal-mini.pendente{background:#fef8ec;color:#7d4e00;}
 .cal-mini.atrasado{background:#fdeaea;color:#8b1c1c;}
 .cal-mini.concluido{background:#e8f8ef;color:#1a5c35;}
+.cal-mini.concluido_atraso{background:#f6e2e2;color:#8b0000;}
 /* MÊS */
 .cal-month-head{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px;}
 .cal-month-head div{font-size:10.5px;font-weight:800;text-transform:uppercase;color:var(--text3);text-align:center;}
@@ -217,8 +254,10 @@ tr:last-child td{border-bottom:none;}
           <button class="cv-btn" data-v="semana" onclick="calSetView('semana')">Semana</button>
           <button class="cv-btn active" data-v="mes" onclick="calSetView('mes')">Mês</button>
           <button class="cv-btn" data-v="ano" onclick="calSetView('ano')">Ano</button>
+          <button class="cv-btn" data-v="kanban" onclick="calSetView('kanban')">Kanban</button>
+          <button class="cv-btn" data-v="dashboard" onclick="calSetView('dashboard')">Dashboard</button>
         </div>
-        <div class="cal-nav">
+        <div class="cal-nav" id="cal-nav">
           <button class="btn btn-sm" onclick="calNav(-1)"><i class="ti ti-chevron-left"></i></button>
           <button class="btn btn-sm" onclick="calToday()">Hoje</button>
           <button class="btn btn-sm" onclick="calNav(1)"><i class="ti ti-chevron-right"></i></button>
@@ -233,7 +272,17 @@ tr:last-child td{border-bottom:none;}
           <option value="pendente">Pendente</option>
           <option value="atrasado">Atrasado</option>
           <option value="concluido">Concluído</option>
+          <option value="concluido_atraso">Concluído com atraso</option>
         </select>
+        <select class="fsel" id="ag-f-prioridade" onchange="renderAgenda()">
+          <option value="">Todas as prioridades</option>
+          <option value="alta">Alta</option>
+          <option value="media">Média</option>
+          <option value="baixa">Baixa</option>
+        </select>
+        <label class="kanban-toggle" id="kanban-toggle-concluidas" style="display:none">
+          <input type="checkbox" id="ag-f-mostrar-concluidas" onchange="renderAgenda()"> Mostrar concluídas no Kanban
+        </label>
       </div>
       <div id="agenda-body"></div>
     </div>
@@ -313,15 +362,32 @@ tr:last-child td{border-bottom:none;}
       <div class="fg"><label class="fl">Demanda</label><input class="fi" type="text" id="nd-nome" placeholder="Ex: DDS — Diálogo Diário de Segurança"></div>
       <div class="fg-row">
         <div class="fg"><label class="fl">Responsável</label><select class="fs" id="nd-resp"></select></div>
-        <div class="fg"><label class="fl">Periodicidade</label>
-          <select class="fs" id="nd-period">
-            <option>Diária</option><option>Semanal</option><option>Quinzenal</option>
-            <option selected>Mensal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option>
+        <div class="fg"><label class="fl">Prioridade</label>
+          <select class="fs" id="nd-prioridade">
+            <option value="alta">Alta</option><option value="media" selected>Média</option><option value="baixa">Baixa</option>
           </select>
         </div>
       </div>
-      <div class="fg"><label class="fl">Data prevista</label><input class="fi" type="date" id="nd-data"></div>
+      <div class="fg-row">
+        <div class="fg"><label class="fl">Periodicidade</label>
+          <select class="fs" id="nd-period">
+            <option>Única</option><option>Diária</option><option>Semanal</option><option>Quinzenal</option>
+            <option selected>Mensal</option><option>Trimestral</option><option>Semestral</option><option>Anual</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Data prevista</label><input class="fi" type="date" id="nd-data"></div>
+      </div>
       <div class="fg"><label class="fl">Observação (opcional)</label><textarea class="ft" id="nd-obs" placeholder="Contexto adicional"></textarea></div>
+      <div class="fg">
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;cursor:pointer">
+          <input type="checkbox" id="nd-excluir-kpi" onchange="document.getElementById('nd-motivo-wrap').style.display=this.checked?'block':'none'" style="width:16px;height:16px;accent-color:var(--black)">
+          Excluir esta demanda das métricas de KPI
+        </label>
+      </div>
+      <div class="fg" id="nd-motivo-wrap" style="display:none">
+        <label class="fl">Motivo da exclusão</label>
+        <input class="fi" type="text" id="nd-motivo" placeholder="Ex: fora do escopo do time">
+      </div>
     </div>
     <div class="modal-f"><button class="btn" onclick="closeModal('modal-demanda')">Cancelar</button><button class="btn btn-primary" onclick="salvarDemanda()">Salvar</button></div>
   </div>
@@ -392,19 +458,19 @@ var DEFAULT_FUNCOES = [
 ];
 
 var DEFAULT_DEMANDAS = [
-  {id:'d1', nome:'DSP — Diálogo de Segurança Psicológica', respId:'c1', periodicidade:'Mensal', dataPrevista:'2026-07-15', status:'pendente', obs:'', dataConclusao:null},
-  {id:'d2', nome:'DDS — Diálogo Diário de Segurança', respId:'c3', periodicidade:'Semanal', dataPrevista:'2026-06-28', status:'atrasado', obs:'Justificativa: equipe reduzida na semana', dataConclusao:null},
-  {id:'d3', nome:'Relatório anual de admissões', respId:'c4', periodicidade:'Anual', dataPrevista:'2026-01-10', status:'concluido', obs:'Enviado à diretoria em anexo', dataConclusao:'2026-01-10'}
+  {id:'d1', nome:'DSP — Diálogo de Segurança Psicológica', respId:'c1', periodicidade:'Mensal', dataPrevista:'2026-07-15', status:'pendente', prioridade:'media', obs:'', dataConclusao:null, concluidoPor:null, excluirKPI:false, motivoExclusao:''},
+  {id:'d2', nome:'DDS — Diálogo Diário de Segurança', respId:'c3', periodicidade:'Semanal', dataPrevista:'2026-06-28', status:'pendente', prioridade:'alta', obs:'', dataConclusao:null, concluidoPor:null, excluirKPI:false, motivoExclusao:''},
+  {id:'d3', nome:'Relatório anual de admissões', respId:'c4', periodicidade:'Anual', dataPrevista:'2026-01-10', status:'concluido', prioridade:'media', obs:'Enviado à diretoria em anexo', dataConclusao:'2026-01-10', concluidoPor:'c4', excluirKPI:false, motivoExclusao:''}
 ];
 
 // Demandas extras relativas a hoje, só para a agenda ficar mais rica na primeira semente
 (function seedRelativas(){
   var hoje = new Date();
   function add(dias){ var d=new Date(hoje); d.setDate(d.getDate()+dias); return toISO(d); }
-  DEFAULT_DEMANDAS.push({id:'d4', nome:'DDQ — Diálogo de Qualidade', respId:'c2', periodicidade:'Semanal', dataPrevista:toISO(hoje), status:'pendente', obs:'', dataConclusao:null});
-  DEFAULT_DEMANDAS.push({id:'d5', nome:'Acompanhamento de caso clínico', respId:'c1', periodicidade:'Quinzenal', dataPrevista:add(2), status:'pendente', obs:'', dataConclusao:null});
-  DEFAULT_DEMANDAS.push({id:'d6', nome:'Inspeção de segurança — Setor Log.', respId:'c3', periodicidade:'Mensal', dataPrevista:add(5), status:'pendente', obs:'', dataConclusao:null});
-  DEFAULT_DEMANDAS.push({id:'d7', nome:'Fechamento de folha', respId:'c4', periodicidade:'Mensal', dataPrevista:add(-4), status:'atrasado', obs:'', dataConclusao:null});
+  DEFAULT_DEMANDAS.push({id:'d4', nome:'DDQ — Diálogo de Qualidade', respId:'c2', periodicidade:'Semanal', dataPrevista:toISO(hoje), status:'pendente', prioridade:'media', obs:'', dataConclusao:null, concluidoPor:null, excluirKPI:false, motivoExclusao:''});
+  DEFAULT_DEMANDAS.push({id:'d5', nome:'Acompanhamento de caso clínico', respId:'c1', periodicidade:'Quinzenal', dataPrevista:add(2), status:'pendente', prioridade:'baixa', obs:'', dataConclusao:null, concluidoPor:null, excluirKPI:false, motivoExclusao:''});
+  DEFAULT_DEMANDAS.push({id:'d6', nome:'Inspeção de segurança — Setor Log.', respId:'c3', periodicidade:'Mensal', dataPrevista:add(5), status:'pendente', prioridade:'alta', obs:'', dataConclusao:null, concluidoPor:null, excluirKPI:false, motivoExclusao:''});
+  DEFAULT_DEMANDAS.push({id:'d7', nome:'Fechamento de folha', respId:'c4', periodicidade:'Mensal', dataPrevista:add(-4), status:'pendente', prioridade:'alta', obs:'', dataConclusao:null, concluidoPor:null, excluirKPI:false, motivoExclusao:''});
 })();
 
 // Arrays "ao vivo" — alimentados pelos listeners em tempo real do Firestore
@@ -426,7 +492,37 @@ function areaCor(id){var a=AREAS.find(function(x){return x.id===id});return a?a.
 function colabNome(id){var c=COLABORADORES.find(function(x){return x.id===id});return c?c.nome:'—';}
 function colabArea(id){var c=COLABORADORES.find(function(x){return x.id===id});return c?c.area:'';}
 function iniciais(nome){return nome.split(' ').map(function(p){return p[0]}).slice(0,2).join('').toUpperCase();}
-function statusLabel(s){return s==='concluido' ? 'Concluído' : (s==='atrasado' ? 'Atrasado' : 'Pendente');}
+function todayISO(){ return toISO(new Date()); }
+// status armazenado é só 'pendente' | 'concluido' | 'concluido_atraso' — "atrasado" é sempre calculado na hora
+function demandaAtrasada(d){ return d.status!=='concluido' && d.status!=='concluido_atraso' && !!(d.dataPrevista && d.dataPrevista<todayISO()); }
+function statusVisual(d){
+  if(d.status==='concluido' || d.status==='concluido_atraso') return d.status;
+  return demandaAtrasada(d) ? 'atrasado' : 'pendente';
+}
+function statusLabel(sv){
+  if(sv==='concluido') return 'Concluído';
+  if(sv==='concluido_atraso') return 'Concluído com atraso';
+  if(sv==='atrasado') return 'Atrasado';
+  return 'Pendente';
+}
+var PRCLR = {alta:'#c0392b', media:'#c77a2e', baixa:'#5b8c3e'};
+var PRLABEL = {alta:'Alta', media:'Média', baixa:'Baixa'};
+function prioridadeDot(p){ return '<span class="pdot" style="background:'+(PRCLR[p]||PRCLR.media)+'" title="Prioridade '+(PRLABEL[p]||'Média')+'"></span>'; }
+function calcNextPrazo(periodicidade, prazoAtual){
+  if(!periodicidade || periodicidade==='Única' || !prazoAtual) return null;
+  var d = fromISO(prazoAtual);
+  switch(periodicidade){
+    case 'Diária': d.setDate(d.getDate()+1); break;
+    case 'Semanal': d.setDate(d.getDate()+7); break;
+    case 'Quinzenal': d.setDate(d.getDate()+14); break;
+    case 'Mensal': d.setMonth(d.getMonth()+1); break;
+    case 'Trimestral': d.setMonth(d.getMonth()+3); break;
+    case 'Semestral': d.setMonth(d.getMonth()+6); break;
+    case 'Anual': d.setFullYear(d.getFullYear()+1); break;
+    default: return null;
+  }
+  return toISO(d);
+}
 var MES_NOMES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 var MES_CURTO=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 var DIA_CURTO=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -586,10 +682,12 @@ function demandasFiltradas(){
   var fResp = document.getElementById('ag-f-resp').value;
   var fArea = document.getElementById('ag-f-area').value;
   var fStatus = document.getElementById('ag-f-status').value;
+  var fPrioridade = document.getElementById('ag-f-prioridade').value;
   return DEMANDAS.filter(function(d){
     if(fResp && d.respId!==fResp) return false;
     if(fArea && colabArea(d.respId)!==fArea) return false;
-    if(fStatus && d.status!==fStatus) return false;
+    if(fStatus && statusVisual(d)!==fStatus) return false;
+    if(fPrioridade && (d.prioridade||'media')!==fPrioridade) return false;
     return true;
   });
 }
@@ -603,6 +701,8 @@ var CAL_DATE = new Date();
 function calSetView(v){
   CAL_VIEW = v;
   document.querySelectorAll('.cv-btn').forEach(function(b){b.classList.toggle('active', b.dataset.v===v)});
+  document.getElementById('cal-nav').style.display = (v==='kanban'||v==='dashboard') ? 'none' : 'flex';
+  document.getElementById('kanban-toggle-concluidas').style.display = (v==='kanban') ? 'flex' : 'none';
   renderAgenda();
 }
 function calNav(delta){
@@ -613,7 +713,7 @@ function calNav(delta){
   renderAgenda();
 }
 function calToday(){ CAL_DATE = new Date(); renderAgenda(); }
-function calGoTo(iso, view){ CAL_DATE = fromISO(iso); CAL_VIEW = view||'dia'; document.querySelectorAll('.cv-btn').forEach(function(b){b.classList.toggle('active', b.dataset.v===CAL_VIEW)}); renderAgenda(); }
+function calGoTo(iso, view){ CAL_DATE = fromISO(iso); CAL_VIEW = view||'dia'; document.querySelectorAll('.cv-btn').forEach(function(b){b.classList.toggle('active', b.dataset.v===CAL_VIEW)}); document.getElementById('cal-nav').style.display='flex'; document.getElementById('kanban-toggle-concluidas').style.display='none'; renderAgenda(); }
 
 function renderAgenda(){
   var lista = demandasFiltradas();
@@ -631,23 +731,29 @@ function renderAgenda(){
   } else if(CAL_VIEW==='mes'){
     label.textContent = MES_NOMES[CAL_DATE.getMonth()]+' de '+CAL_DATE.getFullYear();
     renderMes(body, lista);
-  } else {
+  } else if(CAL_VIEW==='ano'){
     label.textContent = ''+CAL_DATE.getFullYear();
     renderAno(body, lista);
+  } else if(CAL_VIEW==='kanban'){
+    renderKanban(body, lista);
+  } else if(CAL_VIEW==='dashboard'){
+    renderDashboard(body, lista);
   }
 }
 
 function dayCardHTML(d){
-  var acoes = d.status==='concluido' ? '' :
+  var sv = statusVisual(d);
+  var acoes = (sv==='concluido'||sv==='concluido_atraso') ? '' :
     '<button class="btn btn-sm" onclick="abrirConcluirModal(\''+d.id+'\')"><i class="ti ti-check"></i> Concluir</button>'
-    +(d.status==='atrasado' ? ' <button class="btn btn-sm" onclick="justificarDemanda(\''+d.id+'\')">Justificar</button>' : '');
+    +(sv==='atrasado' ? ' <button class="btn btn-sm" onclick="justificarDemanda(\''+d.id+'\')">Justificar</button>' : '');
+  var recIcon = (d.periodicidade && d.periodicidade!=='Única') ? ' <i class="ti ti-repeat rec-icon" title="Recorrência: '+d.periodicidade+'"></i>' : '';
   var infoLinha = colabNome(d.respId)+' · '+d.periodicidade+(d.obs?' · '+d.obs:'');
-  if(d.status==='concluido') infoLinha += ' · Concluído por '+colabNome(d.concluidoPor)+' em '+formatBR(d.dataConclusao);
+  if(sv==='concluido'||sv==='concluido_atraso') infoLinha += ' · Concluído por '+colabNome(d.concluidoPor)+' em '+formatBR(d.dataConclusao);
   return '<div class="day-card">'
     +'<div>'
-    +'<div style="font-weight:700;font-size:13.5px">'+d.nome+'</div>'
+    +'<div style="font-weight:700;font-size:13.5px;display:flex;align-items:center;gap:6px">'+prioridadeDot(d.prioridade||'media')+d.nome+recIcon+(d.excluirKPI?' <span class="badge" title="'+(d.motivoExclusao||'')+'">Fora do KPI</span>':'')+'</div>'
     +'<div class="obs">'+infoLinha+'</div>'
-    +'<div style="margin-top:8px"><span class="status-pill '+d.status+'">'+statusLabel(d.status)+'</span></div>'
+    +'<div style="margin-top:8px"><span class="status-pill '+sv+'">'+statusLabel(sv)+'</span></div>'
     +'</div>'
     +'<div class="day-card-actions">'+acoes+'<button class="card-del" title="Remover" onclick="removerDemanda(\''+d.id+'\')"><i class="ti ti-x"></i></button></div>'
     +'</div>';
@@ -670,7 +776,7 @@ function renderSemana(body, lista, inicioSemana){
     html += '<div class="cal-week-col'+(isHoje?' today':'')+'" onclick="calGoTo(\''+iso+'\',\'dia\')">'
       +'<div class="cal-week-head">'+DIA_CURTO[d.getDay()]+'</div>'
       +'<div class="cal-week-date">'+d.getDate()+'</div>'
-      +doDia.map(function(x){ return '<div class="cal-mini '+x.status+'" title="'+x.nome+'">'+x.nome+'</div>'; }).join('')
+      +doDia.map(function(x){ return '<div class="cal-mini '+statusVisual(x)+'" title="'+x.nome+'">'+x.nome+'</div>'; }).join('')
       +'</div>';
   }
   html += '</div>';
@@ -699,7 +805,7 @@ function renderMes(body, lista){
     var isHoje = sameDay(d, hoje);
     grid += '<div class="cal-day-cell'+(inMonth?'':' out')+(isHoje?' today':'')+'" onclick="calGoTo(\''+iso+'\',\'dia\')">'
       +'<div class="cal-day-num">'+d.getDate()+'</div>'
-      +itens.slice(0,2).map(function(x){ return '<div class="cal-mini '+x.status+'" title="'+x.nome+'">'+x.nome+'</div>'; }).join('')
+      +itens.slice(0,2).map(function(x){ return '<div class="cal-mini '+statusVisual(x)+'" title="'+x.nome+'">'+x.nome+'</div>'; }).join('')
       +(itens.length>2 ? '<div class="cal-more">+'+(itens.length-2)+' outra(s)</div>' : '')
       +'</div>';
   }
@@ -713,7 +819,8 @@ function renderAno(body, lista){
   for(var m=0;m<12;m++){
     var doMes = lista.filter(function(x){ var d=fromISO(x.dataPrevista); return d.getFullYear()===ano && d.getMonth()===m; });
     var cores = doMes.slice(0,10).map(function(x){
-      var c = x.status==='concluido' ? '#1a5c35' : (x.status==='atrasado' ? '#8b1c1c' : '#7d4e00');
+      var sv = statusVisual(x);
+      var c = sv==='concluido' ? '#1a5c35' : sv==='concluido_atraso' ? '#8b0000' : (sv==='atrasado' ? '#8b1c1c' : '#7d4e00');
       return '<span style="background:'+c+'"></span>';
     }).join('');
     html += '<div class="cal-year-card" onclick="CAL_DATE=new Date('+ano+','+m+',1);calSetView(\'mes\')">'
@@ -726,7 +833,129 @@ function renderAno(body, lista){
   body.innerHTML = html;
 }
 
-var CONCLUIR_ALVO = null;
+// ── KANBAN POR URGÊNCIA ──
+function getUrgencia(d){
+  var sv = statusVisual(d);
+  if(sv==='concluido' || sv==='concluido_atraso') return 'done';
+  if(!d.dataPrevista) return 'semdata';
+  if(sv==='atrasado') return 'atraso';
+  var hoje = todayISO();
+  var amanha = toISO(new Date(Date.now()+86400000));
+  if(d.dataPrevista===hoje) return 'hoje';
+  if(d.dataPrevista===amanha) return 'amanha';
+  var d7 = new Date(); d7.setDate(d7.getDate()+7);
+  if(d.dataPrevista<=toISO(d7)) return 'semana';
+  return 'futuro';
+}
+var KANBAN_COLS = [
+  {key:'atraso', titulo:'Em Atraso', cor:'#8b1c1c'},
+  {key:'hoje', titulo:'Vence Hoje', cor:'#c77a2e'},
+  {key:'amanha', titulo:'Amanhã', cor:'#b6904a'},
+  {key:'semana', titulo:'Esta Semana', cor:'#5b8c3e'},
+  {key:'futuro', titulo:'Futuras', cor:'#3c6e9e'},
+  {key:'semdata', titulo:'Sem Prazo', cor:'#a09890'}
+];
+function kanbanCardHTML(d){
+  var sv = statusVisual(d);
+  var recIcon = (d.periodicidade && d.periodicidade!=='Única') ? ' <i class="ti ti-repeat rec-icon" title="Recorrência: '+d.periodicidade+'"></i>' : '';
+  var acoes = (sv==='concluido'||sv==='concluido_atraso') ? '' : '<button class="btn btn-sm" onclick="abrirConcluirModal(\''+d.id+'\')"><i class="ti ti-check"></i></button>';
+  return '<div class="kanban-card" style="border-left-color:'+(PRCLR[d.prioridade||'media'])+'">'
+    +'<div class="kanban-card-title">'+d.nome+recIcon+'</div>'
+    +'<div class="kanban-card-meta">'+prioridadeDot(d.prioridade||'media')+colabNome(d.respId)+' · '+formatBR(d.dataPrevista)+'</div>'
+    +'<div class="kanban-card-meta"><span class="status-pill '+sv+'" style="padding:2px 8px">'+statusLabel(sv)+'</span></div>'
+    +'<div class="kanban-card-actions">'+acoes+'<button class="card-del" title="Remover" onclick="removerDemanda(\''+d.id+'\')"><i class="ti ti-x"></i></button></div>'
+    +'</div>';
+}
+function renderKanban(body, lista){
+  var mostrarConcluidas = document.getElementById('ag-f-mostrar-concluidas').checked;
+  var cols = KANBAN_COLS.slice();
+  if(mostrarConcluidas) cols.push({key:'done', titulo:'Concluídas', cor:'#1a5c35'});
+  var buckets = {};
+  cols.forEach(function(c){ buckets[c.key] = []; });
+  lista.forEach(function(d){
+    var u = getUrgencia(d);
+    if(u==='done' && !mostrarConcluidas) return;
+    if(!buckets[u]) buckets[u] = [];
+    buckets[u].push(d);
+  });
+  var html = '<div class="kanban-wrap">';
+  cols.forEach(function(c){
+    var itens = buckets[c.key]||[];
+    html += '<div class="kanban-col">'
+      +'<div class="kanban-col-head"><span class="kanban-col-title" style="color:'+c.cor+'">'+c.titulo+'</span><span class="kanban-col-count">'+itens.length+'</span></div>'
+      +(itens.length ? itens.map(kanbanCardHTML).join('') : '<div class="kanban-empty">Nada por aqui</div>')
+      +'</div>';
+  });
+  html += '</div>';
+  body.innerHTML = html;
+}
+
+// ── DASHBOARD DE KPI ──
+var chartStatusRef=null, chartAreaRef=null;
+function calcularKPI(lista){
+  var kpi = lista.filter(function(d){ return !d.excluirKPI; });
+  var tot=lista.length, totKpi=kpi.length, excl=tot-totKpi;
+  var co=0, ca=0, at=0, ab=0;
+  kpi.forEach(function(d){
+    var sv = statusVisual(d);
+    if(sv==='concluido') co++;
+    else if(sv==='concluido_atraso') ca++;
+    else if(sv==='atrasado') at++;
+    else ab++;
+  });
+  var den = co+ca+at;
+  var pct = den>0 ? Math.round((co/den)*1000)/10 : null;
+  return {tot:tot, totKpi:totKpi, excl:excl, co:co, ca:ca, at:at, ab:ab, den:den, pct:pct};
+}
+function renderDashboard(body, lista){
+  var k = calcularKPI(lista);
+  var p = function(v){ return k.totKpi ? Math.round(v/k.totKpi*100) : 0; };
+  var color = k.pct===null ? 'var(--text3)' : (k.pct>=95?'#1a5c35':k.pct>=90?'#5b8c3e':k.pct>=85?'#7d4e00':'#8b1c1c');
+  var band = k.pct===null ? 'Sem dados' : (k.pct>=100?'★ Perfeito':k.pct>=95?'✓ Excelente':k.pct>=90?'✓ Ótimo':k.pct>=85?'▲ Bom':'⚠ Insuficiente');
+
+  var html = '<div class="kpi-row">'
+    +'<div class="kpi-card" style="border-left-color:#3c6e9e"><div class="kpi-card-label">Abertas</div><div class="kpi-card-num" style="color:#3c6e9e">'+k.ab+'</div><div class="kpi-card-pct">'+p(k.ab)+'% do KPI · '+k.totKpi+' total</div></div>'
+    +'<div class="kpi-card" style="border-left-color:#8b1c1c"><div class="kpi-card-label">Em Atraso</div><div class="kpi-card-num" style="color:#8b1c1c">'+k.at+'</div><div class="kpi-card-pct">'+p(k.at)+'% do KPI</div></div>'
+    +'<div class="kpi-card" style="border-left-color:#1a5c35"><div class="kpi-card-label">Concluídas</div><div class="kpi-card-num" style="color:#1a5c35">'+k.co+'</div><div class="kpi-card-pct">'+p(k.co)+'% do KPI</div></div>'
+    +'<div class="kpi-card" style="border-left-color:#8b0000"><div class="kpi-card-label">Conc. com Atraso</div><div class="kpi-card-num" style="color:#8b0000">'+k.ca+'</div><div class="kpi-card-pct">'+p(k.ca)+'% do KPI'+(k.excl?' · '+k.excl+' excl. KPI':'')+'</div></div>'
+    +'</div>';
+
+  html += '<div class="atv-box">'
+    +'<div class="atv-top"><div><div class="atv-pct" style="color:'+color+'">'+(k.pct===null?'—':k.pct+'%')+'</div><div class="atv-band" style="color:'+color+'">'+band+'</div></div>'
+    +'<div class="atv-sub">% conclusão no prazo · '+k.den+' demanda'+(k.den!==1?'s':'')+' avaliada'+(k.den!==1?'s':'')+'</div></div>'
+    +'<div class="th-track"><div class="th-fill" style="width:'+(k.pct===null?0:Math.min(k.pct,100))+'%;background:'+color+'"></div></div>'
+    +'<div class="th-marks"><span>0%</span><span>85%</span><span>90%</span><span>95%</span><span>100%</span></div>'
+    +'</div>';
+
+  html += '<div class="charts-row">'
+    +'<div class="chart-card"><div class="chart-card-title">Distribuição por status</div><canvas id="chart-status"></canvas></div>'
+    +'<div class="chart-card"><div class="chart-card-title">Demandas por área</div><canvas id="chart-area"></canvas></div>'
+    +'</div>';
+
+  body.innerHTML = html;
+
+  var statusCounts = {pendente:0, atrasado:0, concluido:0, concluido_atraso:0};
+  lista.forEach(function(d){ statusCounts[statusVisual(d)]++; });
+  var areaCounts = {};
+  lista.forEach(function(d){ var a=areaNome(colabArea(d.respId)); areaCounts[a]=(areaCounts[a]||0)+1; });
+
+  if(typeof Chart==='undefined') return;
+  if(chartStatusRef) chartStatusRef.destroy();
+  if(chartAreaRef) chartAreaRef.destroy();
+  chartStatusRef = new Chart(document.getElementById('chart-status'), {
+    type:'doughnut',
+    data:{ labels:['Pendente','Atrasado','Concluído','Conc. c/ Atraso'],
+      datasets:[{ data:[statusCounts.pendente, statusCounts.atrasado, statusCounts.concluido, statusCounts.concluido_atraso],
+        backgroundColor:['#c77a2e','#8b1c1c','#1a5c35','#8b0000'] }] },
+    options:{ plugins:{legend:{position:'bottom',labels:{boxWidth:10,font:{size:11}}}} }
+  });
+  var areaLabels = Object.keys(areaCounts);
+  chartAreaRef = new Chart(document.getElementById('chart-area'), {
+    type:'bar',
+    data:{ labels:areaLabels, datasets:[{ data:areaLabels.map(function(a){return areaCounts[a];}), backgroundColor:'#0e0f12', borderRadius:4 }] },
+    options:{ plugins:{legend:{display:false}}, scales:{ y:{beginAtZero:true, ticks:{stepSize:1}} } }
+  });
+}
 function abrirConcluirModal(id){
   var d = DEMANDAS.find(function(x){return x.id===id});
   if(!d) return;
@@ -737,7 +966,7 @@ function abrirConcluirModal(id){
   document.getElementById('mc-quem').value = d.respId;
   var justifWrap = document.getElementById('mc-justif-wrap');
   var justifInput = document.getElementById('mc-justif');
-  if(d.status==='atrasado'){
+  if(statusVisual(d)==='atrasado'){
     justifWrap.style.display='block';
     justifInput.value = (d.obs||'').replace(/^Justificativa:\s*/,'');
   } else {
@@ -753,7 +982,8 @@ function confirmarConclusao(){
   var quem = document.getElementById('mc-quem').value;
   if(!data){ toast('Informe a data de conclusão.','err'); return; }
   var justifWrap = document.getElementById('mc-justif-wrap');
-  var upd = {status:'concluido', dataConclusao:data, concluidoPor:quem};
+  var atrasada = !!(d.dataPrevista && data>d.dataPrevista);
+  var upd = {status: atrasada ? 'concluido_atraso' : 'concluido', dataConclusao:data, concluidoPor:quem};
   if(justifWrap.style.display!=='none'){
     var j = document.getElementById('mc-justif').value.trim();
     if(!j){ toast('Informe a justificativa do atraso.','err'); return; }
@@ -764,7 +994,21 @@ function confirmarConclusao(){
   renderAgenda(); renderRelatorios();
   db.collection('equipe_demandas').doc(d.id).update(upd).then(function(){
     toast('Demanda concluída.','ok');
+    gerarProximaRecorrencia(d);
   }).catch(function(e){ toast('Erro ao salvar: '+e.message,'err'); });
+}
+function gerarProximaRecorrencia(d){
+  var nextPrazo = calcNextPrazo(d.periodicidade, d.dataPrevista);
+  if(!nextPrazo) return;
+  var ref = db.collection('equipe_demandas').doc();
+  var nova = {id:ref.id, nome:d.nome, respId:d.respId, periodicidade:d.periodicidade, prioridade:d.prioridade||'media',
+    dataPrevista:nextPrazo, status:'pendente', obs:'Gerada automaticamente por recorrência ('+d.periodicidade+').',
+    dataConclusao:null, concluidoPor:null, excluirKPI:d.excluirKPI||false, motivoExclusao:d.motivoExclusao||''};
+  DEMANDAS.push(nova);
+  renderAgenda(); renderRelatorios();
+  ref.set(nova).then(function(){
+    toast('Próxima ocorrência criada para '+formatBR(nextPrazo)+'.','ok');
+  }).catch(function(e){ toast('Erro ao gerar recorrência: '+e.message,'err'); });
 }
 function justificarDemanda(id){
   var d = DEMANDAS.find(function(x){return x.id===id});
@@ -804,11 +1048,12 @@ function renderRelatorios(){
   var el = document.getElementById('relatorios-body');
   if(!lista.length){ el.innerHTML='<tr><td colspan="6" style="color:var(--text3);text-align:center;padding:24px">Nenhum registro encontrado.</td></tr>'; return; }
   el.innerHTML = lista.map(function(d){
+    var sv = statusVisual(d);
     return '<tr>'
       +'<td>'+colabNome(d.respId)+'</td>'
       +'<td>'+areaNome(colabArea(d.respId))+'</td>'
       +'<td>'+d.nome+'</td>'
-      +'<td><span class="status-pill '+d.status+'">'+statusLabel(d.status)+'</span></td>'
+      +'<td><span class="status-pill '+sv+'">'+statusLabel(sv)+'</span></td>'
       +'<td>'+(d.concluidoPor ? colabNome(d.concluidoPor) : '—')+'</td>'
       +'<td>'+formatBR(d.dataConclusao)+'</td>'
       +'</tr>';
@@ -941,6 +1186,11 @@ function openDemandaModal(){
   document.getElementById('nd-nome').value='';
   document.getElementById('nd-obs').value='';
   document.getElementById('nd-data').value = toISO(new Date());
+  document.getElementById('nd-prioridade').value = 'media';
+  document.getElementById('nd-period').value = 'Mensal';
+  document.getElementById('nd-excluir-kpi').checked = false;
+  document.getElementById('nd-motivo').value = '';
+  document.getElementById('nd-motivo-wrap').style.display = 'none';
   populaSelectResp('nd-resp');
   openModal('modal-demanda');
 }
@@ -948,11 +1198,14 @@ function salvarDemanda(){
   var nome = document.getElementById('nd-nome').value.trim();
   var respId = document.getElementById('nd-resp').value;
   var periodicidade = document.getElementById('nd-period').value;
+  var prioridade = document.getElementById('nd-prioridade').value;
   var dataPrevista = document.getElementById('nd-data').value;
   var obs = document.getElementById('nd-obs').value.trim();
+  var excluirKPI = document.getElementById('nd-excluir-kpi').checked;
+  var motivoExclusao = document.getElementById('nd-motivo').value.trim();
   if(!nome || !dataPrevista){ toast('Preencha a demanda e a data prevista.','err'); return; }
   var ref = db.collection('equipe_demandas').doc();
-  var nova = {id:ref.id, nome:nome, respId:respId, periodicidade:periodicidade, dataPrevista:dataPrevista, status:'pendente', obs:obs, dataConclusao:null, concluidoPor:null};
+  var nova = {id:ref.id, nome:nome, respId:respId, periodicidade:periodicidade, prioridade:prioridade, dataPrevista:dataPrevista, status:'pendente', obs:obs, dataConclusao:null, concluidoPor:null, excluirKPI:excluirKPI, motivoExclusao:motivoExclusao};
   DEMANDAS.push(nova);
   closeModal('modal-demanda');
   renderAgenda(); renderRelatorios();

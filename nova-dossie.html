@@ -227,6 +227,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         <div class="cfg-tab" id="cfgtab-adiant" onclick="showCfgTab('adiant')">Relatório de Adiantamentos</div>
         <div class="cfg-tab" id="cfgtab-disc" onclick="showCfgTab('disc')">Medidas Disciplinares</div>
         <div class="cfg-tab" id="cfgtab-badges" onclick="showCfgTab('badges')">Brigada · CIPA · Multiplicador</div>
+        <div class="cfg-tab" id="cfgtab-evtipo" onclick="showCfgTab('evtipo')">Relatório por Tipo</div>
       </div>
 
       <div id="cfgview-tipos">
@@ -311,6 +312,21 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
             <div style="margin-left:auto"><button class="btn btn-primary" onclick="exportBadgesExcel()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button></div>
           </div>
           <div id="rel-badge-corpo"></div>
+        </div>
+      </div>
+
+      <div id="cfgview-evtipo" style="display:none">
+        <div class="cfg-section">
+          <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Tipo de Evento</label>
+              <select class="fs" id="rel-evt-tipo" style="width:300px" onchange="renderRelEvtTipo()"><option value="">Todos os tipos</option></select></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">De</label>
+              <input class="fs" type="date" id="rel-evt-ini" style="width:150px" onchange="renderRelEvtTipo()"></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Até</label>
+              <input class="fs" type="date" id="rel-evt-fim" style="width:150px" onchange="renderRelEvtTipo()"></div>
+            <div style="margin-left:auto"><button class="btn btn-primary" onclick="exportEvtTipoExcel()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button></div>
+          </div>
+          <div id="rel-evt-corpo"></div>
         </div>
       </div>
     </div>
@@ -1335,7 +1351,7 @@ function renderCfg() {
 function funcNome(id){ var f=_funcs.find(function(x){return x.id===id;}); return f?f.nome:'(funcionário removido)'; }
 
 function showCfgTab(tab){
-  ['tipos','trein','nr','adiant','disc','badges'].forEach(function(t){
+  ['tipos','trein','nr','adiant','disc','badges','evtipo'].forEach(function(t){
     document.getElementById('cfgview-'+t).style.display = (t===tab)?'block':'none';
     document.getElementById('cfgtab-'+t).classList.toggle('active', t===tab);
   });
@@ -1345,6 +1361,7 @@ function showCfgTab(tab){
   if (tab==='adiant') renderRelAdiantamento();
   if (tab==='disc')   renderRelDisciplinar();
   if (tab==='badges') renderRelBadges();
+  if (tab==='evtipo') { popularSelectEvtTipo(); renderRelEvtTipo(); }
 }
 
 function renderRelTreinamento(){
@@ -1538,6 +1555,84 @@ function exportBadgesExcel(){
   XLSX.utils.book_append_sheet(wb, ws, 'Designações');
   var dt = new Date().toISOString().slice(0,10);
   XLSX.writeFile(wb, 'designacoes_brigada_cipa_mult_'+dt+'.xlsx');
+  toast('Planilha gerada!','ok');
+}
+
+// ════ RELATÓRIO POR TIPO DE EVENTO ════
+function nomeTipo(id){ var t=_tipos.find(function(x){return x.id===id;}); return t?t.nome:(id||'—'); }
+
+function popularSelectEvtTipo(){
+  var sel=document.getElementById('rel-evt-tipo');
+  var atual=sel.value;
+  var opts='<option value="">Todos os tipos</option>';
+  _tipos.slice().sort(function(a,b){return (a.nome||'').localeCompare(b.nome||'');}).forEach(function(t){
+    opts+='<option value="'+t.id+'">'+t.nome+'</option>';
+  });
+  sel.innerHTML=opts;
+  sel.value=atual;
+}
+
+function coletarEvtTipo(){
+  var tipo=document.getElementById('rel-evt-tipo').value;
+  var ini=document.getElementById('rel-evt-ini').value;
+  var fim=document.getElementById('rel-evt-fim').value;
+  var evs=_eventos.filter(function(ev){
+    if(tipo && ev.tipoId!==tipo) return false;
+    var dt=String(ev.data||'');
+    if(ini && dt && dt<ini) return false;
+    if(fim && dt && dt>fim) return false;
+    return true;
+  });
+  evs.sort(function(a,b){return String(b.data||'').localeCompare(String(a.data||''));});
+  return evs;
+}
+
+function renderRelEvtTipo(){
+  var evs=coletarEvtTipo();
+  var corpo=document.getElementById('rel-evt-corpo');
+  if(!evs.length){ corpo.innerHTML='<div class="empty" style="padding:24px 0"><i class="ti ti-clipboard-list"></i><p>Nenhum evento encontrado com os filtros.</p></div>'; return; }
+  // Contagem por mês
+  var porMes={};
+  evs.forEach(function(ev){ var m=String(ev.data||'').slice(0,7)||'—'; porMes[m]=(porMes[m]||0)+1; });
+  var nomesMes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  function labelMes(m){ if(m==='—'||m==='')return 'Sem data'; var p=m.split('-'); return nomesMes[parseInt(p[1],10)-1]+'/'+p[0]; }
+  var resumoMes=Object.keys(porMes).sort().reverse().map(function(m){
+    return '<span class="badge b-gray" style="margin:2px 3px">'+labelMes(m)+': <strong>'+porMes[m]+'</strong></span>';
+  }).join('');
+
+  corpo.innerHTML =
+     '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">'
+    +'<span style="font-size:24px;font-weight:900">'+evs.length+'</span>'
+    +'<span style="font-size:12px;font-weight:700;color:var(--text2)">registro(s) no total</span></div>'
+    +'<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;align-items:center">'
+    +'<span style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-right:8px">Por mês:</span>'+resumoMes+'</div>'
+    +'<table class="cfg-table"><thead><tr><th>Data</th><th>Funcionário</th><th>Tipo</th><th>Título</th><th>Responsável</th><th>Observação</th></tr></thead><tbody>'
+    + evs.map(function(ev){
+        return '<tr><td style="white-space:nowrap">'+fmtDate(ev.data)+'</td>'
+          +'<td style="font-weight:600">'+funcNome(ev.funcId)+'</td>'
+          +'<td>'+nomeTipo(ev.tipoId)+'</td>'
+          +'<td>'+(ev.titulo||'—')+'</td>'
+          +'<td>'+(ev.resp||'—')+'</td>'
+          +'<td style="color:var(--text2);font-size:12px">'+(ev.obs||'')+'</td></tr>';
+      }).join('')
+    +'</tbody></table>';
+}
+
+function exportEvtTipoExcel(){
+  if(typeof XLSX==='undefined'){ toast('Biblioteca de exportação ainda carregando, tente novamente.','err'); return; }
+  var evs=coletarEvtTipo();
+  if(!evs.length){ toast('Nada para exportar com os filtros atuais.','warn'); return; }
+  var aoa=[['Data','Funcionário','Tipo','Título','Responsável','Observação']];
+  evs.forEach(function(ev){
+    aoa.push([fmtDate(ev.data), funcNome(ev.funcId), nomeTipo(ev.tipoId), ev.titulo||'', ev.resp||'', ev.obs||'']);
+  });
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:12},{wch:30},{wch:28},{wch:34},{wch:20},{wch:44}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Eventos');
+  var tipoSel=document.getElementById('rel-evt-tipo').value;
+  var nomeArq='eventos_'+(tipoSel||'todos')+'_'+new Date().toISOString().slice(0,10)+'.xlsx';
+  XLSX.writeFile(wb, nomeArq);
   toast('Planilha gerada!','ok');
 }
 

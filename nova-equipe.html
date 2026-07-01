@@ -1226,51 +1226,75 @@ function toast(msg,type){
 
 // ────────────────────────────────────────────────
 // BOOT — escuta as 4 coleções em tempo real (onSnapshot).
-// Se alguma estiver vazia na primeira carga, grava os
-// dados padrão como semente (uma única vez).
+// A semente de dados padrão só acontece UMA VEZ NA VIDA do
+// sistema (controlado por equipe_meta/seed no Firestore) —
+// se alguém apagar tudo depois, não volta sozinho.
 // ────────────────────────────────────────────────
 document.getElementById('topbar-actions').innerHTML = TAB_ACTIONS.organograma;
 
-var SEEDED = {};
+var META_REF = db.collection('equipe_meta').doc('seed');
+var seedFlags = null; // null = ainda não sabemos; objeto = flags carregadas
+
 function seedIfNeeded(snap, key, collectionName, defaults){
-  if(!snap.empty || SEEDED[key]) return;
-  SEEDED[key] = true;
+  if(!seedFlags) return; // flags ainda não carregadas — espera o próximo snapshot
+  if(!snap.empty){
+    // já existem dados reais: só garante que o marcador fique travado para o futuro
+    if(!seedFlags[key]){
+      seedFlags[key] = true;
+      META_REF.set(seedFlags, {merge:true}).catch(function(e){ console.warn('[equipe] falha ao travar marcador de semente', e); });
+    }
+    return;
+  }
+  if(seedFlags[key]) return;        // já foi semeado uma vez — respeita exclusões do usuário
+  seedFlags[key] = true;
   var batch = db.batch();
   defaults.forEach(function(item){ batch.set(db.collection(collectionName).doc(item.id), item); });
+  batch.set(META_REF, seedFlags, {merge:true});
   batch.commit().catch(function(e){ console.warn('[equipe] falha ao semear '+collectionName, e); });
 }
 
-db.collection('equipe_areas').onSnapshot(function(snap){
-  AREAS = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
-  seedIfNeeded(snap, 'areas', 'equipe_areas', DEFAULT_AREAS);
-  refreshFiltroSelects();
-  renderOrganograma(); orgZoomFit();
-  renderFuncoes();
-  renderAgenda();
-  renderRelatorios();
-}, function(e){ console.warn('[equipe] listener equipe_areas falhou', e); toast('Sem conexão com o Firestore — verifique sua internet.','err'); });
+function attachListeners(){
+  db.collection('equipe_areas').onSnapshot(function(snap){
+    AREAS = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    seedIfNeeded(snap, 'areas', 'equipe_areas', DEFAULT_AREAS);
+    refreshFiltroSelects();
+    renderOrganograma(); orgZoomFit();
+    renderFuncoes();
+    renderAgenda();
+    renderRelatorios();
+  }, function(e){ console.warn('[equipe] listener equipe_areas falhou', e); toast('Sem conexão com o Firestore — verifique sua internet.','err'); });
 
-db.collection('equipe_colaboradores').onSnapshot(function(snap){
-  COLABORADORES = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
-  seedIfNeeded(snap, 'colab', 'equipe_colaboradores', DEFAULT_COLABORADORES);
-  refreshFiltroSelects();
-  renderOrganograma(); orgZoomFit();
-  renderAgenda();
-  renderRelatorios();
-}, function(e){ console.warn('[equipe] listener equipe_colaboradores falhou', e); });
+  db.collection('equipe_colaboradores').onSnapshot(function(snap){
+    COLABORADORES = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    seedIfNeeded(snap, 'colaboradores', 'equipe_colaboradores', DEFAULT_COLABORADORES);
+    refreshFiltroSelects();
+    renderOrganograma(); orgZoomFit();
+    renderAgenda();
+    renderRelatorios();
+  }, function(e){ console.warn('[equipe] listener equipe_colaboradores falhou', e); });
 
-db.collection('equipe_funcoes').onSnapshot(function(snap){
-  FUNCOES = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
-  seedIfNeeded(snap, 'func', 'equipe_funcoes', DEFAULT_FUNCOES);
-  renderFuncoes();
-}, function(e){ console.warn('[equipe] listener equipe_funcoes falhou', e); });
+  db.collection('equipe_funcoes').onSnapshot(function(snap){
+    FUNCOES = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    seedIfNeeded(snap, 'funcoes', 'equipe_funcoes', DEFAULT_FUNCOES);
+    renderFuncoes();
+  }, function(e){ console.warn('[equipe] listener equipe_funcoes falhou', e); });
 
-db.collection('equipe_demandas').onSnapshot(function(snap){
-  DEMANDAS = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
-  seedIfNeeded(snap, 'dem', 'equipe_demandas', DEFAULT_DEMANDAS);
-  renderAgenda();
-  renderRelatorios();
-}, function(e){ console.warn('[equipe] listener equipe_demandas falhou', e); });
+  db.collection('equipe_demandas').onSnapshot(function(snap){
+    DEMANDAS = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    seedIfNeeded(snap, 'demandas', 'equipe_demandas', DEFAULT_DEMANDAS);
+    renderAgenda();
+    renderRelatorios();
+  }, function(e){ console.warn('[equipe] listener equipe_demandas falhou', e); });
+}
+
+META_REF.get().then(function(doc){
+  seedFlags = doc.exists ? doc.data() : {};
+  attachListeners();
+}).catch(function(e){
+  console.warn('[equipe] falha ao ler marcador de semente — seguindo sem semear automaticamente', e);
+  seedFlags = {areas:true, colaboradores:true, funcoes:true, demandas:true}; // por segurança, não semeia se não conseguir confirmar
+  attachListeners();
+});
 </script>
 </body>
 </html>

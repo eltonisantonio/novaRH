@@ -131,6 +131,16 @@ iframe{flex:1;border:none;width:100%;height:100%;}
 
 /* ── BADGE SOL ── */
 .nav-badge{background:var(--lime);color:var(--black);font-size:9px;font-weight:900;padding:1px 5px;border-radius:8px;margin-left:auto;}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(14,15,18,.55);z-index:200;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:14px;width:520px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;}
+.modal-h{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:15px;font-weight:800;}
+.modal-close{background:transparent;border:none;font-size:18px;cursor:pointer;color:var(--text2);}
+.modal-b{padding:22px 24px;overflow-y:auto;}
+.modal-f{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
 </style>
 </head>
 <body>
@@ -262,6 +272,53 @@ iframe{flex:1;border:none;width:100%;height:100%;}
 
       <div style="margin-top:8px">
         <button class="btn-sm" onclick="goHome()"><i class="ti ti-arrow-left"></i> Voltar ao Início</button>
+      </div>
+    </div>
+
+    <!-- MODAL EDITAR USUÁRIO -->
+    <div class="overlay" id="modal-editar-usuario">
+      <div class="modal">
+        <div class="modal-h"><span class="modal-title">Editar Usuário</span><button class="modal-close" onclick="fecharEditarUsuario()">✕</button></div>
+        <div class="modal-b">
+          <div class="form-inline" style="grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group-sm"><label class="form-label-sm">Nome</label><input class="form-input-sm" type="text" id="eu-nome"></div>
+            <div class="form-group-sm"><label class="form-label-sm">E-mail (login)</label><input class="form-input-sm" type="email" id="eu-login"></div>
+          </div>
+          <div style="margin-top:10px">
+            <div class="form-group-sm"><label class="form-label-sm">Perfil</label>
+              <select class="form-select-sm" id="eu-perfil" style="width:160px"><option value="user">Usuário</option><option value="admin">Admin</option></select>
+            </div>
+          </div>
+          <div style="margin-top:14px">
+            <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Módulos liberados</div>
+            <div class="mod-check-grid" id="eu-modulos">
+              <label class="mod-check"><input type="checkbox" value="dashboard"> Dashboard</label>
+              <label class="mod-check"><input type="checkbox" value="rs"> R&amp;S</label>
+              <label class="mod-check"><input type="checkbox" value="admissao"> Admissão</label>
+              <label class="mod-check"><input type="checkbox" value="experiencia"> Experiência</label>
+              <label class="mod-check"><input type="checkbox" value="dossie"> Dossiê</label>
+              <label class="mod-check"><input type="checkbox" value="rescisao"> Rescisão</label>
+              <label class="mod-check"><input type="checkbox" value="solicitacao"> Solicitações</label>
+              <label class="mod-check"><input type="checkbox" value="equipe"> Equipe</label>
+            </div>
+          </div>
+          <div style="margin-top:14px">
+            <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Setor na Rescisão</div>
+            <select class="form-select-sm" id="eu-setor-rescisao" style="width:220px">
+              <option value="">Nenhum (não acessa rescisão)</option>
+              <option value="rh">RH / DP</option>
+              <option value="sesmt">SESMT</option>
+              <option value="amb">Ambulatório</option>
+              <option value="ti">TI</option>
+              <option value="log">Logística</option>
+              <option value="alm">Almoxarifado</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-f">
+          <button class="btn-sm" onclick="fecharEditarUsuario()">Cancelar</button>
+          <button class="btn-sm btn-primary-sm" onclick="salvarEdicaoUsuario()"><i class="ti ti-device-floppy"></i> Salvar</button>
+        </div>
       </div>
     </div>
 
@@ -544,15 +601,16 @@ function renderUsuarios(){
     var isAdmin=(u.id==='u_admin');
     var modsList=(u.modulos||[]).join(', ')||'\u2014';
     var badgeClass=u.perfil==='admin'?'badge-admin':'badge-user';
+    var editBtn='<button class="btn-sm" onclick="abrirEditarUsuario(\''+u.id+'\')" title="Editar"><i class="ti ti-pencil" style="font-size:13px"></i></button>';
     var acaoBtn=isAdmin
       ?'<span style="font-size:11px;color:var(--text3);font-weight:600">Master</span>'
-      :'<button class="btn-sm btn-danger-sm" onclick="removerUsuario(\''+u.id+'\')"><i class="ti ti-trash" style="font-size:13px"></i></button>';
+      :'<button class="btn-sm btn-danger-sm" onclick="removerUsuario(\''+u.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:13px"></i></button>';
     return '<div class="user-row">'
       +'<div style="flex:1">'
       +'<div class="user-name">'+u.nome+' <span class="'+badgeClass+'">'+u.perfil+'</span></div>'
       +'<div class="user-meta">Login: '+u.login+' &middot; Módulos: '+modsList+(u.setorRescisao?' &middot; Rescisão: '+u.setorRescisao.toUpperCase():'')+'</div>'
       +'</div>'
-      +acaoBtn
+      +'<div style="display:flex;gap:6px">'+editBtn+acaoBtn+'</div>'
       +'</div>';
     }).join('');
   });
@@ -583,6 +641,51 @@ function addUsuario(){
 
 function alterarSenhaMaster(){
   toast('A senha do admin agora é alterada no Firebase Authentication.','warn');
+}
+
+// ────────────────────────────────────────────────
+// EDITAR USUÁRIO (liberar/bloquear módulos)
+// ────────────────────────────────────────────────
+var EDITAR_ALVO=null;
+function abrirEditarUsuario(id){
+  getUsuarios().then(function(users){
+    var u=users.find(function(x){return x.id===id;});
+    if(!u){toast('Usuário não encontrado.','err');return;}
+    EDITAR_ALVO=id;
+    document.getElementById('eu-nome').value=u.nome||'';
+    document.getElementById('eu-login').value=u.login||'';
+    document.getElementById('eu-perfil').value=u.perfil==='admin'?'admin':'user';
+    var mods=u.modulos||[];
+    document.querySelectorAll('#eu-modulos input[type=checkbox]').forEach(function(chk){
+      chk.checked=mods.indexOf(chk.value)!==-1;
+    });
+    document.getElementById('eu-setor-rescisao').value=u.setorRescisao||'';
+    var isMaster=(id==='u_admin');
+    document.getElementById('eu-perfil').disabled=isMaster;
+    document.querySelectorAll('#eu-modulos input[type=checkbox]').forEach(function(chk){chk.disabled=isMaster;});
+    document.getElementById('modal-editar-usuario').classList.add('open');
+  });
+}
+function fecharEditarUsuario(){
+  document.getElementById('modal-editar-usuario').classList.remove('open');
+  EDITAR_ALVO=null;
+}
+function salvarEdicaoUsuario(){
+  if(!EDITAR_ALVO)return;
+  var nome=(document.getElementById('eu-nome').value||'').trim();
+  var login=(document.getElementById('eu-login').value||'').trim().toLowerCase();
+  var perfil=document.getElementById('eu-perfil').value;
+  if(!nome||!login){toast('Preencha nome e e-mail.','err');return;}
+  var isMaster=(EDITAR_ALVO==='u_admin');
+  var mods=Array.prototype.slice.call(document.querySelectorAll('#eu-modulos input:checked')).map(function(i){return i.value;});
+  var setorResc=document.getElementById('eu-setor-rescisao').value;
+  var upd={nome:nome, login:login, perfil:isMaster?'admin':perfil, modulos:isMaster?Object.keys(MODS):mods, setorRescisao:setorResc};
+  // atualiza APENAS o documento do usuário alvo (merge, sem tocar nos demais)
+  _db.collection('users').doc(EDITAR_ALVO).set(upd,{merge:true}).then(function(){
+    toast('Usuário atualizado.','ok');
+    fecharEditarUsuario();
+    renderUsuarios();
+  }).catch(function(e){toast('Erro: '+e.message,'err');});
 }
 
 function removerUsuario(id){

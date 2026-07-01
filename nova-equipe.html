@@ -49,7 +49,13 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .card-del{background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px;font-size:14px;flex-shrink:0;}
 .card-del:hover{color:#8b1c1c;}
 /* ORGANOGRAMA */
-.orgchart-wrap{overflow-x:auto;padding:10px 0 30px;}
+.org-toolbar{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-bottom:10px;}
+.org-zoom-btn{width:30px;height:30px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);cursor:pointer;font-size:15px;font-weight:700;color:var(--text);line-height:1;}
+.org-zoom-btn:hover{background:var(--s2);}
+.org-zoom-label{font-size:12px;font-weight:700;color:var(--text2);min-width:40px;text-align:center;}
+.orgchart-wrap{overflow:auto;padding:10px 0 30px;cursor:grab;}
+.orgchart-wrap.dragging{cursor:grabbing;user-select:none;}
+#organograma-body{display:inline-block;transform-origin:top center;transition:transform .12s;}
 .tree, .tree ul{display:flex;justify-content:center;list-style:none;}
 .tree{padding-top:6px;}
 .tree li{list-style:none;position:relative;padding:26px 10px 0 10px;display:flex;flex-direction:column;align-items:center;}
@@ -189,7 +195,13 @@ tr:last-child td{border-bottom:none;}
 
     <!-- ORGANOGRAMA -->
     <div class="content tab-page active" id="view-organograma">
-      <div class="orgchart-wrap"><div id="organograma-body"></div></div>
+      <div class="org-toolbar">
+        <button class="org-zoom-btn" onclick="orgZoomBy(-0.1)" title="Reduzir">－</button>
+        <span class="org-zoom-label" id="org-zoom-label">100%</span>
+        <button class="org-zoom-btn" onclick="orgZoomBy(0.1)" title="Ampliar">＋</button>
+        <button class="btn btn-sm" onclick="orgZoomFit()"><i class="ti ti-arrows-maximize"></i> Ajustar à tela</button>
+      </div>
+      <div class="orgchart-wrap" id="organograma-wrap"><div id="organograma-body"></div></div>
     </div>
 
     <!-- FUNÇÕES -->
@@ -338,8 +350,8 @@ tr:last-child td{border-bottom:none;}
 
 <script>
 // ────────────────────────────────────────────────
-// FIREBASE (inicializado, mas este módulo ainda usa
-// dados mockados — ligar às coleções reais depois)
+// FIREBASE — coleções: equipe_areas, equipe_colaboradores,
+// equipe_funcoes, equipe_demandas
 // ────────────────────────────────────────────────
 if (!firebase.apps.length) {
   firebase.initializeApp({
@@ -354,16 +366,17 @@ if (!firebase.apps.length) {
 var db = firebase.firestore();
 
 // ────────────────────────────────────────────────
-// DADOS MOCKADOS
+// DADOS PADRÃO (usados como semente apenas se as
+// coleções do Firestore estiverem vazias)
 // ────────────────────────────────────────────────
-var AREAS = [
+var DEFAULT_AREAS = [
   {id:'geral', nome:'Coordenação', cor:'#0e0f12'},
   {id:'amb', nome:'Ambulatório', cor:'#2f6f62'},
   {id:'sst', nome:'Segurança do Trabalho', cor:'#c77a2e'},
   {id:'rh',  nome:'Recursos Humanos', cor:'#5b4b8a'}
 ];
 
-var COLABORADORES = [
+var DEFAULT_COLABORADORES = [
   {id:'coord', nome:'Coordenação de RH', cargo:'Coordenação Geral', area:'geral', tempoCasa:'', reportaPara:null},
   {id:'c1', nome:'Marina Costa', cargo:'Psicóloga Organizacional', area:'amb', tempoCasa:'2 anos e 4 meses de casa', reportaPara:'coord'},
   {id:'c2', nome:'Rodrigo Alves', cargo:'Técnico de Enfermagem', area:'amb', tempoCasa:'1 ano e 1 mês de casa', reportaPara:'c1'},
@@ -371,28 +384,34 @@ var COLABORADORES = [
   {id:'c4', nome:'Fernanda Lima', cargo:'Analista de RH', area:'rh', tempoCasa:'3 anos de casa', reportaPara:'coord'}
 ];
 
-var FUNCOES = [
-  {nome:'Psicóloga Organizacional', area:'amb', desc:'Responsável pela saúde psicológica e bem-estar dos colaboradores.',
+var DEFAULT_FUNCOES = [
+  {id:'func_psic', nome:'Psicóloga Organizacional', area:'amb', desc:'Responsável pela saúde psicológica e bem-estar dos colaboradores.',
     atividades:['DSP — Diálogo de Segurança Psicológica','Atendimento clínico e acolhimento','Acompanhamento de casos e encaminhamentos']},
-  {nome:'Técnico de Segurança do Trabalho', area:'sst', desc:'Prevenção de riscos e conformidade com normas regulamentadoras.',
+  {id:'func_sst', nome:'Técnico de Segurança do Trabalho', area:'sst', desc:'Prevenção de riscos e conformidade com normas regulamentadoras.',
     atividades:['Inspeções de segurança','DDS — Diálogo Diário de Segurança','Investigação de acidentes']}
 ];
 
-var DEMANDAS = [
+var DEFAULT_DEMANDAS = [
   {id:'d1', nome:'DSP — Diálogo de Segurança Psicológica', respId:'c1', periodicidade:'Mensal', dataPrevista:'2026-07-15', status:'pendente', obs:'', dataConclusao:null},
   {id:'d2', nome:'DDS — Diálogo Diário de Segurança', respId:'c3', periodicidade:'Semanal', dataPrevista:'2026-06-28', status:'atrasado', obs:'Justificativa: equipe reduzida na semana', dataConclusao:null},
   {id:'d3', nome:'Relatório anual de admissões', respId:'c4', periodicidade:'Anual', dataPrevista:'2026-01-10', status:'concluido', obs:'Enviado à diretoria em anexo', dataConclusao:'2026-01-10'}
 ];
 
-// Demandas extras relativas a hoje, só para a agenda ficar mais rica na demo
+// Demandas extras relativas a hoje, só para a agenda ficar mais rica na primeira semente
 (function seedRelativas(){
   var hoje = new Date();
   function add(dias){ var d=new Date(hoje); d.setDate(d.getDate()+dias); return toISO(d); }
-  DEMANDAS.push({id:'d4', nome:'DDQ — Diálogo de Qualidade', respId:'c2', periodicidade:'Semanal', dataPrevista:toISO(hoje), status:'pendente', obs:'', dataConclusao:null});
-  DEMANDAS.push({id:'d5', nome:'Acompanhamento de caso clínico', respId:'c1', periodicidade:'Quinzenal', dataPrevista:add(2), status:'pendente', obs:'', dataConclusao:null});
-  DEMANDAS.push({id:'d6', nome:'Inspeção de segurança — Setor Log.', respId:'c3', periodicidade:'Mensal', dataPrevista:add(5), status:'pendente', obs:'', dataConclusao:null});
-  DEMANDAS.push({id:'d7', nome:'Fechamento de folha', respId:'c4', periodicidade:'Mensal', dataPrevista:add(-4), status:'atrasado', obs:'', dataConclusao:null});
+  DEFAULT_DEMANDAS.push({id:'d4', nome:'DDQ — Diálogo de Qualidade', respId:'c2', periodicidade:'Semanal', dataPrevista:toISO(hoje), status:'pendente', obs:'', dataConclusao:null});
+  DEFAULT_DEMANDAS.push({id:'d5', nome:'Acompanhamento de caso clínico', respId:'c1', periodicidade:'Quinzenal', dataPrevista:add(2), status:'pendente', obs:'', dataConclusao:null});
+  DEFAULT_DEMANDAS.push({id:'d6', nome:'Inspeção de segurança — Setor Log.', respId:'c3', periodicidade:'Mensal', dataPrevista:add(5), status:'pendente', obs:'', dataConclusao:null});
+  DEFAULT_DEMANDAS.push({id:'d7', nome:'Fechamento de folha', respId:'c4', periodicidade:'Mensal', dataPrevista:add(-4), status:'atrasado', obs:'', dataConclusao:null});
 })();
+
+// Arrays "ao vivo" — alimentados pelos listeners em tempo real do Firestore
+var AREAS = [];
+var COLABORADORES = [];
+var FUNCOES = [];
+var DEMANDAS = [];
 
 // ────────────────────────────────────────────────
 // HELPERS
@@ -463,11 +482,56 @@ function removerColaborador(id){
   if(!alvo) return;
   if(!confirm('Remover "'+alvo.nome+'"? Subordinados diretos passam a reportar ao superior dele.')) return;
   var novoPai = alvo.reportaPara;
+  var filhos = COLABORADORES.filter(function(c){return c.reportaPara===id});
   COLABORADORES.forEach(function(c){ if(c.reportaPara===id) c.reportaPara=novoPai; });
   COLABORADORES = COLABORADORES.filter(function(c){return c.id!==id});
-  toast('Colaborador removido (mock — ainda não grava no Firestore).','ok');
   renderOrganograma(); refreshFiltroSelects(); renderAgenda(); renderRelatorios();
+  orgZoomFit();
+  var batch = db.batch();
+  filhos.forEach(function(c){ batch.update(db.collection('equipe_colaboradores').doc(c.id), {reportaPara:novoPai}); });
+  batch.delete(db.collection('equipe_colaboradores').doc(id));
+  batch.commit().then(function(){
+    toast('Colaborador removido.','ok');
+  }).catch(function(e){ toast('Erro ao remover: '+e.message,'err'); });
 }
+
+// ── Zoom e arraste do organograma ──
+var ORG_ZOOM = 1;
+function orgZoomSet(z){
+  ORG_ZOOM = Math.min(1.3, Math.max(0.3, z));
+  var body = document.getElementById('organograma-body');
+  if(body) body.style.transform = 'scale('+ORG_ZOOM+')';
+  var label = document.getElementById('org-zoom-label');
+  if(label) label.textContent = Math.round(ORG_ZOOM*100)+'%';
+}
+function orgZoomBy(delta){ orgZoomSet(ORG_ZOOM+delta); }
+function orgZoomFit(){
+  var wrap = document.getElementById('organograma-wrap');
+  var body = document.getElementById('organograma-body');
+  if(!wrap || !body) return;
+  body.style.transform = 'scale(1)';
+  var natural = body.scrollWidth;
+  var avail = wrap.clientWidth - 16;
+  if(natural<=0 || avail<=0){ orgZoomSet(1); return; }
+  orgZoomSet(Math.min(1, avail/natural));
+}
+(function initOrgDrag(){
+  var wrap, dragging=false, startX=0, startScroll=0;
+  document.addEventListener('mousedown', function(e){
+    wrap = document.getElementById('organograma-wrap');
+    if(!wrap || !wrap.contains(e.target)) return;
+    dragging = true; wrap.classList.add('dragging');
+    startX = e.pageX; startScroll = wrap.scrollLeft;
+  });
+  document.addEventListener('mousemove', function(e){
+    if(!dragging || !wrap) return;
+    wrap.scrollLeft = startScroll - (e.pageX - startX);
+  });
+  document.addEventListener('mouseup', function(){
+    if(wrap) wrap.classList.remove('dragging');
+    dragging = false;
+  });
+})();
 
 // ────────────────────────────────────────────────
 // FUNÇÕES
@@ -475,9 +539,9 @@ function removerColaborador(id){
 function renderFuncoes(){
   var el = document.getElementById('funcoes-body');
   if(!FUNCOES.length){ el.innerHTML='<div class="empty-state"><i class="ti ti-briefcase"></i>Nenhuma função cadastrada.</div>'; return; }
-  el.innerHTML = FUNCOES.map(function(f,idx){
+  el.innerHTML = FUNCOES.map(function(f){
     return '<div class="card func-card">'
-      +'<button class="card-del" title="Remover" onclick="removerFuncao('+idx+')"><i class="ti ti-x"></i></button>'
+      +'<button class="card-del" title="Remover" onclick="removerFuncao(\''+f.id+'\')"><i class="ti ti-x"></i></button>'
       +'<div class="fnome">'+f.nome+'</div>'
       +'<div class="farea">'+areaNome(f.area)+'</div>'
       +'<p>'+f.desc+'</p>'
@@ -485,11 +549,13 @@ function renderFuncoes(){
       +'</div>';
   }).join('');
 }
-function removerFuncao(idx){
+function removerFuncao(id){
   if(!confirm('Remover esta função?')) return;
-  FUNCOES.splice(idx,1);
-  toast('Função removida (mock).','ok');
+  FUNCOES = FUNCOES.filter(function(f){return f.id!==id});
   renderFuncoes();
+  db.collection('equipe_funcoes').doc(id).delete().then(function(){
+    toast('Função removida.','ok');
+  }).catch(function(e){ toast('Erro ao remover: '+e.message,'err'); });
 }
 
 // ────────────────────────────────────────────────
@@ -687,32 +753,37 @@ function confirmarConclusao(){
   var quem = document.getElementById('mc-quem').value;
   if(!data){ toast('Informe a data de conclusão.','err'); return; }
   var justifWrap = document.getElementById('mc-justif-wrap');
+  var upd = {status:'concluido', dataConclusao:data, concluidoPor:quem};
   if(justifWrap.style.display!=='none'){
     var j = document.getElementById('mc-justif').value.trim();
     if(!j){ toast('Informe a justificativa do atraso.','err'); return; }
-    d.obs = 'Justificativa: '+j;
+    upd.obs = 'Justificativa: '+j;
   }
-  d.status='concluido';
-  d.dataConclusao=data;
-  d.concluidoPor=quem;
-  toast('Demanda concluída (mock — ainda não grava no Firestore).','ok');
+  Object.assign(d, upd);
   closeModal('modal-concluir');
   renderAgenda(); renderRelatorios();
+  db.collection('equipe_demandas').doc(d.id).update(upd).then(function(){
+    toast('Demanda concluída.','ok');
+  }).catch(function(e){ toast('Erro ao salvar: '+e.message,'err'); });
 }
 function justificarDemanda(id){
   var d = DEMANDAS.find(function(x){return x.id===id});
   if(!d) return;
-  var just = prompt('Justificativa do atraso:', d.obs||'');
+  var just = prompt('Justificativa do atraso:', (d.obs||'').replace(/^Justificativa:\s*/,''));
   if(just===null) return;
   d.obs = 'Justificativa: '+just;
-  toast('Justificativa registrada (mock).','ok');
   renderAgenda();
+  db.collection('equipe_demandas').doc(id).update({obs:d.obs}).then(function(){
+    toast('Justificativa registrada.','ok');
+  }).catch(function(e){ toast('Erro ao salvar: '+e.message,'err'); });
 }
 function removerDemanda(id){
   if(!confirm('Remover esta demanda?')) return;
   DEMANDAS = DEMANDAS.filter(function(d){return d.id!==id});
-  toast('Demanda removida (mock).','ok');
   renderAgenda(); renderRelatorios();
+  db.collection('equipe_demandas').doc(id).delete().then(function(){
+    toast('Demanda removida.','ok');
+  }).catch(function(e){ toast('Erro ao remover: '+e.message,'err'); });
 }
 
 // ────────────────────────────────────────────────
@@ -771,15 +842,20 @@ function removerArea(selectId){
   if(id==='geral'){ toast('A área de Coordenação não pode ser removida.','err'); return; }
   var area = AREAS.find(function(a){return a.id===id});
   if(!area) return;
-  var qtd = COLABORADORES.filter(function(c){return c.area===id}).length;
-  var msg = 'Remover a área "'+area.nome+'"?'+(qtd?' '+qtd+' colaborador(es) ficarão sem área definida.':'');
+  var afetados = COLABORADORES.filter(function(c){return c.area===id});
+  var msg = 'Remover a área "'+area.nome+'"?'+(afetados.length?' '+afetados.length+' colaborador(es) ficarão sem área definida.':'');
   if(!confirm(msg)) return;
   COLABORADORES.forEach(function(c){ if(c.area===id) c.area=''; });
   AREAS = AREAS.filter(function(a){return a.id!==id});
-  toast('Área removida (mock).','ok');
   document.querySelectorAll('#nc-area,#nf-area').forEach(function(s){ populaSelectAreas(s.id); });
   refreshFiltroSelects();
   renderOrganograma(); renderFuncoes(); renderAgenda(); renderRelatorios();
+  var batch = db.batch();
+  afetados.forEach(function(c){ batch.update(db.collection('equipe_colaboradores').doc(c.id), {area:''}); });
+  batch.delete(db.collection('equipe_areas').doc(id));
+  batch.commit().then(function(){
+    toast('Área removida.','ok');
+  }).catch(function(e){ toast('Erro ao remover: '+e.message,'err'); });
 }
 function handleAreaSelectChange(sel){
   if(sel.value !== '__nova__') return;
@@ -787,15 +863,18 @@ function handleAreaSelectChange(sel){
   if(!nome || !nome.trim()){ sel.value = AREAS[0].id; return; }
   nome = nome.trim();
   var cor = COR_POOL[AREAS.length % COR_POOL.length];
-  var novaArea = {id:'area_'+Date.now(), nome:nome, cor:cor};
+  var ref = db.collection('equipe_areas').doc();
+  var novaArea = {id:ref.id, nome:nome, cor:cor};
   AREAS.push(novaArea);
-  toast('Área "'+nome+'" criada (mock).','ok');
   document.querySelectorAll('#nc-area,#nf-area').forEach(function(s){
     var isThis = (s===sel);
     populaSelectAreas(s.id);
     if(isThis) s.value = novaArea.id;
   });
   refreshFiltroSelects();
+  ref.set(novaArea).then(function(){
+    toast('Área "'+nome+'" criada.','ok');
+  }).catch(function(e){ toast('Erro ao salvar: '+e.message,'err'); });
 }
 function populaSelectReporta(){
   var sel = document.getElementById('nc-reporta');
@@ -823,10 +902,15 @@ function salvarColaborador(){
   var reporta = document.getElementById('nc-reporta').value || null;
   var tempo = document.getElementById('nc-tempo').value.trim();
   if(!nome || !cargo){ toast('Preencha nome e cargo.','err'); return; }
-  COLABORADORES.push({id:'col_'+Date.now(), nome:nome, cargo:cargo, area:area, tempoCasa:tempo, reportaPara:reporta});
-  toast('Colaborador adicionado (mock — ainda não grava no Firestore).','ok');
+  var ref = db.collection('equipe_colaboradores').doc();
+  var novo = {id:ref.id, nome:nome, cargo:cargo, area:area, tempoCasa:tempo, reportaPara:reporta};
+  COLABORADORES.push(novo);
   closeModal('modal-colab');
   renderOrganograma(); refreshFiltroSelects(); renderAgenda(); renderRelatorios();
+  orgZoomFit();
+  ref.set(novo).then(function(){
+    toast('Colaborador adicionado.','ok');
+  }).catch(function(e){ toast('Erro ao salvar: '+e.message,'err'); });
 }
 
 function openFuncaoModal(){
@@ -843,10 +927,14 @@ function salvarFuncao(){
   var ativRaw = document.getElementById('nf-ativ').value;
   var ativ = ativRaw.split('\n').map(function(l){return l.trim()}).filter(function(l){return l.length});
   if(!nome){ toast('Informe o nome da função.','err'); return; }
-  FUNCOES.push({nome:nome, area:area, desc:desc, atividades:ativ});
-  toast('Função adicionada (mock).','ok');
+  var ref = db.collection('equipe_funcoes').doc();
+  var nova = {id:ref.id, nome:nome, area:area, desc:desc, atividades:ativ};
+  FUNCOES.push(nova);
   closeModal('modal-funcao');
   renderFuncoes();
+  ref.set(nova).then(function(){
+    toast('Função adicionada.','ok');
+  }).catch(function(e){ toast('Erro ao salvar: '+e.message,'err'); });
 }
 
 function openDemandaModal(){
@@ -863,10 +951,14 @@ function salvarDemanda(){
   var dataPrevista = document.getElementById('nd-data').value;
   var obs = document.getElementById('nd-obs').value.trim();
   if(!nome || !dataPrevista){ toast('Preencha a demanda e a data prevista.','err'); return; }
-  DEMANDAS.push({id:'dem_'+Date.now(), nome:nome, respId:respId, periodicidade:periodicidade, dataPrevista:dataPrevista, status:'pendente', obs:obs, dataConclusao:null});
-  toast('Demanda adicionada (mock — ainda não grava no Firestore).','ok');
+  var ref = db.collection('equipe_demandas').doc();
+  var nova = {id:ref.id, nome:nome, respId:respId, periodicidade:periodicidade, dataPrevista:dataPrevista, status:'pendente', obs:obs, dataConclusao:null, concluidoPor:null};
+  DEMANDAS.push(nova);
   closeModal('modal-demanda');
   renderAgenda(); renderRelatorios();
+  ref.set(nova).then(function(){
+    toast('Demanda adicionada.','ok');
+  }).catch(function(e){ toast('Erro ao salvar: '+e.message,'err'); });
 }
 
 // ────────────────────────────────────────────────
@@ -880,14 +972,52 @@ function toast(msg,type){
 }
 
 // ────────────────────────────────────────────────
-// BOOT
+// BOOT — escuta as 4 coleções em tempo real (onSnapshot).
+// Se alguma estiver vazia na primeira carga, grava os
+// dados padrão como semente (uma única vez).
 // ────────────────────────────────────────────────
-refreshFiltroSelects();
-renderOrganograma();
-renderFuncoes();
-renderAgenda();
-renderRelatorios();
 document.getElementById('topbar-actions').innerHTML = TAB_ACTIONS.organograma;
+
+var SEEDED = {};
+function seedIfNeeded(snap, key, collectionName, defaults){
+  if(!snap.empty || SEEDED[key]) return;
+  SEEDED[key] = true;
+  var batch = db.batch();
+  defaults.forEach(function(item){ batch.set(db.collection(collectionName).doc(item.id), item); });
+  batch.commit().catch(function(e){ console.warn('[equipe] falha ao semear '+collectionName, e); });
+}
+
+db.collection('equipe_areas').onSnapshot(function(snap){
+  AREAS = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+  seedIfNeeded(snap, 'areas', 'equipe_areas', DEFAULT_AREAS);
+  refreshFiltroSelects();
+  renderOrganograma(); orgZoomFit();
+  renderFuncoes();
+  renderAgenda();
+  renderRelatorios();
+}, function(e){ console.warn('[equipe] listener equipe_areas falhou', e); toast('Sem conexão com o Firestore — verifique sua internet.','err'); });
+
+db.collection('equipe_colaboradores').onSnapshot(function(snap){
+  COLABORADORES = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+  seedIfNeeded(snap, 'colab', 'equipe_colaboradores', DEFAULT_COLABORADORES);
+  refreshFiltroSelects();
+  renderOrganograma(); orgZoomFit();
+  renderAgenda();
+  renderRelatorios();
+}, function(e){ console.warn('[equipe] listener equipe_colaboradores falhou', e); });
+
+db.collection('equipe_funcoes').onSnapshot(function(snap){
+  FUNCOES = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+  seedIfNeeded(snap, 'func', 'equipe_funcoes', DEFAULT_FUNCOES);
+  renderFuncoes();
+}, function(e){ console.warn('[equipe] listener equipe_funcoes falhou', e); });
+
+db.collection('equipe_demandas').onSnapshot(function(snap){
+  DEMANDAS = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+  seedIfNeeded(snap, 'dem', 'equipe_demandas', DEFAULT_DEMANDAS);
+  renderAgenda();
+  renderRelatorios();
+}, function(e){ console.warn('[equipe] listener equipe_demandas falhou', e); });
 </script>
 </body>
 </html>

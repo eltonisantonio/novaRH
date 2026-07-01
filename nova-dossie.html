@@ -14,6 +14,7 @@
 <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css"></noscript>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -225,6 +226,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         <div class="cfg-tab" id="cfgtab-nr" onclick="showCfgTab('nr')">Vencimento NR</div>
         <div class="cfg-tab" id="cfgtab-adiant" onclick="showCfgTab('adiant')">Relatório de Adiantamentos</div>
         <div class="cfg-tab" id="cfgtab-disc" onclick="showCfgTab('disc')">Medidas Disciplinares</div>
+        <div class="cfg-tab" id="cfgtab-badges" onclick="showCfgTab('badges')">Brigada · CIPA · Multiplicador</div>
       </div>
 
       <div id="cfgview-tipos">
@@ -294,6 +296,21 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
                 <option value="">Todas</option><option value="pendente">Aguardando recebimento</option><option value="recebido">Recebidas pelo RH</option></select></div>
           </div>
           <div id="rel-disc-corpo"></div>
+        </div>
+      </div>
+
+      <div id="cfgview-badges" style="display:none">
+        <div class="cfg-section">
+          <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Tipo</label>
+              <select class="fs" id="rel-badge-tipo" style="width:180px" onchange="renderRelBadges()">
+                <option value="">Todos</option><option value="brig">Brigadista</option><option value="cipa">CIPA</option><option value="mult">Multiplicador</option></select></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Situação</label>
+              <select class="fs" id="rel-badge-sit" style="width:160px" onchange="renderRelBadges()">
+                <option value="">Todas</option><option value="ativo">Ativas</option><option value="encerrado">Encerradas</option></select></div>
+            <div style="margin-left:auto"><button class="btn btn-primary" onclick="exportBadgesExcel()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button></div>
+          </div>
+          <div id="rel-badge-corpo"></div>
         </div>
       </div>
     </div>
@@ -802,6 +819,17 @@ function iniciarListeners() {
       var batch = db.batch();
       _tipos.forEach(function(t){ batch.set(db.collection('dossie_tipos').doc(t.id), t); });
       batch.commit();
+    } else {
+      // Garante que tipos padrão novos (ex: adicionados em atualizações) existam mesmo em bases já populadas
+      var idsExistentes = {};
+      _tipos.forEach(function(t){ idsExistentes[t.id] = true; });
+      var faltantes = TIPOS_DEFAULT.filter(function(t){ return !idsExistentes[t.id]; });
+      if (faltantes.length) {
+        var batch2 = db.batch();
+        faltantes.forEach(function(t){ batch2.set(db.collection('dossie_tipos').doc(t.id), t); });
+        batch2.commit();
+        _tipos = _tipos.concat(faltantes);
+      }
     }
     popularSelectTipos();
   });
@@ -1307,7 +1335,7 @@ function renderCfg() {
 function funcNome(id){ var f=_funcs.find(function(x){return x.id===id;}); return f?f.nome:'(funcionário removido)'; }
 
 function showCfgTab(tab){
-  ['tipos','trein','nr','adiant','disc'].forEach(function(t){
+  ['tipos','trein','nr','adiant','disc','badges'].forEach(function(t){
     document.getElementById('cfgview-'+t).style.display = (t===tab)?'block':'none';
     document.getElementById('cfgtab-'+t).classList.toggle('active', t===tab);
   });
@@ -1316,6 +1344,7 @@ function showCfgTab(tab){
   if (tab==='nr')     renderRelNR();
   if (tab==='adiant') renderRelAdiantamento();
   if (tab==='disc')   renderRelDisciplinar();
+  if (tab==='badges') renderRelBadges();
 }
 
 function renderRelTreinamento(){
@@ -1445,6 +1474,72 @@ function renderRelDisciplinar(){
     +'</tbody></table>';
 }
 
+// ════ RELATÓRIO BRIGADA / CIPA / MULTIPLICADOR ════
+function coletarBadges(){
+  var tipo = document.getElementById('rel-badge-tipo').value; // '', brig, cipa, mult
+  var sit  = document.getElementById('rel-badge-sit').value;  // '', ativo, encerrado
+  var rows = [];
+  _funcs.forEach(function(f){
+    function push(kind, label, obj){
+      if(!obj || !obj.inicio) return;
+      rows.push({nome:f.nome, kind:kind, label:label, inicio:obj.inicio, fim:obj.fim||'', ativo:!!obj.ativo, nivel:obj.nivel, pontos:obj.pontos});
+    }
+    push('brig','Brigadista', f.brigadista);
+    push('cipa','CIPA', f.cipa);
+    push('mult','Multiplicador', f.multiplicador);
+  });
+  if(tipo) rows = rows.filter(function(r){return r.kind===tipo;});
+  if(sit==='ativo')     rows = rows.filter(function(r){return r.ativo;});
+  if(sit==='encerrado') rows = rows.filter(function(r){return !r.ativo;});
+  rows.sort(function(a,b){ return a.ativo===b.ativo ? (a.nome||'').localeCompare(b.nome||'') : (a.ativo?-1:1); });
+  return rows;
+}
+
+function renderRelBadges(){
+  var rows = coletarBadges();
+  var corpo = document.getElementById('rel-badge-corpo');
+  if(!rows.length){ corpo.innerHTML='<div class="empty" style="padding:24px 0"><i class="ti ti-award"></i><p>Nenhuma designação encontrada.</p></div>'; return; }
+  var nAtivos = rows.filter(function(r){return r.ativo;}).length;
+  var cores = {brig:'#c0392b', cipa:'#2e7d32', mult:'#1a5276'};
+  corpo.innerHTML = '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+rows.length+' registro(s) · '+nAtivos+' ativo(s)</div>'
+    +'<table class="cfg-table"><thead><tr><th>Funcionário</th><th>Designação</th><th>Início</th><th>Situação</th><th>Nível / Pontos</th></tr></thead><tbody>'
+    + rows.map(function(r){
+        var sitTxt = r.ativo ? '<span class="badge b-green">Ativo</span>'
+                             : '<span class="badge b-gray">Encerrado'+(r.fim?' · '+fmtDate(r.fim):'')+'</span>';
+        var np = r.kind==='mult' ? ('Nível '+(r.nivel||1)+' · '+(r.pontos||0)+' pts') : '<span style="color:var(--text3)">—</span>';
+        return '<tr><td style="font-weight:600">'+(r.nome||'—')+'</td>'
+          +'<td style="color:'+cores[r.kind]+';font-weight:700">'+r.label+'</td>'
+          +'<td style="white-space:nowrap">'+fmtDate(r.inicio)+'</td>'
+          +'<td>'+sitTxt+'</td>'
+          +'<td>'+np+'</td></tr>';
+      }).join('')
+    +'</tbody></table>';
+}
+
+function exportBadgesExcel(){
+  if(typeof XLSX==='undefined'){ toast('Biblioteca de exportação ainda carregando, tente novamente.','err'); return; }
+  var rows = coletarBadges();
+  if(!rows.length){ toast('Nada para exportar com os filtros atuais.','warn'); return; }
+  var aoa = [['Funcionário','Designação','Início','Situação','Data Fim','Nível','Pontos']];
+  rows.forEach(function(r){
+    aoa.push([
+      r.nome||'',
+      r.label,
+      fmtDate(r.inicio),
+      r.ativo?'Ativo':'Encerrado',
+      r.fim?fmtDate(r.fim):'',
+      r.kind==='mult'?(r.nivel||1):'',
+      r.kind==='mult'?(r.pontos||0):''
+    ]);
+  });
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:34},{wch:16},{wch:12},{wch:12},{wch:12},{wch:8},{wch:8}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Designações');
+  var dt = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, 'designacoes_brigada_cipa_mult_'+dt+'.xlsx');
+  toast('Planilha gerada!','ok');
+}
 
 // ════ EVENTO EM GRUPO ════
 var _egSelecionados = {};

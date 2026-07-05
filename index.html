@@ -31,6 +31,12 @@ body{font-family:'Inter',sans-serif;background:var(--cream);overflow:hidden;heig
 .login-btn{width:100%;padding:12px;border-radius:var(--r);border:none;background:var(--black);color:var(--lime);font-size:14px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;margin-top:8px;transition:background .15s;}
 .login-btn:hover{background:#1e2026;}
 .login-err{font-size:12px;font-weight:600;color:#c0392b;margin-top:8px;display:none;}
+.login-forgot{text-align:right;margin:2px 0 2px;}
+.login-forgot span{font-size:12px;font-weight:600;color:#6b6558;cursor:pointer;}
+.login-forgot span:hover{color:var(--black);text-decoration:underline;}
+.login-msg{margin-top:10px;font-size:12.5px;font-weight:600;line-height:1.45;border-radius:var(--r);padding:9px 11px;}
+.login-msg.ok{background:#e8f8ef;color:#1a5c35;}
+.login-msg.err{background:#fdeaea;color:#8b1c1c;}
 
 /* ── SHELL ── */
 .shell{display:flex;height:100vh;}
@@ -47,6 +53,16 @@ body{font-family:'Inter',sans-serif;background:var(--cream);overflow:hidden;heig
 .nav-item.active{color:var(--lime);border-left-color:var(--lime);background:rgba(215,255,61,.06);}
 .nav-item.locked{opacity:.3;cursor:not-allowed;pointer-events:none;}
 .nav-item i{font-size:16px;}
+.nav-grp-head{display:flex;align-items:center;gap:9px;padding:10px 24px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.38);cursor:pointer;user-select:none;transition:color .15s;}
+.nav-grp-head:hover{color:rgba(255,255,255,.7);}
+.nav-grp-head .grp-ic{font-size:15px;}
+.nav-grp-head span{flex:1;}
+.nav-grp-head .grp-chev{font-size:15px;transition:transform .2s;transform:rotate(-90deg);}
+.nav-group.open .grp-chev{transform:rotate(0);}
+.nav-group.active-grp .nav-grp-head{color:var(--lime);}
+.nav-grp-body{overflow:hidden;max-height:0;transition:max-height .22s ease;}
+.nav-group.open .nav-grp-body{max-height:320px;}
+.nav-grp-body .nav-item{padding-left:34px;font-size:12.5px;}
 .sidebar-user{padding:14px 24px;border-top:1px solid rgba(255,255,255,.08);display:flex;align-items:center;gap:10px;}
 .sidebar-user-info{flex:1;min-width:0;}
 .sidebar-user-nome{font-size:12px;font-weight:700;color:rgba(255,255,255,.85);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -131,6 +147,16 @@ iframe{flex:1;border:none;width:100%;height:100%;}
 
 /* ── BADGE SOL ── */
 .nav-badge{background:var(--lime);color:var(--black);font-size:9px;font-weight:900;padding:1px 5px;border-radius:8px;margin-left:auto;}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(14,15,18,.55);z-index:200;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:14px;width:520px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;}
+.modal-h{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:15px;font-weight:800;}
+.modal-close{background:transparent;border:none;font-size:18px;cursor:pointer;color:var(--text2);}
+.modal-b{padding:22px 24px;overflow-y:auto;}
+.modal-f{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
 </style>
 </head>
 <body>
@@ -148,8 +174,10 @@ iframe{flex:1;border:none;width:100%;height:100%;}
       <label class="login-label">Senha</label>
       <input class="login-input" type="password" id="inp-senha" placeholder="••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
+    <div class="login-forgot"><span onclick="resetSenha()">Esqueci minha senha</span></div>
     <button class="login-btn" onclick="doLogin()">Entrar</button>
     <div class="login-err" id="login-err">Usuário ou senha incorretos.</div>
+    <div class="login-msg" id="login-msg" style="display:none"></div>
   </div>
 </div>
 
@@ -163,15 +191,35 @@ iframe{flex:1;border:none;width:100%;height:100%;}
       <div class="logo-sub">Sistema de RH</div>
     </div>
     <nav class="nav" id="sidebar-nav">
-      <div class="nav-s">Módulos</div>
-      <div class="nav-item" id="nav-dashboard" onclick="loadMod('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
       <div class="nav-item" id="nav-home" onclick="goHome()"><i class="ti ti-home"></i> Início</div>
-      <div class="nav-item" id="nav-rs"         onclick="loadMod('rs')"><i class="ti ti-user-search"></i> R&amp;S</div>
-      <div class="nav-item" id="nav-admissao"   onclick="loadMod('admissao')"><i class="ti ti-file-check"></i> Admissão</div>
-      <div class="nav-item" id="nav-experiencia" onclick="loadMod('experiencia')"><i class="ti ti-clock"></i> Experiência</div>
-      <div class="nav-item" id="nav-dossie"     onclick="loadMod('dossie')"><i class="ti ti-notebook"></i> Dossiê</div>
-      <div class="nav-item" id="nav-rescisao"   onclick="loadMod('rescisao')"><i class="ti ti-file-minus"></i> Rescisão</div>
-      <div class="nav-item" id="nav-solicitacao" onclick="loadMod('solicitacao')"><i class="ti ti-send"></i> Solicitações <span class="nav-badge" id="badge-sol" style="display:none">0</span></div>
+
+      <div class="nav-group" id="grp-rs">
+        <div class="nav-grp-head" onclick="toggleGroup('rs')"><i class="ti ti-user-search grp-ic"></i><span>Recrutamento &amp; Seleção</span><i class="ti ti-chevron-down grp-chev"></i></div>
+        <div class="nav-grp-body">
+          <div class="nav-item" id="nav-rs" onclick="loadMod('rs')"><i class="ti ti-user-search"></i> R&amp;S</div>
+          <div class="nav-item" id="nav-solicitacao" onclick="loadMod('solicitacao')"><i class="ti ti-send"></i> Solicitações <span class="nav-badge" id="badge-sol" style="display:none">0</span></div>
+        </div>
+      </div>
+
+      <div class="nav-group" id="grp-jornada">
+        <div class="nav-grp-head" onclick="toggleGroup('jornada')"><i class="ti ti-route grp-ic"></i><span>Jornada do Colaborador</span><i class="ti ti-chevron-down grp-chev"></i></div>
+        <div class="nav-grp-body">
+          <div class="nav-item" id="nav-admissao" onclick="loadMod('admissao')"><i class="ti ti-file-check"></i> Admissão</div>
+          <div class="nav-item" id="nav-experiencia" onclick="loadMod('experiencia')"><i class="ti ti-clock"></i> Experiência</div>
+          <div class="nav-item" id="nav-dossie" onclick="loadMod('dossie')"><i class="ti ti-notebook"></i> Dossiê</div>
+          <div class="nav-item" id="nav-rescisao" onclick="loadMod('rescisao')"><i class="ti ti-file-minus"></i> Rescisão</div>
+        </div>
+      </div>
+
+      <div class="nav-group" id="grp-gestao">
+        <div class="nav-grp-head" onclick="toggleGroup('gestao')"><i class="ti ti-users-group grp-ic"></i><span>Gestão de Pessoas</span><i class="ti ti-chevron-down grp-chev"></i></div>
+        <div class="nav-grp-body">
+          <div class="nav-item" id="nav-dashboard" onclick="loadMod('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+          <div class="nav-item" id="nav-equipe" onclick="loadMod('equipe')"><i class="ti ti-sitemap"></i> Equipe</div>
+          <div class="nav-item" id="nav-salario" onclick="loadMod('salario')"><i class="ti ti-cash"></i> Tabela Salarial</div>
+        </div>
+      </div>
+
       <div class="nav-s" id="nav-s-admin" style="display:none">Admin</div>
       <div class="nav-item" id="nav-admin" style="display:none" onclick="openAdmin()"><i class="ti ti-settings"></i> Usuários</div>
     </nav>
@@ -234,6 +282,8 @@ iframe{flex:1;border:none;width:100%;height:100%;}
             <label class="mod-check"><input type="checkbox" value="dossie" checked> Dossiê</label>
             <label class="mod-check"><input type="checkbox" value="rescisao" checked> Rescisão</label>
             <label class="mod-check"><input type="checkbox" value="solicitacao" checked> Solicitações</label>
+            <label class="mod-check"><input type="checkbox" value="equipe" checked> Equipe</label>
+            <label class="mod-check"><input type="checkbox" value="salario" checked> Tabela Salarial</label>
           </div>
         </div>
         <div style="margin-top:12px">
@@ -260,6 +310,54 @@ iframe{flex:1;border:none;width:100%;height:100%;}
 
       <div style="margin-top:8px">
         <button class="btn-sm" onclick="goHome()"><i class="ti ti-arrow-left"></i> Voltar ao Início</button>
+      </div>
+    </div>
+
+    <!-- MODAL EDITAR USUÁRIO -->
+    <div class="overlay" id="modal-editar-usuario">
+      <div class="modal">
+        <div class="modal-h"><span class="modal-title">Editar Usuário</span><button class="modal-close" onclick="fecharEditarUsuario()">✕</button></div>
+        <div class="modal-b">
+          <div class="form-inline" style="grid-template-columns:1fr 1fr;gap:10px">
+            <div class="form-group-sm"><label class="form-label-sm">Nome</label><input class="form-input-sm" type="text" id="eu-nome"></div>
+            <div class="form-group-sm"><label class="form-label-sm">E-mail (login)</label><input class="form-input-sm" type="email" id="eu-login"></div>
+          </div>
+          <div style="margin-top:10px">
+            <div class="form-group-sm"><label class="form-label-sm">Perfil</label>
+              <select class="form-select-sm" id="eu-perfil" style="width:160px"><option value="user">Usuário</option><option value="admin">Admin</option></select>
+            </div>
+          </div>
+          <div style="margin-top:14px">
+            <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Módulos liberados</div>
+            <div class="mod-check-grid" id="eu-modulos">
+              <label class="mod-check"><input type="checkbox" value="dashboard"> Dashboard</label>
+              <label class="mod-check"><input type="checkbox" value="rs"> R&amp;S</label>
+              <label class="mod-check"><input type="checkbox" value="admissao"> Admissão</label>
+              <label class="mod-check"><input type="checkbox" value="experiencia"> Experiência</label>
+              <label class="mod-check"><input type="checkbox" value="dossie"> Dossiê</label>
+              <label class="mod-check"><input type="checkbox" value="rescisao"> Rescisão</label>
+              <label class="mod-check"><input type="checkbox" value="solicitacao"> Solicitações</label>
+              <label class="mod-check"><input type="checkbox" value="equipe"> Equipe</label>
+              <label class="mod-check"><input type="checkbox" value="salario"> Tabela Salarial</label>
+            </div>
+          </div>
+          <div style="margin-top:14px">
+            <div style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Setor na Rescisão</div>
+            <select class="form-select-sm" id="eu-setor-rescisao" style="width:220px">
+              <option value="">Nenhum (não acessa rescisão)</option>
+              <option value="rh">RH / DP</option>
+              <option value="sesmt">SESMT</option>
+              <option value="amb">Ambulatório</option>
+              <option value="ti">TI</option>
+              <option value="log">Logística</option>
+              <option value="alm">Almoxarifado</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-f">
+          <button class="btn-sm" onclick="fecharEditarUsuario()">Cancelar</button>
+          <button class="btn-sm btn-primary-sm" onclick="salvarEdicaoUsuario()"><i class="ti ti-device-floppy"></i> Salvar</button>
+        </div>
       </div>
     </div>
 
@@ -314,6 +412,8 @@ var MODS = {
   dossie:      {nome:'Dossiê',                 tag:'Módulo 5', file:'nova-dossie.html',     icon:'ti-notebook',    desc:'Histórico completo de registros por funcionário, filtros, exportação em PDF.'},
   rescisao:    {nome:'Rescisão',               tag:'Módulo 6', file:'nova-rescisao.html',   icon:'ti-file-minus',  desc:'Checklist de desligamento por setor com perfis, prazo de homologação e PDF.'},
   solicitacao: {nome:'Solicitações de Vaga',   tag:'Módulo 7', file:'nova-solicitacao.html',icon:'ti-send',        desc:'Solicitações de abertura de vaga enviadas pelos gestores. Aprove e abra no R&S.'},
+  equipe:      {nome:'Gestão de Equipe',       tag:'Módulo 8', file:'nova-equipe.html',      icon:'ti-sitemap',     desc:'Organograma, funções, agenda de demandas e relatórios de entrega por colaborador.'},
+  salario:     {nome:'Tabela Salarial',        tag:'Módulo 9', file:'nova-salario.html',     icon:'ti-cash',        desc:'Tabela salarial por cargo, faixas A–F, filtros, sinalização de mudança após experiência e importação/exportação em Excel.'},
 };
 
 // ────────────────────────────────────────────────
@@ -381,6 +481,29 @@ function doLogin(){
   });
 }
 
+function showLoginMsg(t,tipo){
+  var m=document.getElementById('login-msg');
+  m.textContent=t; m.className='login-msg '+(tipo||''); m.style.display='block';
+}
+function resetSenha(){
+  var email=(document.getElementById('inp-login').value||'').trim().toLowerCase();
+  document.getElementById('login-err').style.display='none';
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    showLoginMsg('Digite seu e-mail no campo acima e clique de novo em "Esqueci minha senha".','err'); return;
+  }
+  showLoginMsg('Enviando link de redefinição...','ok');
+  firebase.auth().sendPasswordResetEmail(email).then(function(){
+    showLoginMsg('Enviamos um link de redefinição para '+email+'. Confira a caixa de entrada e o spam — o link é do Firebase.','ok');
+  }).catch(function(e){
+    var c=(e&&e.code)||'';
+    if(c==='auth/invalid-email') showLoginMsg('E-mail em formato inválido.','err');
+    else if(c==='auth/user-not-found') showLoginMsg('Este e-mail não está cadastrado no sistema.','err');
+    else if(c==='auth/too-many-requests') showLoginMsg('Muitas tentativas. Aguarde alguns minutos e tente de novo.','err');
+    else showLoginMsg('Não foi possível enviar agora. Tente novamente em instantes.','err');
+    console.warn('[reset senha]', c||e);
+  });
+}
+
 function doLogout(){
   try{ firebase.auth().signOut(); }catch(e){}
   sessionStorage.removeItem(SESSION_KEY);
@@ -428,6 +551,13 @@ function startShell(u){
     }
   });
 
+  // Esconder grupo inteiro quando o usuário não tem nenhum módulo dele
+  Object.keys(GRUPOS).forEach(function(gid){
+    var visible = (u.perfil==='admin') || GRUPOS[gid].some(function(k){return mods.includes(k);});
+    var grp=document.getElementById('grp-'+gid);
+    if(grp) grp.style.display = visible?'block':'none';
+  });
+
   buildHomeGrid(u);
   goHome();
   updateBadgeSol();
@@ -464,6 +594,9 @@ function updateBadgeSol(){
 // NAVEGAÇÃO
 // ────────────────────────────────────────────────
 var modAtivo = null;
+var GRUPOS = {rs:['rs','solicitacao'], jornada:['admissao','experiencia','dossie','rescisao'], gestao:['dashboard','equipe','salario']};
+var GRUPO_MOD = {rs:'rs',solicitacao:'rs',admissao:'jornada',experiencia:'jornada',dossie:'jornada',rescisao:'jornada',dashboard:'gestao',equipe:'gestao',salario:'gestao'};
+function toggleGroup(g){ var el=document.getElementById('grp-'+g); if(el) el.classList.toggle('open'); }
 
 function goHome(){
   modAtivo=null;
@@ -519,6 +652,9 @@ function setActive(id){
   document.querySelectorAll('.nav-item').forEach(function(el){el.classList.remove('active');});
   var el=document.getElementById(id);
   if(el)el.classList.add('active');
+  document.querySelectorAll('.nav-group').forEach(function(g){g.classList.remove('active-grp');});
+  var g=GRUPO_MOD[(id||'').replace('nav-','')];
+  if(g){ var grp=document.getElementById('grp-'+g); if(grp) grp.classList.add('open','active-grp'); }
 }
 
 // ────────────────────────────────────────────────
@@ -541,15 +677,16 @@ function renderUsuarios(){
     var isAdmin=(u.id==='u_admin');
     var modsList=(u.modulos||[]).join(', ')||'\u2014';
     var badgeClass=u.perfil==='admin'?'badge-admin':'badge-user';
+    var editBtn='<button class="btn-sm" onclick="abrirEditarUsuario(\''+u.id+'\')" title="Editar"><i class="ti ti-pencil" style="font-size:13px"></i></button>';
     var acaoBtn=isAdmin
       ?'<span style="font-size:11px;color:var(--text3);font-weight:600">Master</span>'
-      :'<button class="btn-sm btn-danger-sm" onclick="removerUsuario(\''+u.id+'\')"><i class="ti ti-trash" style="font-size:13px"></i></button>';
+      :'<button class="btn-sm btn-danger-sm" onclick="removerUsuario(\''+u.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:13px"></i></button>';
     return '<div class="user-row">'
       +'<div style="flex:1">'
       +'<div class="user-name">'+u.nome+' <span class="'+badgeClass+'">'+u.perfil+'</span></div>'
       +'<div class="user-meta">Login: '+u.login+' &middot; Módulos: '+modsList+(u.setorRescisao?' &middot; Rescisão: '+u.setorRescisao.toUpperCase():'')+'</div>'
       +'</div>'
-      +acaoBtn
+      +'<div style="display:flex;gap:6px">'+editBtn+acaoBtn+'</div>'
       +'</div>';
     }).join('');
   });
@@ -580,6 +717,51 @@ function addUsuario(){
 
 function alterarSenhaMaster(){
   toast('A senha do admin agora é alterada no Firebase Authentication.','warn');
+}
+
+// ────────────────────────────────────────────────
+// EDITAR USUÁRIO (liberar/bloquear módulos)
+// ────────────────────────────────────────────────
+var EDITAR_ALVO=null;
+function abrirEditarUsuario(id){
+  getUsuarios().then(function(users){
+    var u=users.find(function(x){return x.id===id;});
+    if(!u){toast('Usuário não encontrado.','err');return;}
+    EDITAR_ALVO=id;
+    document.getElementById('eu-nome').value=u.nome||'';
+    document.getElementById('eu-login').value=u.login||'';
+    document.getElementById('eu-perfil').value=u.perfil==='admin'?'admin':'user';
+    var mods=u.modulos||[];
+    document.querySelectorAll('#eu-modulos input[type=checkbox]').forEach(function(chk){
+      chk.checked=mods.indexOf(chk.value)!==-1;
+    });
+    document.getElementById('eu-setor-rescisao').value=u.setorRescisao||'';
+    var isMaster=(id==='u_admin');
+    document.getElementById('eu-perfil').disabled=isMaster;
+    document.querySelectorAll('#eu-modulos input[type=checkbox]').forEach(function(chk){chk.disabled=isMaster;});
+    document.getElementById('modal-editar-usuario').classList.add('open');
+  });
+}
+function fecharEditarUsuario(){
+  document.getElementById('modal-editar-usuario').classList.remove('open');
+  EDITAR_ALVO=null;
+}
+function salvarEdicaoUsuario(){
+  if(!EDITAR_ALVO)return;
+  var nome=(document.getElementById('eu-nome').value||'').trim();
+  var login=(document.getElementById('eu-login').value||'').trim().toLowerCase();
+  var perfil=document.getElementById('eu-perfil').value;
+  if(!nome||!login){toast('Preencha nome e e-mail.','err');return;}
+  var isMaster=(EDITAR_ALVO==='u_admin');
+  var mods=Array.prototype.slice.call(document.querySelectorAll('#eu-modulos input:checked')).map(function(i){return i.value;});
+  var setorResc=document.getElementById('eu-setor-rescisao').value;
+  var upd={nome:nome, login:login, perfil:isMaster?'admin':perfil, modulos:isMaster?Object.keys(MODS):mods, setorRescisao:setorResc};
+  // atualiza APENAS o documento do usuário alvo (merge, sem tocar nos demais)
+  _db.collection('users').doc(EDITAR_ALVO).set(upd,{merge:true}).then(function(){
+    toast('Usuário atualizado.','ok');
+    fecharEditarUsuario();
+    renderUsuarios();
+  }).catch(function(e){toast('Erro: '+e.message,'err');});
 }
 
 function removerUsuario(id){

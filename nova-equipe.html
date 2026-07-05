@@ -112,7 +112,9 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .kanban-card-actions .btn-sm{padding:4px 8px;font-size:10.5px;}
 .kanban-empty{font-size:11px;color:var(--text3);text-align:center;padding:16px 0;}
 /* DASHBOARD KPI */
-.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;}
+.dash-period-label{font-size:12px;font-weight:700;color:var(--text2);background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:8px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.dash-period-label i{color:var(--gold);}
 .kpi-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;border-left:4px solid;}
 .kpi-card-label{font-size:10.5px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.4px;}
 .kpi-card-num{font-size:24px;font-weight:900;margin:4px 0 2px;}
@@ -262,6 +264,18 @@ tr:last-child td{border-bottom:none;}
           <button class="btn btn-sm" onclick="calToday()">Hoje</button>
           <button class="btn btn-sm" onclick="calNav(1)"><i class="ti ti-chevron-right"></i></button>
           <span class="cal-label" id="cal-label"></span>
+        </div>
+        <div class="cal-nav" id="dash-period" style="display:none">
+          <button class="btn btn-sm" onclick="dashPeriodoPreset(30)">30 dias</button>
+          <button class="btn btn-sm" onclick="dashPeriodoPreset('mes')">Este mês</button>
+          <button class="btn btn-sm" onclick="dashPeriodoPreset('ano')">Este ano</button>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);font-weight:600">De
+            <input class="fsel" type="date" id="dash-f-de" onchange="renderAgenda()">
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text2);font-weight:600">Até
+            <input class="fsel" type="date" id="dash-f-ate" onchange="renderAgenda()">
+          </label>
+          <button class="btn btn-sm" onclick="limparPeriodoDash()"><i class="ti ti-x"></i> Limpar</button>
         </div>
       </div>
       <div class="filters">
@@ -702,6 +716,7 @@ function calSetView(v){
   CAL_VIEW = v;
   document.querySelectorAll('.cv-btn').forEach(function(b){b.classList.toggle('active', b.dataset.v===v)});
   document.getElementById('cal-nav').style.display = (v==='kanban'||v==='dashboard') ? 'none' : 'flex';
+  document.getElementById('dash-period').style.display = (v==='dashboard') ? 'flex' : 'none';
   document.getElementById('kanban-toggle-concluidas').style.display = (v==='kanban') ? 'flex' : 'none';
   renderAgenda();
 }
@@ -713,7 +728,7 @@ function calNav(delta){
   renderAgenda();
 }
 function calToday(){ CAL_DATE = new Date(); renderAgenda(); }
-function calGoTo(iso, view){ CAL_DATE = fromISO(iso); CAL_VIEW = view||'dia'; document.querySelectorAll('.cv-btn').forEach(function(b){b.classList.toggle('active', b.dataset.v===CAL_VIEW)}); document.getElementById('cal-nav').style.display='flex'; document.getElementById('kanban-toggle-concluidas').style.display='none'; renderAgenda(); }
+function calGoTo(iso, view){ CAL_DATE = fromISO(iso); CAL_VIEW = view||'dia'; document.querySelectorAll('.cv-btn').forEach(function(b){b.classList.toggle('active', b.dataset.v===CAL_VIEW)}); document.getElementById('cal-nav').style.display='flex'; document.getElementById('dash-period').style.display='none'; document.getElementById('kanban-toggle-concluidas').style.display='none'; renderAgenda(); }
 
 function renderAgenda(){
   var lista = demandasFiltradas();
@@ -737,8 +752,43 @@ function renderAgenda(){
   } else if(CAL_VIEW==='kanban'){
     renderKanban(body, lista);
   } else if(CAL_VIEW==='dashboard'){
-    renderDashboard(body, lista);
+    renderDashboard(body, aplicarPeriodoDash(lista));
   }
+}
+
+// Filtra por prazo (dataPrevista) dentro do período de/até do Dashboard
+function aplicarPeriodoDash(lista){
+  var de = document.getElementById('dash-f-de').value;
+  var ate = document.getElementById('dash-f-ate').value;
+  if(!de && !ate) return lista;
+  return lista.filter(function(d){
+    if(!d.dataPrevista) return false;
+    if(de && d.dataPrevista<de) return false;
+    if(ate && d.dataPrevista>ate) return false;
+    return true;
+  });
+}
+function limparPeriodoDash(){
+  document.getElementById('dash-f-de').value='';
+  document.getElementById('dash-f-ate').value='';
+  renderAgenda();
+}
+function dashPeriodoPreset(tipo){
+  var hoje = new Date();
+  var de, ate;
+  if(tipo==='mes'){
+    de = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+    ate = new Date(hoje.getFullYear(), hoje.getMonth()+1, 0);
+  } else if(tipo==='ano'){
+    de = new Date(hoje.getFullYear(), 0, 1);
+    ate = new Date(hoje.getFullYear(), 11, 31);
+  } else { // número de dias a partir de hoje, para trás
+    de = new Date(hoje); de.setDate(de.getDate()-Number(tipo)+1);
+    ate = new Date(hoje);
+  }
+  document.getElementById('dash-f-de').value = toISO(de);
+  document.getElementById('dash-f-ate').value = toISO(ate);
+  renderAgenda();
 }
 
 function dayCardHTML(d){
@@ -913,8 +963,19 @@ function renderDashboard(body, lista){
   var color = k.pct===null ? 'var(--text3)' : (k.pct>=95?'#1a5c35':k.pct>=90?'#5b8c3e':k.pct>=85?'#7d4e00':'#8b1c1c');
   var band = k.pct===null ? 'Sem dados' : (k.pct>=100?'★ Perfeito':k.pct>=95?'✓ Excelente':k.pct>=90?'✓ Ótimo':k.pct>=85?'▲ Bom':'⚠ Insuficiente');
 
-  var html = '<div class="kpi-row">'
-    +'<div class="kpi-card" style="border-left-color:#3c6e9e"><div class="kpi-card-label">Abertas</div><div class="kpi-card-num" style="color:#3c6e9e">'+k.ab+'</div><div class="kpi-card-pct">'+p(k.ab)+'% do KPI · '+k.totKpi+' total</div></div>'
+  var pDe = document.getElementById('dash-f-de').value;
+  var pAte = document.getElementById('dash-f-ate').value;
+  var periodoTxt;
+  if(pDe && pAte) periodoTxt = 'Período: '+formatBR(pDe)+' até '+formatBR(pAte)+' (por prazo)';
+  else if(pDe) periodoTxt = 'A partir de '+formatBR(pDe)+' (por prazo)';
+  else if(pAte) periodoTxt = 'Até '+formatBR(pAte)+' (por prazo)';
+  else periodoTxt = 'Todas as demandas (nenhum período selecionado)';
+
+  var html = '<div class="dash-period-label"><i class="ti ti-calendar-stats"></i>'+periodoTxt+'</div>';
+
+  html += '<div class="kpi-row">'
+    +'<div class="kpi-card" style="border-left-color:#0e0f12"><div class="kpi-card-label">Total</div><div class="kpi-card-num" style="color:#0e0f12">'+k.tot+'</div><div class="kpi-card-pct">'+k.totKpi+' no KPI'+(k.excl?' · '+k.excl+' excl.':'')+'</div></div>'
+    +'<div class="kpi-card" style="border-left-color:#3c6e9e"><div class="kpi-card-label">Abertas</div><div class="kpi-card-num" style="color:#3c6e9e">'+k.ab+'</div><div class="kpi-card-pct">'+p(k.ab)+'% do KPI</div></div>'
     +'<div class="kpi-card" style="border-left-color:#8b1c1c"><div class="kpi-card-label">Em Atraso</div><div class="kpi-card-num" style="color:#8b1c1c">'+k.at+'</div><div class="kpi-card-pct">'+p(k.at)+'% do KPI</div></div>'
     +'<div class="kpi-card" style="border-left-color:#1a5c35"><div class="kpi-card-label">Concluídas</div><div class="kpi-card-num" style="color:#1a5c35">'+k.co+'</div><div class="kpi-card-pct">'+p(k.co)+'% do KPI</div></div>'
     +'<div class="kpi-card" style="border-left-color:#8b0000"><div class="kpi-card-label">Conc. com Atraso</div><div class="kpi-card-num" style="color:#8b0000">'+k.ca+'</div><div class="kpi-card-pct">'+p(k.ca)+'% do KPI'+(k.excl?' · '+k.excl+' excl. KPI':'')+'</div></div>'

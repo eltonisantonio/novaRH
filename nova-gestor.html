@@ -115,12 +115,6 @@ body{font-family:'Inter',sans-serif;background:var(--cream);min-height:100vh;dis
         <label class="form-label">Escala de Trabalho <span class="req">*</span></label>
         <select class="form-select" id="g-escala">
           <option value="">Selecione</option>
-          <option>SEG-SEX (08h-18h)</option>
-          <option>SEG-SAB (07h-17h)</option>
-          <option>12x36 DIURNO</option>
-          <option>12x36 NOTURNO</option>
-          <option>5x1 ESCALA</option>
-          <option>OUTRO</option>
         </select>
       </div>
       <div class="form-group full" id="bloco-substituto" style="display:none">
@@ -180,7 +174,30 @@ async function carregarSetores(){
   }
 }
 
-(async()=>{await carregarSetores();})();
+async function carregarEscalas(){
+  var sel=document.getElementById('g-escala');
+  try{
+    var snap=await firebase.firestore().collection('sol_escalas').get();
+    var escalas=snap.docs.map(function(d){return d.data();})
+                  .sort(function(a,b){return (a.nome||'').localeCompare(b.nome||'');});
+    if(escalas.length){
+      escalas.forEach(function(e){
+        var opt=document.createElement('option');
+        opt.value=e.nome;opt.textContent=e.nome;
+        sel.appendChild(opt);
+      });
+    } else {
+      // fallback: campo livre se nenhuma escala cadastrada
+      var div=sel.parentNode;
+      div.innerHTML='<label class="form-label">Escala de Trabalho <span class="req">*</span></label>'
+        +'<input class="form-input upper" type="text" id="g-escala" placeholder="EX: SEG-SEX (08h-18h)">';
+    }
+  }catch(e){
+    console.error(e);
+  }
+}
+
+(async()=>{await carregarSetores();await carregarEscalas();})();
 
 function sanitize(s){
   var d=document.createElement('div');

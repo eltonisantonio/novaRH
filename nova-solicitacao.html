@@ -245,6 +245,19 @@ textarea.fi2{resize:vertical;min-height:80px;}
           <tbody id="tb-n2s"></tbody>
         </table>
       </div>
+
+      <div class="cfg-section">
+        <div class="cfg-title">Escalas / Turnos de Trabalho</div>
+        <div class="cfg-sub">Cadastre as escalas disponíveis. Elas aparecem no formulário do gestor.</div>
+        <div class="cfg-form cfg-form-2">
+          <div class="fg"><label class="fl">Nome da Escala / Turno</label><input class="fi" type="text" id="ne-nome" placeholder="Ex: SEG-SEX (08h-18h)"></div>
+          <button class="btn btn-primary" style="height:38px" onclick="addEscala()"><i class="ti ti-plus"></i> Adicionar</button>
+        </div>
+        <table class="cfg-table">
+          <thead><tr><th>Escala / Turno</th><th style="width:50px"></th></tr></thead>
+          <tbody id="tb-escalas"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -827,13 +840,41 @@ function removerN2(id, nome) {
   });
 }
 
+// ════════════════════════════════════════════
+// CONFIGURAÇÕES — Escalas / Turnos
+// ════════════════════════════════════════════
+function addEscala() {
+  var nome = (document.getElementById('ne-nome').value || '').trim();
+  if (!nome) { toast('Informe o nome da escala.', 'err'); return; }
+  db.collection('sol_escalas').where('nome', '==', nome).get().then(function(snap) {
+    if (!snap.empty) { toast('Escala já existe.', 'err'); return; }
+    var id = 'esc_' + Date.now();
+    db.collection('sol_escalas').doc(id).set({id: id, nome: nome}).then(function() {
+      document.getElementById('ne-nome').value = '';
+      toast('Escala adicionada!', 'ok');
+      renderCfg();
+    });
+  });
+}
+
+function removerEscala(id, nome) {
+  if (!confirm('Remover escala "' + nome + '"?')) return;
+  db.collection('sol_escalas').doc(id).delete().then(function() {
+    toast('Escala removida.');
+    renderCfg();
+  });
+}
+
 function renderCfg() {
   Promise.all([
     db.collection('sol_setores').get(),
-    db.collection('sol_n2s').get()
+    db.collection('sol_n2s').get(),
+    db.collection('sol_escalas').get()
   ]).then(function(results) {
     var setores = results[0].docs.map(function(d) { return d.data(); });
     var n2s     = results[1].docs.map(function(d) { return d.data(); });
+    var escalas = results[2].docs.map(function(d) { return d.data(); })
+                    .sort(function(a, b) { return (a.nome || '').localeCompare(b.nome || ''); });
 
     // Tabela setores
     var tbS = document.getElementById('tb-setores');
@@ -865,6 +906,17 @@ function renderCfg() {
         return '<tr><td style="font-weight:700">' + n.nome + '</td><td style="font-size:12px">' + n.email + '</td>'
           + '<td><span class="tag-emp" style="background:var(--s2);color:var(--text2)">' + n.setor + '</span></td>'
           + '<td><button class="btn-icon" onclick="removerN2(\'' + n.id + '\',\'' + n.nome + '\')"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td></tr>';
+      }).join('');
+    }
+
+    // Tabela escalas / turnos
+    var tbE = document.getElementById('tb-escalas');
+    if (!escalas.length) {
+      tbE.innerHTML = '<tr><td colspan="2" style="color:var(--text3);font-size:12px;padding:16px">Nenhuma escala cadastrada.</td></tr>';
+    } else {
+      tbE.innerHTML = escalas.map(function(e) {
+        return '<tr><td style="font-weight:700">' + e.nome + '</td>'
+          + '<td><button class="btn-icon" onclick="removerEscala(\'' + e.id + '\',\'' + e.nome + '\')"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td></tr>';
       }).join('');
     }
   });

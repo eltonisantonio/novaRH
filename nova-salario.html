@@ -271,11 +271,11 @@ table.val td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:
     <div class="content" id="view-validacao" style="display:none">
       <div class="val-intro">
         <div style="font-size:14px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:8px"><i class="ti ti-clipboard-check" style="font-size:18px;color:var(--gold)"></i> Validar remuneração pela Relação de Funcionários</div>
-        <div style="font-size:12.5px;color:var(--text2);line-height:1.6">Suba a planilha da <b>Relação de Funcionários</b> (FoRelaFunc2). Para cada pessoa, o sistema busca no cadastro o cargo e a faixa (A–F) e devolve a <b>Remuneração Esperada</b>. Todas as filiais são conferidas contra a tabela da Matriz; o casamento é por cargo + departamento, ignorando acentos e maiúsculas.</div>
+        <div style="font-size:12.5px;color:var(--text2);line-height:1.6">Suba a planilha da <b>Relação de Funcionários</b> (FoRelaFunc2) com a coluna <b>Salário</b>. Para cada pessoa, o sistema compara o <b>salário pago</b> com o valor da faixa (A–F) no cadastro e sinaliza se está <b>correto</b> ou <b>divergente</b> (conferência exata, centavo a centavo). O casamento é por cargo + departamento, ignorando acentos e maiúsculas. O Excel baixa <b>apenas as inconsistências</b>.</div>
         <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('file-valida').click()"><i class="ti ti-upload"></i> Subir planilha</button>
           <input type="file" id="file-valida" accept=".xlsx,.xls" style="display:none" onchange="processarValidacao(this.files[0]); this.value='';">
-          <button class="btn btn-sm" id="btn-baixar-val" onclick="exportarValidacao()" style="display:none"><i class="ti ti-file-spreadsheet"></i> Baixar resultado (Excel)</button>
+          <button class="btn btn-sm" id="btn-baixar-val" onclick="exportarValidacao()" style="display:none"><i class="ti ti-file-spreadsheet"></i> Baixar inconsistências (Excel)</button>
         </div>
       </div>
       <div id="val-summary" class="imp-summary" style="display:none"></div>
@@ -912,8 +912,9 @@ function aplicarImport(){
 // ============================================================
 var _validacao = null;
 var ST = {
-  ok:{c:'st-ok',t:'OK'}, semfaixa:{c:'st-warn',t:'Sem faixa'},
-  faixavazia:{c:'st-warn',t:'Faixa s/ valor'}, naoenc:{c:'st-err',t:'Não encontrado'},
+  ok:{c:'st-ok',t:'OK'}, divergente:{c:'st-err',t:'Salário divergente'},
+  semfaixa:{c:'st-warn',t:'Sem faixa'}, faixavazia:{c:'st-warn',t:'Faixa s/ valor'},
+  semsalario:{c:'st-warn',t:'Sem salário'}, naoenc:{c:'st-err',t:'Não encontrado'},
   amb:{c:'st-err',t:'Ambíguo'}
 };
 
@@ -961,7 +962,8 @@ function construirValidacao(aoa){
   function col(){ for(var a=0;a<arguments.length;a++){ if(cols[arguments[a]]!==undefined) return cols[arguments[a]]; } return -1; }
   var cChapa=col('CHAPA'), cNome=col('NOME'), cFil=col('FILIAL (NOME FANTASIA)','FILIAL'),
       cCargo=col('CARGO'), cFaixa=col('FAIXA SAL','FAIXA SALARIAL','FAIXA'),
-      cDepto=col('DEPTO (NOME FANTASIA)','DEPTO','DEPARTAMENTO');
+      cDepto=col('DEPTO (NOME FANTASIA)','DEPTO','DEPARTAMENTO'),
+      cSal=col('SALARIO','SALARIO ATUAL','REMUNERACAO','REMUNERACAO ATUAL');
 
   var idx=idxCadastro(), res=[];
   for(var r=hi+1;r<aoa.length;r++){
@@ -974,6 +976,7 @@ function construirValidacao(aoa){
     var filial=cFil>=0?String(row[cFil]||'').trim():'';
     var fRaw=cFaixa>=0?String(row[cFaixa]||'').trim().toUpperCase():'';
     var faixa=/^[A-F]$/.test(fRaw)?fRaw:'';
+    var salPago=cSal>=0?num(row[cSal]):null;
 
     var kc=normTxt(cargo), match=idx.byCD[kc+'|'+normTxt(depto)]||null, via='cargo+depto';
     if(!match && idx.byC[kc]){
@@ -983,17 +986,22 @@ function construirValidacao(aoa){
       else { via='ambiguo'; }
     }
 
-    var esperada=null, status, obs='';
+    var esperada=null, diff=null, status, obs='';
     if(!match && via==='ambiguo'){ status='amb'; obs='Cargo existe em vários deptos com faixas diferentes'; }
     else if(!match){ status='naoenc'; obs='Cargo/depto não encontrado no cadastro'; }
     else if(!faixa){ status='semfaixa'; obs='Faixa não informada na planilha'; }
     else {
       esperada=(match.faixas||{})[faixa];
       if(esperada==null){ status='faixavazia'; obs='Faixa '+faixa+' sem valor no cadastro'; }
-      else { status='ok'; if(via!=='cargo+depto') obs=via; }
+      else if(salPago==null){ status='semsalario'; obs='Salário não informado na planilha'; }
+      else {
+        diff=Math.round((salPago-esperada)*100)/100;
+        if(Math.round(salPago*100)===Math.round(esperada*100)){ status='ok'; if(via!=='cargo+depto') obs=via; }
+        else { status='divergente'; obs='Pago '+brl(salPago)+' vs faixa '+faixa+' '+brl(esperada)+(via!=='cargo+depto'?' · '+via:''); }
+      }
     }
     res.push({chapa:chapa,nome:nome,filial:filial,cargo:cargo,depto:depto,faixa:faixa,
-      esperada:esperada,status:status,obs:obs, cargoCad:match?match.cargo:'', deptoCad:match?match.depto:''});
+      salPago:salPago,esperada:esperada,diff:diff,status:status,obs:obs, cargoCad:match?match.cargo:'', deptoCad:match?match.depto:''});
   }
   if(!res.length){ toast('Nenhuma linha de funcionário reconhecida na planilha.','err'); return; }
   _validacao=res;
@@ -1003,50 +1011,59 @@ function construirValidacao(aoa){
 
 function renderValidacao(){
   var res=_validacao||[];
-  var cont={ok:0,semfaixa:0,faixavazia:0,naoenc:0,amb:0};
+  var cont={ok:0,divergente:0,semfaixa:0,faixavazia:0,semsalario:0,naoenc:0,amb:0};
   res.forEach(function(x){ cont[x.status]++; });
+  var pend=cont.semfaixa+cont.faixavazia+cont.semsalario+cont.naoenc+cont.amb;
   var sum=document.getElementById('val-summary');
   sum.style.display='flex';
   sum.innerHTML =
     pill('eq', res.length, 'Funcionários')+
-    pill('up', cont.ok, 'Com remuneração')+
-    pill('warn', cont.semfaixa+cont.faixavazia, 'Sem faixa/valor')+
-    pill('new', cont.naoenc+cont.amb, 'Não casados');
+    pill('up', cont.ok, 'Salário OK')+
+    pill('warn', cont.divergente, 'Divergentes')+
+    pill('new', pend, 'Pendências');
 
   var linhas=res.map(function(x){
     var s=ST[x.status];
+    var dcell='—';
+    if(x.diff!=null && x.diff!==0){ dcell=(x.diff>0?'+':'−')+brl(Math.abs(x.diff)); }
+    else if(x.diff===0){ dcell=brl(0); }
     return '<tr>'+
       '<td>'+esc(x.chapa)+'</td>'+
       '<td>'+esc(x.nome)+'</td>'+
-      '<td>'+esc(x.filial)+'</td>'+
       '<td>'+esc(x.cargo)+'</td>'+
       '<td>'+esc(x.depto)+'</td>'+
       '<td style="text-align:center">'+(x.faixa||'—')+'</td>'+
+      '<td class="num">'+brl(x.salPago)+'</td>'+
       '<td class="num">'+brl(x.esperada)+'</td>'+
+      '<td class="num">'+dcell+'</td>'+
       '<td><span class="st '+s.c+'">'+s.t+'</span></td>'+
       '<td class="val-obs">'+esc(x.obs||'')+'</td>'+
     '</tr>';
   }).join('');
   document.getElementById('val-host').innerHTML =
     '<div class="val-table-wrap"><table class="val"><thead><tr>'+
-      '<th>Chapa</th><th>Nome</th><th>Filial</th><th>Cargo</th><th>Departamento</th>'+
-      '<th style="text-align:center">Faixa</th><th class="num">Remuneração Esperada</th><th>Status</th><th>Observação</th>'+
+      '<th>Chapa</th><th>Nome</th><th>Cargo</th><th>Departamento</th>'+
+      '<th style="text-align:center">Faixa</th><th class="num">Salário Pago</th><th class="num">Remuneração Esperada</th><th class="num">Diferença</th><th>Status</th><th>Observação</th>'+
     '</tr></thead><tbody>'+linhas+'</tbody></table></div>';
   document.getElementById('btn-baixar-val').style.display='inline-flex';
 }
 
 function exportarValidacao(){
-  var res=_validacao||[]; if(!res.length){ toast('Nada para exportar.','warn'); return; }
-  var head=['CHAPA','NOME','FILIAL','CARGO','DEPARTAMENTO','FAIXA','REMUNERAÇÃO ESPERADA','STATUS','CARGO NO CADASTRO','DEPTO NO CADASTRO','OBSERVAÇÃO'];
-  var aoa=[head].concat(res.map(function(x){
-    return [x.chapa,x.nome,x.filial,x.cargo,x.depto,x.faixa,(x.esperada==null?'':x.esperada),ST[x.status].t,x.cargoCad,x.deptoCad,x.obs];
+  var res=_validacao||[];
+  var inc=res.filter(function(x){ return x.status!=='ok'; });
+  if(!inc.length){ toast('Nenhuma inconsistência encontrada — nada a baixar.','ok'); return; }
+  var head=['CHAPA','NOME','CARGO','DEPARTAMENTO','FAIXA','SALÁRIO PAGO','REMUNERAÇÃO ESPERADA','DIFERENÇA','STATUS','CARGO NO CADASTRO','DEPTO NO CADASTRO','OBSERVAÇÃO'];
+  var aoa=[head].concat(inc.map(function(x){
+    return [x.chapa,x.nome,x.cargo,x.depto,x.faixa,
+      (x.salPago==null?'':x.salPago),(x.esperada==null?'':x.esperada),(x.diff==null?'':x.diff),
+      ST[x.status].t,x.cargoCad,x.deptoCad,x.obs];
   }));
   var ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:10},{wch:28},{wch:20},{wch:30},{wch:24},{wch:7},{wch:18},{wch:16},{wch:30},{wch:24},{wch:34}];
+  ws['!cols']=[{wch:10},{wch:28},{wch:30},{wch:24},{wch:7},{wch:15},{wch:18},{wch:13},{wch:18},{wch:30},{wch:24},{wch:38}];
   var wb=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'VALIDAÇÃO');
-  XLSX.writeFile(wb, 'validacao_remuneracao_'+new Date().toISOString().slice(0,10)+'.xlsx');
-  toast('Resultado exportado.','ok');
+  XLSX.utils.book_append_sheet(wb, ws, 'INCONSISTÊNCIAS');
+  XLSX.writeFile(wb, 'inconsistencias_salario_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  toast(inc.length+' inconsistência(s) exportada(s).','ok');
 }
 
 // ============================================================

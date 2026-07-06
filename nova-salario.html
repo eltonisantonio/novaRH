@@ -222,10 +222,10 @@ table.val td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:
           <i class="ti ti-search"></i>
           <input class="search-input" type="text" id="busca" placeholder="Buscar cargo ou departamento..." oninput="renderTabela()">
         </div>
-        <select class="form-select" id="f-area" onchange="onAreaChange()"><option value="">Todas as áreas</option></select>
-        <select class="form-select" id="f-depto" onchange="onDeptoChange()"><option value="">Todos os deptos.</option></select>
-        <select class="form-select" id="f-tabela" onchange="renderTabela()"><option value="">Todas as tabelas</option></select>
-        <select class="form-select" id="f-grat" onchange="renderTabela()">
+        <select class="form-select" id="f-area" onchange="onFiltroTab()"><option value="">Todas as áreas</option></select>
+        <select class="form-select" id="f-depto" onchange="onFiltroTab()"><option value="">Todos os deptos.</option></select>
+        <select class="form-select" id="f-tabela" onchange="onFiltroTab()"><option value="">Todas as tabelas</option></select>
+        <select class="form-select" id="f-grat" onchange="onFiltroTab()">
           <option value="">Gratificação: todas</option>
           <option value="1">Com gratificação</option>
           <option value="0">Sem gratificação</option>
@@ -245,10 +245,10 @@ table.val td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:
           <i class="ti ti-search"></i>
           <input class="search-input" type="text" id="busca-cad" placeholder="Buscar cargo ou departamento..." oninput="renderCadastro()">
         </div>
-        <select class="form-select" id="fc-area" onchange="onAreaChangeCad()"><option value="">Todas as áreas</option></select>
-        <select class="form-select" id="fc-depto" onchange="onDeptoChangeCad()"><option value="">Todos os deptos.</option></select>
-        <select class="form-select" id="fc-tabela" onchange="renderCadastro()"><option value="">Todas as tabelas</option></select>
-        <select class="form-select" id="fc-grat" onchange="renderCadastro()">
+        <select class="form-select" id="fc-area" onchange="onFiltroCad()"><option value="">Todas as áreas</option></select>
+        <select class="form-select" id="fc-depto" onchange="onFiltroCad()"><option value="">Todos os deptos.</option></select>
+        <select class="form-select" id="fc-tabela" onchange="onFiltroCad()"><option value="">Todas as tabelas</option></select>
+        <select class="form-select" id="fc-grat" onchange="onFiltroCad()">
           <option value="">Gratificação: todas</option>
           <option value="1">Com gratificação</option>
           <option value="0">Sem gratificação</option>
@@ -459,33 +459,33 @@ function ordenar(a,b){
 }
 
 function popularFiltros(){
-  fillSelect('f-area','Todas as áreas', uniq('area'));
-  fillSelect('fc-area','Todas as áreas', uniq('area'));
-  refreshDepto('f-area','f-depto'); refreshTabela('f-area','f-depto','f-tabela');
-  refreshDepto('fc-area','fc-depto'); refreshTabela('fc-area','fc-depto','fc-tabela');
+  cascata('f'); cascata('fc');
 }
 function val(id){ var e=document.getElementById(id); return e?e.value:''; }
 function uniq(k){ var s={}; _cargos.forEach(function(c){ if(c[k]) s[c[k]]=1; }); return Object.keys(s).sort(); }
-function deptosDaArea(area){
-  var s={}; _cargos.forEach(function(c){ if(c.depto && (!area||c.area===area)) s[c.depto]=1; }); return Object.keys(s).sort();
+
+// Um cargo satisfaz a seleção atual, ignorando a dimensão "skip" (para não filtrar a si mesma)
+function cargoBate(c, sel, skip){
+  if(skip!=='area'   && sel.area   && c.area!==sel.area)     return false;
+  if(skip!=='depto'  && sel.depto  && c.depto!==sel.depto)   return false;
+  if(skip!=='tabela' && sel.tabela && c.tabela!==sel.tabela) return false;
+  if(skip!=='grat'   && sel.grat!==''){ if(sel.grat==='1'&&!c.grat) return false; if(sel.grat==='0'&&c.grat) return false; }
+  return true;
 }
-function tabelasDoFiltro(area,depto){
-  var s={}; _cargos.forEach(function(c){ if(c.tabela && (!area||c.area===area) && (!depto||c.depto===depto)) s[c.tabela]=1; }); return Object.keys(s).sort();
+function opcoesPara(sel, key){
+  var s={}; _cargos.forEach(function(c){ if(c[key] && cargoBate(c,sel,key)) s[c[key]]=1; }); return Object.keys(s).sort();
 }
-function refreshDepto(areaId,deptoId){
-  var el=document.getElementById(deptoId), atual=el.value, opts=deptosDaArea(val(areaId));
-  fillSelect(deptoId,'Todos os deptos.',opts); if(opts.indexOf(atual)<0) el.value='';
-}
-function refreshTabela(areaId,deptoId,tabId){
-  var el=document.getElementById(tabId), atual=el.value, opts=tabelasDoFiltro(val(areaId),val(deptoId));
-  fillSelect(tabId,'Todas as tabelas',opts); if(opts.indexOf(atual)<0) el.value='';
+// Recalcula Área/Depto/Tabela a partir de TODAS as demais seleções ativas (prefixo 'f' ou 'fc')
+function cascata(prefix){
+  var sel={ area:val(prefix+'-area'), depto:val(prefix+'-depto'), tabela:val(prefix+'-tabela'), grat:val(prefix+'-grat') };
+  fillSelect(prefix+'-area',  'Todas as áreas',    opcoesPara(sel,'area'));
+  fillSelect(prefix+'-depto', 'Todos os deptos.',  opcoesPara(sel,'depto'));
+  fillSelect(prefix+'-tabela','Todas as tabelas',  opcoesPara(sel,'tabela'));
 }
 // aba Tabela
-function onAreaChange(){ refreshDepto('f-area','f-depto'); refreshTabela('f-area','f-depto','f-tabela'); renderTabela(); }
-function onDeptoChange(){ refreshTabela('f-area','f-depto','f-tabela'); renderTabela(); }
+function onFiltroTab(){ cascata('f'); renderTabela(); }
 // aba Cadastro
-function onAreaChangeCad(){ refreshDepto('fc-area','fc-depto'); refreshTabela('fc-area','fc-depto','fc-tabela'); renderCadastro(); }
-function onDeptoChangeCad(){ refreshTabela('fc-area','fc-depto','fc-tabela'); renderCadastro(); }
+function onFiltroCad(){ cascata('fc'); renderCadastro(); }
 function fillSelect(id,ph,vals){
   var el=document.getElementById(id); if(!el) return;
   var cur=el.value;
@@ -534,13 +534,13 @@ function toggleExp(){ _filtroExp=!_filtroExp; document.getElementById('chip-exp'
 function toggleExpCad(){ _filtroExpCad=!_filtroExpCad; document.getElementById('chip-exp-cad').classList.toggle('on',_filtroExpCad); renderCadastro(); }
 function limparFiltros(){
   ['busca','f-area','f-depto','f-tabela','f-grat'].forEach(function(id){document.getElementById(id).value='';});
-  refreshDepto('f-area','f-depto'); refreshTabela('f-area','f-depto','f-tabela');
+  cascata('f');
   _filtroExp=false; document.getElementById('chip-exp').classList.remove('on');
   renderTabela();
 }
 function limparFiltrosCad(){
   ['busca-cad','fc-area','fc-depto','fc-tabela','fc-grat'].forEach(function(id){document.getElementById(id).value='';});
-  refreshDepto('fc-area','fc-depto'); refreshTabela('fc-area','fc-depto','fc-tabela');
+  cascata('fc');
   _filtroExpCad=false; document.getElementById('chip-exp-cad').classList.remove('on');
   renderCadastro();
 }

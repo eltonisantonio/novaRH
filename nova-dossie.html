@@ -330,6 +330,60 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         </div>
       </div>
     </div>
+
+    <!-- PÍLULAS -->
+    <div class="content" id="view-pilulas" style="display:none">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+        <i class="ti ti-pill" style="font-size:20px;color:#7c5cc4"></i>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px">Pílulas — Raguife Notícias</div>
+          <div style="font-size:12px;color:var(--text2)">Registro dos envios ao grupo de WhatsApp. Cada pílula aparece também na linha do tempo dos colaboradores ativos.</div>
+        </div>
+      </div>
+      <div class="search-bar">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input class="search-input" type="text" id="pil-busca" placeholder="Buscar por tema..." oninput="renderPilulas()">
+        </div>
+        <select class="form-select" id="pil-f-cat" onchange="renderPilulas()" style="width:185px">
+          <option value="">Todas as categorias</option>
+          <option value="Convivência">Convivência</option>
+          <option value="Qualidade">Qualidade</option>
+          <option value="Segurança">Segurança</option>
+        </select>
+      </div>
+      <div id="pil-lista"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PÍLULA -->
+<div class="overlay" id="modal-pilula">
+  <div class="modal">
+    <div class="modal-h"><span class="modal-title">Nova Pílula</span><button class="btn-icon" onclick="closeModal('modal-pilula')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2);margin-bottom:16px">
+        <i class="ti ti-brand-whatsapp" style="font-size:13px;margin-right:4px;color:#25d366"></i>
+        Registro de envio ao grupo <strong>Raguife Notícias</strong>.
+      </div>
+      <div class="fg"><label class="fl">Categoria <span style="color:#c0392b">*</span></label>
+        <select class="fs" id="pil-cat">
+          <option value="">Selecione</option>
+          <option value="Convivência">Convivência</option>
+          <option value="Qualidade">Qualidade</option>
+          <option value="Segurança">Segurança</option>
+        </select></div>
+      <div class="fg"><label class="fl">Tema / Título <span style="color:#c0392b">*</span></label>
+        <input class="fi" type="text" id="pil-tema" placeholder="Ex: Uso correto de EPI"></div>
+      <div class="fg"><label class="fl">Data do envio <span style="color:#c0392b">*</span></label>
+        <input class="fi" type="date" id="pil-data"></div>
+      <div class="fg"><label class="fl">Observações</label>
+        <textarea class="ft" id="pil-obs" rows="3" placeholder="Detalhes, link do conteúdo, etc."></textarea></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-pilula')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarPilula()"><i class="ti ti-device-floppy"></i> Registrar</button>
+    </div>
   </div>
 </div>
 
@@ -604,9 +658,13 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           <select class="fs" id="eg-empresa" onchange="filtrarEG()" style="flex:1;font-size:12px;padding:7px 9px">
             <option value="">Todas as empresas</option>
           </select>
-          <select class="fs" id="eg-depto" onchange="filtrarEG()" style="flex:1;font-size:12px;padding:7px 9px">
-            <option value="">Todos os setores</option>
-          </select>
+          <div style="flex:1;position:relative">
+            <button type="button" class="fs" id="eg-depto-btn" onclick="toggleEGDeptoPanel(event)" style="width:100%;text-align:left;font-size:12px;padding:7px 9px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px">
+              <span id="eg-depto-label" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Todos os setores</span>
+              <i class="ti ti-chevron-down" style="font-size:14px;flex-shrink:0"></i>
+            </button>
+            <div id="eg-depto-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:30;background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:230px;overflow-y:auto;padding:4px"></div>
+          </div>
         </div>
         <div id="eg-lista" style="max-height:290px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--white)"></div>
       </div>
@@ -654,9 +712,12 @@ var TIPOS_DEFAULT = [
 var _funcs    = [];
 var _eventos  = [];
 var _tipos    = [];
+var _pilulas  = [];
 var _funcAtivo = null;
 var _tipoFiltro = '';
 var _funcEditId = null;
+var _pilFiltroCat = '';
+var _egSetores = {};
 
 function toast(msg, tp) {
   var el = document.getElementById('toast');
@@ -828,6 +889,12 @@ function iniciarListeners() {
     _eventos.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
     if (_funcAtivo) renderDossie(_funcAtivo);
   });
+  db.collection('dossie_pilulas').onSnapshot(function(snap) {
+    _pilulas = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    _pilulas.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+    if (document.getElementById('view-pilulas').style.display !== 'none') renderPilulas();
+    if (_funcAtivo) renderDossie(_funcAtivo);
+  });
   db.collection('dossie_tipos').onSnapshot(function(snap) {
     _tipos = snap.docs.map(function(d){ return d.data(); });
     if (!_tipos.length) {
@@ -862,9 +929,10 @@ function popularSelectTipos() {
 
 // ════ TABS ════
 function showTab(t) {
-  document.getElementById('view-lista').style.display  = t==='lista'  ? 'block' : 'none';
-  document.getElementById('view-dossie').style.display = t==='dossie' ? 'block' : 'none';
-  document.getElementById('view-cfg').style.display    = t==='cfg'    ? 'block' : 'none';
+  document.getElementById('view-lista').style.display   = t==='lista'   ? 'block' : 'none';
+  document.getElementById('view-dossie').style.display  = t==='dossie'  ? 'block' : 'none';
+  document.getElementById('view-cfg').style.display     = t==='cfg'     ? 'block' : 'none';
+  document.getElementById('view-pilulas').style.display = t==='pilulas' ? 'block' : 'none';
 
   var tb = document.getElementById('topbar-title');
   var ta = document.getElementById('topbar-actions');
@@ -873,8 +941,16 @@ function showTab(t) {
     _funcAtivo=null;
     tb.innerHTML = 'Dossiê de Funcionários';
     ta.innerHTML = '<button class="btn btn-sm" onclick="showTab(\'cfg\')"><i class="ti ti-settings"></i> Configurações</button>'
+      +'<button class="btn btn-sm" onclick="showTab(\'pilulas\')"><i class="ti ti-pill"></i> Pílulas</button>'
       +'<button class="btn btn-sm" onclick="openEventoGrupo()"><i class="ti ti-users"></i> Evento em Grupo</button>'
       +'<button class="btn btn-primary btn-sm" onclick="openCadastrarFunc()"><i class="ti ti-user-plus"></i> Novo Funcionário</button>';
+  }
+  if (t==='pilulas') {
+    _funcAtivo=null;
+    tb.innerHTML = 'Pílulas — Raguife Notícias';
+    ta.innerHTML = '<button class="btn btn-sm" onclick="showTab(\'lista\')"><i class="ti ti-arrow-left"></i> Voltar</button>'
+      +'<button class="btn btn-primary btn-sm" onclick="openNovaPilula()"><i class="ti ti-plus"></i> Nova Pílula</button>';
+    renderPilulas();
   }
   if (t==='dossie' && _funcAtivo) {
     tb.innerHTML = _funcAtivo.nome;
@@ -978,25 +1054,38 @@ function renderDossie(f) {
     +'<div class="stat"><div class="stat-v" style="color:#e05252">'+adv+'</div><div class="stat-l">Advertências</div></div>'
     +'<div class="stat"><div class="stat-v" style="color:#8ab800">'+elo+'</div><div class="stat-l">Elogios</div></div>';
 
+  // Pílulas do grupo aparecem na linha do tempo dos colaboradores ATIVOS (mural — sem duplicar no banco)
+  var pilPseudo = isDeslig ? [] : _pilulas.map(function(p){
+    return { id:p.id, _pilula:true, tipoId:'pilula', categoria:p.categoria, titulo:p.tema, data:p.data, obs:p.obs||'' };
+  });
+  var itens = evs.concat(pilPseudo);
+  itens.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+
   // Filtros por tipo
   var tiposUsados = _tipos.filter(function(t){
     return evs.find(function(ev){ return ev.tipoId===t.id; });
   });
-  var filtersHtml = '<button class="tipo-btn'+(_tipoFiltro===''?' active':'')+'" onclick="filtrarTipo(\'\')">Todos ('+evs.length+')</button>';
+  var filtersHtml = '<button class="tipo-btn'+(_tipoFiltro===''?' active':'')+'" onclick="filtrarTipo(\'\')">Todos ('+itens.length+')</button>';
   tiposUsados.forEach(function(t) {
     var n = evs.filter(function(ev){ return ev.tipoId===t.id; }).length;
     filtersHtml += '<button class="tipo-btn'+(_tipoFiltro===t.id?' active':'')+'" style="'+(_tipoFiltro===t.id?'background:'+t.cor+';color:#fff;border-color:'+t.cor:'')+'" onclick="filtrarTipo(\''+t.id+'\')">'+t.nome+' ('+n+')</button>';
   });
+  if (pilPseudo.length) {
+    var cp = '#7c5cc4';
+    filtersHtml += '<button class="tipo-btn'+(_tipoFiltro==='pilula'?' active':'')+'" style="'+(_tipoFiltro==='pilula'?'background:'+cp+';color:#fff;border-color:'+cp:'')+'" onclick="filtrarTipo(\'pilula\')"><i class="ti ti-pill" style="font-size:12px;margin-right:3px"></i>Pílulas ('+pilPseudo.length+')</button>';
+  }
   document.getElementById('tipo-filters').innerHTML = filtersHtml;
 
   // Timeline
-  var filtrados = _tipoFiltro ? evs.filter(function(ev){ return ev.tipoId===_tipoFiltro; }) : evs;
+  var filtrados = _tipoFiltro ? itens.filter(function(ev){ return (ev._pilula?'pilula':ev.tipoId)===_tipoFiltro; }) : itens;
   if (!filtrados.length) {
     document.getElementById('timeline').innerHTML = '<div class="empty" style="padding:30px 0"><i class="ti ti-notebook"></i><p>Nenhum evento registrado.</p></div>';
     return;
   }
   document.getElementById('timeline').innerHTML = filtrados.map(function(ev) {
-    var tp = getTipo(ev.tipoId);
+    var tp = ev._pilula
+      ? { nome:'Pílula · '+ev.categoria, cor:corPilula(ev.categoria), icon:iconPilula(ev.categoria) }
+      : getTipo(ev.tipoId);
     var extraHtml = '';
 
     // Treinamento — carga horária e remuneração
@@ -1060,7 +1149,9 @@ function renderDossie(f) {
       +'<span class="ev-tipo" style="color:'+tp.cor+'"><i class="ti '+tp.icon+'" style="margin-right:4px;font-size:12px"></i>'+tp.nome+'</span>'
       +'<div style="display:flex;align-items:center;gap:8px">'
       +'<span class="ev-data">'+fmtDate(ev.data)+'</span>'
-      +'<button class="btn-icon" style="font-size:11px" onclick="removerEvento(\''+ev.id+'\')" title="Remover"><i class="ti ti-trash"></i></button>'
+      +(ev._pilula
+        ? '<span class="badge b-gray" title="Enviada ao grupo Raguife Notícias" style="font-size:10px"><i class="ti ti-brand-whatsapp" style="font-size:10px;margin-right:2px"></i>Grupo</span>'
+        : '<button class="btn-icon" style="font-size:11px" onclick="removerEvento(\''+ev.id+'\')" title="Remover"><i class="ti ti-trash"></i></button>')
       +'</div></div>'
       +'<div class="ev-titulo">'+ev.titulo+'</div>'
       +(ev.obs?'<div class="ev-obs">'+ev.obs+'</div>':'')
@@ -1641,6 +1732,7 @@ var _egSelecionados = {};
 
 function openEventoGrupo() {
   _egSelecionados = {};
+  _egSetores = {};
   var sel = document.getElementById('eg-tipo');
   sel.innerHTML = '<option value="">Selecione</option>'
     + _tipos.map(function(t){ return '<option value="'+t.id+'">'+t.nome+'</option>'; }).join('');
@@ -1660,9 +1752,17 @@ function openEventoGrupo() {
   var selEmp = document.getElementById('eg-empresa');
   selEmp.innerHTML = '<option value="">Todas as empresas</option>'
     + Object.keys(emps).sort().map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('');
-  var selDep = document.getElementById('eg-depto');
-  selDep.innerHTML = '<option value="">Todos os setores</option>'
-    + Object.keys(deptos).sort().map(function(d){ return '<option value="'+d+'">'+d+'</option>'; }).join('');
+
+  var panel = document.getElementById('eg-depto-panel');
+  panel.style.display = 'none';
+  panel.innerHTML = Object.keys(deptos).sort().map(function(d){
+    var idSafe = 'egdep_' + d.replace(/[^a-zA-Z0-9]/g,'_');
+    return '<label style="display:flex;align-items:center;gap:8px;padding:7px 8px;font-size:12px;cursor:pointer;border-radius:6px" '
+      +'onmouseover="this.style.background=\'var(--s2)\'" onmouseout="this.style.background=\'transparent\'">'
+      +'<input type="checkbox" id="'+idSafe+'" style="accent-color:var(--black);width:14px;height:14px" onchange="toggleEGSetor(\''+d.replace(/'/g,"\\'")+'\')">'
+      +'<span>'+d+'</span></label>';
+  }).join('') || '<div style="padding:10px;font-size:12px;color:var(--text3);text-align:center">Nenhum setor cadastrado.</div>';
+  atualizarLabelEGSetores();
 
   renderEGLista();
   openModal('modal-grupo');
@@ -1671,12 +1771,12 @@ function openEventoGrupo() {
 function renderEGLista() {
   var q     = (document.getElementById('eg-busca').value||'').toLowerCase();
   var femp  = document.getElementById('eg-empresa').value;
-  var fdep  = document.getElementById('eg-depto').value;
+  var setores = egSetoresAtivos();
   var lista = _funcs.filter(function(f){
     if (f.desligado || f.status === 'desligado') return false;
     if (q && !(f.nome||'').toLowerCase().includes(q)) return false;
     if (femp && (f.empresa||'') !== femp) return false;
-    if (fdep && (f.departamento||'') !== fdep) return false;
+    if (setores.length && setores.indexOf(f.departamento||'') === -1) return false;
     return true;
   });
   lista.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||''); });
@@ -1699,12 +1799,12 @@ function filtrarEG(){ renderEGLista(); }
 function selecionarTodosEG(){
   var q    = (document.getElementById('eg-busca').value||'').toLowerCase();
   var femp = document.getElementById('eg-empresa').value;
-  var fdep = document.getElementById('eg-depto').value;
+  var setores = egSetoresAtivos();
   _funcs.filter(function(f){
     if (f.desligado || f.status==='desligado') return false;
     if (q && !(f.nome||'').toLowerCase().includes(q)) return false;
     if (femp && (f.empresa||'') !== femp) return false;
-    if (fdep && (f.departamento||'') !== fdep) return false;
+    if (setores.length && setores.indexOf(f.departamento||'') === -1) return false;
     return true;
   }).forEach(function(f){ _egSelecionados[f.id]=true; });
   renderEGLista();
@@ -1738,6 +1838,104 @@ function salvarEventoGrupo(){
     closeModal('modal-grupo');
     _egSelecionados={};
   }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ── Multi-seleção de setores no Evento em Grupo ──
+function egSetoresAtivos(){
+  return Object.keys(_egSetores).filter(function(k){ return _egSetores[k]; });
+}
+function toggleEGDeptoPanel(e){
+  if (e) e.stopPropagation();
+  var panel = document.getElementById('eg-depto-panel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+function toggleEGSetor(dep){
+  _egSetores[dep] = !_egSetores[dep];
+  atualizarLabelEGSetores();
+  renderEGLista();
+}
+function atualizarLabelEGSetores(){
+  var sels = egSetoresAtivos();
+  var lbl = document.getElementById('eg-depto-label');
+  if (!sels.length) lbl.textContent = 'Todos os setores';
+  else if (sels.length === 1) lbl.textContent = sels[0];
+  else lbl.textContent = sels.length + ' setores';
+}
+// Fecha o painel de setores ao clicar fora
+document.addEventListener('click', function(e){
+  var panel = document.getElementById('eg-depto-panel');
+  var btn   = document.getElementById('eg-depto-btn');
+  if (!panel || panel.style.display === 'none') return;
+  if (panel.contains(e.target) || (btn && btn.contains(e.target))) return;
+  panel.style.display = 'none';
+});
+
+// ════ PÍLULAS ════
+var CAT_PILULA = {
+  'Convivência': {cor:'#7c5cc4', icon:'ti-heart-handshake'},
+  'Qualidade':   {cor:'#2f80c4', icon:'ti-award'},
+  'Segurança':   {cor:'#d98a1f', icon:'ti-shield-check'}
+};
+function corPilula(cat){ return (CAT_PILULA[cat]||{}).cor || '#7c5cc4'; }
+function iconPilula(cat){ return (CAT_PILULA[cat]||{}).icon || 'ti-pill'; }
+
+function openNovaPilula(){
+  document.getElementById('pil-cat').value = '';
+  document.getElementById('pil-tema').value = '';
+  document.getElementById('pil-obs').value = '';
+  document.getElementById('pil-data').value = new Date().toISOString().split('T')[0];
+  openModal('modal-pilula');
+}
+
+function salvarPilula(){
+  var cat  = document.getElementById('pil-cat').value;
+  var tema = (document.getElementById('pil-tema').value||'').trim();
+  var data = document.getElementById('pil-data').value;
+  var obs  = (document.getElementById('pil-obs').value||'').trim();
+  if(!cat){ toast('Selecione a categoria.','err'); return; }
+  if(!tema){ toast('Informe o tema.','err'); return; }
+  if(!data){ toast('Informe a data.','err'); return; }
+  var ref = db.collection('dossie_pilulas').doc();
+  ref.set({ id:ref.id, categoria:cat, tema:tema, data:data, obs:obs, criadoEm:new Date().toISOString() })
+    .then(function(){ toast('Pílula registrada!','ok'); closeModal('modal-pilula'); })
+    .catch(function(e){ toast('Erro: '+e.message,'err'); });
+}
+
+function removerPilula(id){
+  if(!confirm('Remover esta pílula? Ela deixará de aparecer na linha do tempo dos colaboradores.')) return;
+  db.collection('dossie_pilulas').doc(id).delete()
+    .then(function(){ toast('Pílula removida.','warn'); })
+    .catch(function(e){ toast('Erro: '+e.message,'err'); });
+}
+
+function renderPilulas(){
+  var q   = (document.getElementById('pil-busca').value||'').toLowerCase();
+  var fc  = document.getElementById('pil-f-cat').value;
+  var lista = _pilulas.filter(function(p){
+    if (fc && p.categoria !== fc) return false;
+    if (q && !((p.tema||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+  var alvo = document.getElementById('pil-lista');
+  if(!lista.length){
+    alvo.innerHTML = '<div class="empty" style="padding:40px 0"><i class="ti ti-pill"></i><p>Nenhuma pílula registrada.</p></div>';
+    return;
+  }
+  alvo.innerHTML = lista.map(function(p){
+    var cor = corPilula(p.categoria);
+    return '<div style="background:var(--white);border:1px solid var(--border);border-left:4px solid '+cor+';border-radius:var(--r);padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start">'
+      +'<div style="width:34px;height:34px;border-radius:9px;background:'+cor+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      +'<i class="ti '+iconPilula(p.categoria)+'" style="font-size:18px;color:'+cor+'"></i></div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      +'<span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:'+cor+'">'+p.categoria+'</span>'
+      +'<span style="font-size:12px;color:var(--text3)">· '+fmtDate(p.data)+'</span></div>'
+      +'<div style="font-size:14px;font-weight:600;margin-top:2px">'+p.tema+'</div>'
+      +(p.obs?'<div style="font-size:12px;color:var(--text2);margin-top:4px">'+p.obs+'</div>':'')
+      +'</div>'
+      +'<button class="btn-icon" style="font-size:12px" onclick="removerPilula(\''+p.id+'\')" title="Remover"><i class="ti ti-trash"></i></button>'
+      +'</div>';
+  }).join('');
 }
 
 // ════ HELPERS DE REFERÊNCIA ════

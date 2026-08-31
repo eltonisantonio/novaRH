@@ -14,6 +14,7 @@
 <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css"></noscript>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>
 :root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -112,8 +113,28 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 /* EMPTY */
 .empty{text-align:center;padding:40px 20px;color:var(--text2);}
 .empty i{font-size:36px;color:var(--text3);display:block;margin-bottom:10px;}
-/* TOAST */
-.toast{position:fixed;bottom:24px;right:24px;background:var(--black);color:var(--cream);padding:12px 18px;border-radius:var(--r);font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;}
+/* NAV BADGE */
+.nav-badge{margin-left:auto;background:var(--lime);color:var(--black);font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;}
+/* TABELA RELATÓRIO */
+.rel-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:auto;max-height:calc(100vh - 300px);}
+.rel-table{width:100%;border-collapse:collapse;font-size:12px;}
+.rel-table th{position:sticky;top:0;background:var(--s2);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:var(--text2);padding:9px 10px;text-align:left;border-bottom:1px solid var(--border2);white-space:nowrap;z-index:2;}
+.rel-table td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.rel-table tr:last-child td{border-bottom:none;}
+.rel-table tr.sel td{background:#f8ffe8;}
+.rel-table tr:hover td{background:var(--s2);}
+.rel-num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.rel-chk{width:34px;text-align:center;}
+.rel-bar{display:flex;align-items:center;gap:10px;padding:10px 0 14px;flex-wrap:wrap;}
+/* GRADE DE LANÇAMENTO */
+.grid-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--r);}
+.grid-table{border-collapse:collapse;font-size:12px;min-width:1100px;}
+.grid-table th{background:var(--s2);font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.4px;color:var(--text2);padding:7px 6px;text-align:left;border-bottom:1px solid var(--border2);white-space:nowrap;}
+.grid-table td{padding:3px 4px;border-bottom:1px solid var(--border);}
+.grid-table input,.grid-table select{padding:6px 7px;border:1px solid var(--border);border-radius:4px;font-size:12px;font-family:'Inter',sans-serif;outline:none;width:100%;background:var(--white);}
+.grid-table input:focus,.grid-table select:focus{border-color:var(--black);}
+.grid-table tr.dup input[data-c="nome"]{border-color:#e0a020;background:#fffaf0;}
+/* TOAST */.toast{position:fixed;bottom:24px;right:24px;background:var(--black);color:var(--cream);padding:12px 18px;border-radius:var(--r);font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;}
 .toast.show{opacity:1;transform:translateY(0);}
 .toast.err{background:#8b1c1c;}
 .toast.ok{background:#1a5c35;}
@@ -135,6 +156,8 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="nav-item" id="nav-exp" onclick="setView('exp')"><i class="ti ti-user-check"></i> Efetivações</div>
       <div class="nav-item" id="nav-moto" onclick="setView('moto')"><i class="ti ti-truck"></i> Motoristas</div>
       <div class="nav-item" id="nav-aux" onclick="setView('aux')"><i class="ti ti-school"></i> Auxílio-Educação</div>
+      <div class="nav-s" style="margin-top:14px">Departamento Pessoal</div>
+      <div class="nav-item" id="nav-rel" onclick="setView('rel')"><i class="ti ti-report"></i> Relatório DP <span class="nav-badge" id="badge-dp" style="display:none">0</span></div>
     </nav>
     <div class="sidebar-footer">Módulo 8 · Gestão de Pessoas</div>
   </aside>
@@ -262,6 +285,39 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         </select>
       </div>
       <div id="lista-aux"></div>
+    </div>
+
+    <!-- ═══════ RELATÓRIO DP ═══════ -->
+    <div class="content" id="view-rel" style="display:none">
+      <div class="filters">
+        <select class="form-select" id="rl-fonte" onchange="renderRel()" style="width:210px">
+          <option value="movs">Movimentações</option>
+          <option value="efet">Efetivações</option>
+          <option value="mult">Multiplicadores</option>
+          <option value="moto">Motoristas (cesta/ticket)</option>
+          <option value="aux">Auxílio-educação</option>
+        </select>
+        <select class="form-select" id="rl-status" onchange="renderRel()" style="width:170px">
+          <option value="PENDENTE">Pendentes do DP</option>
+          <option value="AJUSTADO">Já ajustados</option>
+          <option value="">Todos</option>
+        </select>
+        <input class="fi" type="month" id="rl-comp" style="width:160px" onchange="renderRel()" title="Filtrar por competência">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input class="search-input" type="text" id="rl-busca" placeholder="Buscar por nome..." oninput="renderRel()">
+        </div>
+      </div>
+      <div class="rel-bar">
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;cursor:pointer">
+          <input type="checkbox" id="rl-all" onchange="relSelAll(this)"> Selecionar todos
+        </label>
+        <span style="font-size:12px;color:var(--text2)" id="rl-resumo">—</span>
+        <div style="flex:1"></div>
+        <button class="btn btn-sm" onclick="exportarRel()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button>
+        <button class="btn btn-primary btn-sm" onclick="abrirBaixa()"><i class="ti ti-check"></i> Marcar como ajustado</button>
+      </div>
+      <div class="rel-wrap"><table class="rel-table" id="rel-table"></table></div>
     </div>
   </div>
 </div>
@@ -496,6 +552,79 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
   </div>
 </div>
 
+<!-- ═══════ MODAL GRADE (LANÇAMENTO RÁPIDO) ═══════ -->
+<div class="overlay" id="modal-grade">
+  <div class="modal" style="width:96vw;max-width:1400px">
+    <div class="modal-h">
+      <div><span class="modal-title">Lançamento rápido — movimentações</span>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">Preencha as linhas e salve tudo de uma vez. Cole valores de planilha diretamente nos campos. Tab avança, Enter na última linha cria outra.</div></div>
+      <button class="btn-icon" onclick="closeModal('modal-grade')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-b" style="padding:16px">
+      <div style="display:flex;gap:8px;align-items:end;margin-bottom:12px;flex-wrap:wrap">
+        <div><label class="fl" style="display:block;margin-bottom:4px">Competência de todas as linhas</label>
+          <input class="fi" type="month" id="g-comp" style="width:170px"></div>
+        <div><label class="fl" style="display:block;margin-bottom:4px">Responsável</label>
+          <input class="fi" type="text" id="g-resp" style="width:180px"></div>
+        <button class="btn btn-sm" onclick="addLinhas(5)"><i class="ti ti-plus"></i> +5 linhas</button>
+      </div>
+      <div class="grid-wrap">
+        <table class="grid-table">
+          <thead><tr>
+            <th style="width:26px"></th>
+            <th style="min-width:200px">Nome *</th>
+            <th style="min-width:150px">Cargo anterior</th>
+            <th style="min-width:130px">Depto anterior</th>
+            <th style="min-width:100px">Salário ant.</th>
+            <th style="min-width:150px">Cargo novo *</th>
+            <th style="min-width:130px">Depto novo</th>
+            <th style="min-width:100px">Salário novo</th>
+            <th style="min-width:110px">Líder</th>
+            <th style="min-width:160px">Motivo *</th>
+            <th style="min-width:70px">Risco</th>
+            <th style="min-width:70px">Sind.</th>
+            <th style="min-width:80px">Insal.</th>
+            <th style="min-width:160px">Observações</th>
+            <th style="width:36px"></th>
+          </tr></thead>
+          <tbody id="grid-body"></tbody>
+        </table>
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-top:10px" id="grid-aviso"></div>
+    </div>
+    <div class="modal-f">
+      <div style="font-size:12px;color:var(--text2)" id="grid-contador">0 linhas preenchidas</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeModal('modal-grade')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarGrade()"><i class="ti ti-check"></i> Salvar todas</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL BAIXA DP ═══════ -->
+<div class="overlay" id="modal-baixa">
+  <div class="modal modal-sm">
+    <div class="modal-h"><span class="modal-title">Marcar como ajustado</span><button class="btn-icon" onclick="closeModal('modal-baixa')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div style="font-size:13px;font-weight:700;margin-bottom:14px" id="bx-resumo"></div>
+      <div class="fgrid">
+        <div class="fg"><label class="fl">Data do ajuste *</label><input class="fi" type="date" id="bx-data"></div>
+        <div class="fg"><label class="fl">Responsável (DP) *</label><input class="fi" type="text" id="bx-resp"></div>
+      </div>
+      <div class="fg"><label class="fl">Competência da folha</label><input class="fi" type="month" id="bx-comp"></div>
+      <div class="fg"><label class="fl">Observações do DP</label><textarea class="ft" id="bx-obs" rows="2" placeholder="Divergências, verbas incluídas, etc."></textarea></div>
+    </div>
+    <div class="modal-f">
+      <div><button class="btn btn-sm" onclick="reabrirBaixa()"><i class="ti ti-arrow-back-up"></i> Reabrir (voltar a pendente)</button></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeModal('modal-baixa')">Cancelar</button>
+        <button class="btn btn-primary" onclick="confirmarBaixa()"><i class="ti ti-check"></i> Confirmar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -597,24 +726,38 @@ function iniciarListeners(){
 }
 
 function renderAll(){
-  renderInd();renderMovs();renderMult();renderExp();renderMoto();renderAux();
+  renderInd();renderMovs();renderMult();renderExp();renderMoto();renderAux();renderRel();atualizarBadgeDP();
 }
 
 // ════ NAVEGAÇÃO ════
 function setView(v){
   _viewAtiva=v;
-  ['ind','movs','mult','exp','moto','aux'].forEach(function(k){
+  ['ind','movs','mult','exp','moto','aux','rel'].forEach(function(k){
     document.getElementById('view-'+k).style.display=(k===v?'block':'none');
     document.getElementById('nav-'+k).classList.toggle('active',k===v);
   });
-  var titulos={ind:'Indicadores',movs:'Movimentações Internas',mult:'Prêmio Multiplicadores',exp:'Efetivações — Período de Experiência',moto:'Motoristas — Cesta / Ticket',aux:'Auxílio-Educação'};
+  var titulos={ind:'Indicadores',movs:'Movimentações Internas',mult:'Prêmio Multiplicadores',exp:'Efetivações — Período de Experiência',moto:'Motoristas — Cesta / Ticket',aux:'Auxílio-Educação',rel:'Relatório para o Departamento Pessoal'};
   document.getElementById('topbar-title').textContent=titulos[v];
   var acoes='';
-  if(v==='movs')acoes='<button class="btn btn-primary btn-sm" onclick="novaMov()"><i class="ti ti-plus"></i> Nova movimentação</button>';
+  if(v==='movs')acoes='<button class="btn btn-sm" onclick="abrirGrade()"><i class="ti ti-table"></i> Lançamento rápido</button>'
+    +'<button class="btn btn-primary btn-sm" onclick="novaMov()"><i class="ti ti-plus"></i> Nova movimentação</button>';
   if(v==='mult')acoes='<button class="btn btn-primary btn-sm" onclick="novoMult()"><i class="ti ti-plus"></i> Novo multiplicador</button>';
   if(v==='moto')acoes='<button class="btn btn-primary btn-sm" onclick="novoMoto()"><i class="ti ti-plus"></i> Novo motorista</button>';
   if(v==='aux')acoes='<button class="btn btn-primary btn-sm" onclick="novoAux()"><i class="ti ti-plus"></i> Novo auxílio</button>';
   document.getElementById('topbar-actions').innerHTML=acoes;
+  if(v==='rel')renderRel();
+}
+
+// ════ STATUS DP ════
+function dpStatus(o){return (o&&o.dp&&o.dp.status)||'PENDENTE';}
+
+function atualizarBadgeDP(){
+  var n=0;
+  ['movs','efet','mult','moto','aux'].forEach(function(f){
+    n+=linhasRel(f).filter(function(l){return dpStatus(l.raw)==='PENDENTE';}).length;
+  });
+  var b=document.getElementById('badge-dp');
+  if(b){b.textContent=n;b.style.display=n?'inline-flex':'none';}
 }
 
 // ════ PENDÊNCIAS ════
@@ -762,6 +905,9 @@ function renderMovs(){
   el.innerHTML=lista.map(function(m){
     var pend=pendenciasMov(m);
     var badges='<span class="badge badge-blue">'+esc(m.motivo||'—')+'</span>';
+    badges+=dpStatus(m)==='AJUSTADO'
+      ?'<span class="badge badge-lime"><i class="ti ti-check"></i> DP ajustou'+(m.dp&&m.dp.data?' '+fmtDate(m.dp.data):'')+'</span>'
+      :'<span class="badge badge-gray">Aguardando DP</span>';
     if((m.mudancaRisco||'')==='SIM')badges+=pend.length
       ?pend.map(function(p){return '<span class="badge badge-red"><i class="ti ti-alert-triangle" style="font-size:9px"></i> '+esc(p)+'</span>';}).join('')
       :'<span class="badge badge-lime"><i class="ti ti-check"></i> ASO ok</span>';
@@ -1225,6 +1371,321 @@ function excluirAux(){
   db.collection('gp_auxedu').doc(_auxEditId).delete()
     .then(function(){toast('Auxílio-educação excluído.','ok');closeModal('modal-aux');})
     .catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ════ LANÇAMENTO RÁPIDO (GRADE) ════
+var GRID_COLS=[
+  {c:'nome',   t:'text'},
+  {c:'cargoAnt',t:'text'},{c:'deptoAnt',t:'text'},{c:'salarioAnt',t:'number'},
+  {c:'cargoNovo',t:'text'},{c:'deptoNovo',t:'text'},{c:'salarioNovo',t:'number'},
+  {c:'liderNovo',t:'text'},
+  {c:'motivo', t:'select',opts:MOTIVOS},
+  {c:'mudancaRisco',t:'select',opts:['NÃO','SIM']},
+  {c:'mudancaSindicato',t:'select',opts:['NÃO','SIM']},
+  {c:'insalPeric',t:'select',opts:['NÃO','SIM']},
+  {c:'obs',    t:'text'}
+];
+
+function abrirGrade(){
+  setVal('g-comp',compAtual());
+  setVal('g-resp',_usuario?_usuario.nome:'');
+  document.getElementById('grid-body').innerHTML='';
+  addLinhas(8);
+  openModal('modal-grade');
+}
+
+function addLinhas(n){
+  var tb=document.getElementById('grid-body');
+  var html='';
+  for(var i=0;i<n;i++){
+    html+='<tr><td style="text-align:center;color:var(--text3);font-size:10px;font-weight:700"></td>';
+    GRID_COLS.forEach(function(col){
+      if(col.t==='select'){
+        html+='<td><select data-c="'+col.c+'">'+col.opts.map(function(o,j){
+          return '<option'+(col.c==='motivo'&&j===0?' value=""':'')+'>'+(col.c==='motivo'&&j===0?'':'')+o+'</option>';
+        }).join('')+'</select></td>';
+      }else{
+        html+='<td><input type="'+(col.t==='number'?'number':'text')+'"'+(col.t==='number'?' step="0.01"':'')+' data-c="'+col.c+'"></td>';
+      }
+    });
+    html+='<td style="text-align:center"><button class="btn-icon" onclick="this.closest(\'tr\').remove();atualizarGrade()" title="Remover linha"><i class="ti ti-x" style="font-size:13px"></i></button></td></tr>';
+  }
+  tb.insertAdjacentHTML('beforeend',html);
+  // motivo começa vazio para forçar escolha consciente
+  tb.querySelectorAll('select[data-c="motivo"]').forEach(function(s){
+    if(!s.dataset.init){s.dataset.init='1';s.insertAdjacentHTML('afterbegin','<option value="" selected>—</option>');}
+  });
+  tb.oninput=atualizarGrade;
+  atualizarGrade();
+}
+
+function lerGrade(){
+  var linhas=[];
+  document.querySelectorAll('#grid-body tr').forEach(function(tr){
+    var o={};
+    tr.querySelectorAll('[data-c]').forEach(function(el){o[el.dataset.c]=(el.value||'').trim();});
+    var preenchida=o.nome||o.cargoNovo||o.cargoAnt;
+    if(preenchida)linhas.push({o:o,tr:tr});
+  });
+  return linhas;
+}
+
+function atualizarGrade(){
+  var linhas=lerGrade();
+  document.getElementById('grid-contador').textContent=linhas.length+' linha'+(linhas.length!==1?'s':'')+' preenchida'+(linhas.length!==1?'s':'');
+  // Sinalizar possíveis duplicatas com o que já está salvo na mesma competência
+  var comp=val('g-comp');
+  var avisos=[];
+  document.querySelectorAll('#grid-body tr').forEach(function(tr){tr.classList.remove('dup');});
+  linhas.forEach(function(l){
+    var dup=_movs.some(function(m){
+      return m.competencia===comp&&normNome(m.nome)===normNome(l.o.nome)&&normNome(l.o.nome);
+    });
+    if(dup){l.tr.classList.add('dup');avisos.push(l.o.nome);}
+  });
+  document.getElementById('grid-aviso').innerHTML=avisos.length
+    ?'<i class="ti ti-alert-triangle" style="color:#b8860b"></i> Já existe movimentação nesta competência para: <strong>'+avisos.map(esc).join(', ')+'</strong>. Confira antes de salvar — pode ser uma segunda movimentação legítima.'
+    :'';
+}
+
+function normNome(s){return String(s||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim();}
+
+function salvarGrade(){
+  var comp=val('g-comp'),resp=val('g-resp');
+  if(!comp){toast('Informe a competência.','err');return;}
+  if(!resp){toast('Informe o responsável.','err');return;}
+  var linhas=lerGrade();
+  if(!linhas.length){toast('Nenhuma linha preenchida.','err');return;}
+
+  var invalidas=linhas.filter(function(l){return !l.o.nome||!l.o.cargoNovo||!l.o.motivo;});
+  if(invalidas.length){toast(invalidas.length+' linha(s) sem nome, cargo novo ou motivo.','err');return;}
+
+  var batch=db.batch();
+  linhas.forEach(function(l){
+    var o=l.o;
+    var ref=db.collection('gp_movs').doc();
+    batch.set(ref,{
+      competencia:comp,nome:o.nome.toUpperCase(),dtAdmissao:'',
+      cargoAnt:o.cargoAnt,deptoAnt:o.deptoAnt,salarioAnt:o.salarioAnt?Number(o.salarioAnt):'',
+      liderAnt:'',escalaAnt:'',
+      cargoNovo:o.cargoNovo,deptoNovo:o.deptoNovo,salarioNovo:o.salarioNovo?Number(o.salarioNovo):'',
+      liderNovo:o.liderNovo,escalaNovo:'',
+      motivo:o.motivo,mudancaRisco:o.mudancaRisco||'NÃO',dtExame:'',dtAso:'',
+      mudancaSindicato:o.mudancaSindicato||'NÃO',insalPeric:o.insalPeric||'NÃO',
+      responsavel:resp,obs:o.obs,
+      criadoEm:today(),atualizadoEm:today()
+    });
+  });
+  batch.commit().then(function(){
+    toast(linhas.length+' movimentações salvas!','ok');
+    closeModal('modal-grade');
+  }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ════ RELATÓRIO DP ════
+// Cada fonte devolve linhas normalizadas: {id, col, nested, nome, comp, cols:{}, raw}
+function linhasRel(fonte){
+  if(fonte==='movs'){
+    return _movs.map(function(m){
+      return {id:m.id,col:'gp_movs',nome:m.nome,comp:m.competencia,raw:m,cols:{
+        'Competência':fmtComp(m.competencia),'Nome':m.nome,'Motivo':m.motivo,
+        'Cargo anterior':m.cargoAnt,'Cargo novo':m.cargoNovo,
+        'Depto anterior':m.deptoAnt,'Depto novo':m.deptoNovo,
+        'Salário anterior':m.salarioAnt,'Salário novo':m.salarioNovo,
+        'Líder':m.liderNovo,'Escala':m.escalaNovo,
+        'Mudança risco':m.mudancaRisco,'Dt. exame':fmtDate(m.dtExame),'Dt. ASO':fmtDate(m.dtAso),
+        'Sindicato':m.mudancaSindicato,'Insal./Peric.':m.insalPeric,
+        'Responsável RH':m.responsavel,'Observações':m.obs
+      },num:['Salário anterior','Salário novo']};
+    });
+  }
+  if(fonte==='efet'){
+    var out=[];
+    _funcs.forEach(function(f){
+      var e=_expData[f.id]&&_expData[f.id].efetivacao;
+      if(!e)return;
+      out.push({id:f.id,col:'exp_data',nested:'efetivacao',nome:f.nome,comp:addDays(f.admissao,90).slice(0,7),raw:e,cols:{
+        'Competência':fmtComp(addDays(f.admissao,90).slice(0,7)),'Nome':f.nome,
+        'Cargo':f.cargo,'Departamento':f.departamento,'Admissão':fmtDate(f.admissao),
+        'Fim 90 dias':fmtDate(addDays(f.admissao,90)),
+        'Efetivado':e.efetivado,'Cargo efetivação':e.cargo,'Salário efetivação':e.salario,
+        'Dt. alteração':fmtDate(e.dtAlteracao),'Troca capacete':fmtDate(e.dtCapacete),
+        'Indicação':e.indicacao,'Responsável RH':e.responsavel,'Obs. salariais':e.obs
+      },num:['Salário efetivação']});
+    });
+    return out;
+  }
+  if(fonte==='mult'){
+    return _mult.map(function(u){
+      return {id:u.id,col:'gp_mult',nome:u.nome,comp:u.dtInclusao,raw:u,cols:{
+        'Competência verba':fmtComp(u.dtInclusao),'Nome':u.nome,'Cargo':u.cargo,'Departamento':u.depto,
+        'Nível':u.nivel,'Valor bonificação':u.valor,'Pontuação':u.pontuacao,
+        'Alterou nível em':fmtComp(u.alterouNivelEm),'Ativo':u.ativo,'Responsável RH':u.responsavel,'Observação':u.obs
+      },num:['Valor bonificação']};
+    });
+  }
+  if(fonte==='moto'){
+    // Só entram no relatório os que mudaram de opção — é o que gera ação no DP
+    return _moto.filter(function(o){return o.opcaoProx&&o.opcaoProx!==o.opcao;}).map(function(o){
+      return {id:o.id,col:'gp_motoristas',nome:o.nome,comp:o.compProx,raw:o,cols:{
+        'Competência':fmtComp(o.compProx),'Nome':o.nome,'Cargo':o.cargo,'Departamento':o.depto,
+        'Opção atual':o.opcao,'Nova opção':o.opcaoProx,'Sindicato':o.sindicato,'Status':o.status
+      },num:[]};
+    });
+  }
+  if(fonte==='aux'){
+    return _aux.filter(function(a){return a.termo!=='FINALIZADO';}).map(function(a){
+      return {id:a.id,col:'gp_auxedu',nome:a.nome,comp:a.compInicial,raw:a,cols:{
+        'Competência inicial':fmtComp(a.compInicial),'Nome':a.nome,'Cargo':a.cargo,'Departamento':a.depto,
+        'Termo':a.termo,'Modalidade':a.modalidade,'Curso':a.curso,'Instituição':a.instituicao,
+        'Mensalidade':a.mensalidade,'Parcelas':a.parcelas,'% concedido':a.percentual,
+        'Forma':a.formaAuxilio,'Custo empresa/ano':a.custoEmpresa,'Aprovado por':a.aprovadoPor
+      },num:['Mensalidade','Custo empresa/ano','Parcelas','% concedido']};
+    });
+  }
+  return [];
+}
+
+function relFiltradas(){
+  var fonte=document.getElementById('rl-fonte').value;
+  var status=document.getElementById('rl-status').value;
+  var comp=document.getElementById('rl-comp').value;
+  var busca=(document.getElementById('rl-busca').value||'').toLowerCase().trim();
+  return linhasRel(fonte).filter(function(l){
+    if(status&&dpStatus(l.raw)!==status)return false;
+    if(comp&&l.comp!==comp)return false;
+    if(busca&&!(l.nome||'').toLowerCase().includes(busca))return false;
+    return true;
+  }).sort(function(a,b){return (b.comp||'').localeCompare(a.comp||'')||(a.nome||'').localeCompare(b.nome||'');});
+}
+
+function renderRel(){
+  if(!document.getElementById('rel-table'))return;
+  var linhas=relFiltradas();
+  var tbl=document.getElementById('rel-table');
+  document.getElementById('rl-all').checked=false;
+
+  if(!linhas.length){
+    tbl.innerHTML='<tbody><tr><td style="padding:40px;text-align:center;color:var(--text2)">'
+      +'<i class="ti ti-report-off" style="font-size:32px;display:block;margin-bottom:8px;color:var(--text3)"></i>'
+      +'Nada nesta seleção. Troque a fonte ou o status acima.</td></tr></tbody>';
+    document.getElementById('rl-resumo').textContent='0 registros';
+    return;
+  }
+
+  var chaves=Object.keys(linhas[0].cols);
+  var nums=linhas[0].num||[];
+  var head='<thead><tr><th class="rel-chk"></th><th>Status DP</th>'
+    +chaves.map(function(k){return '<th'+(nums.includes(k)?' style="text-align:right"':'')+'>'+esc(k)+'</th>';}).join('')
+    +'<th>Ajuste DP</th></tr></thead>';
+
+  var body='<tbody>'+linhas.map(function(l){
+    var st=dpStatus(l.raw);
+    var badge=st==='AJUSTADO'
+      ?'<span class="badge badge-lime"><i class="ti ti-check"></i> Ajustado</span>'
+      :'<span class="badge badge-amber">Pendente</span>';
+    var dpInfo=st==='AJUSTADO'&&l.raw.dp
+      ?esc(l.raw.dp.responsavel||'')+(l.raw.dp.data?' · '+fmtDate(l.raw.dp.data):'')+(l.raw.dp.obs?'<div style="color:var(--text3);font-size:11px">'+esc(l.raw.dp.obs)+'</div>':'')
+      :'<span style="color:var(--text3)">—</span>';
+    return '<tr data-rel-id="'+esc(l.id)+'">'
+      +'<td class="rel-chk"><input type="checkbox" class="rel-cb" value="'+esc(l.id)+'" onchange="relSync()"></td>'
+      +'<td>'+badge+'</td>'
+      +chaves.map(function(k){
+        var v=l.cols[k];
+        if(nums.includes(k))return '<td class="rel-num">'+(v===''||v==null?'—':(k.indexOf('%')>=0||k==='Parcelas'?v:fmtMoney(v)))+'</td>';
+        return '<td>'+(v===''||v==null?'<span style="color:var(--text3)">—</span>':esc(v))+'</td>';
+      }).join('')
+      +'<td>'+dpInfo+'</td></tr>';
+  }).join('')+'</tbody>';
+
+  tbl.innerHTML=head+body;
+  relSync();
+}
+
+function relSync(){
+  var todas=document.querySelectorAll('.rel-cb');
+  var sel=document.querySelectorAll('.rel-cb:checked');
+  todas.forEach(function(cb){cb.closest('tr').classList.toggle('sel',cb.checked);});
+  document.getElementById('rl-resumo').textContent=todas.length+' registro'+(todas.length!==1?'s':'')
+    +(sel.length?' · '+sel.length+' selecionado'+(sel.length!==1?'s':''):'');
+}
+
+function relSelAll(el){
+  document.querySelectorAll('.rel-cb').forEach(function(cb){cb.checked=el.checked;});
+  relSync();
+}
+
+function relSelecionadas(){
+  var ids=Array.prototype.slice.call(document.querySelectorAll('.rel-cb:checked')).map(function(cb){return cb.value;});
+  return relFiltradas().filter(function(l){return ids.includes(l.id);});
+}
+
+// ── Baixa do DP ──
+function abrirBaixa(){
+  var sel=relSelecionadas();
+  if(!sel.length){toast('Selecione ao menos um registro.','warn');return;}
+  document.getElementById('bx-resumo').textContent=sel.length+' registro'+(sel.length!==1?'s':'')+' selecionado'+(sel.length!==1?'s':'');
+  setVal('bx-data',today());
+  setVal('bx-resp',_usuario?_usuario.nome:'');
+  setVal('bx-comp',compAtual());
+  setVal('bx-obs','');
+  openModal('modal-baixa');
+}
+
+function gravarDP(linhas,dp){
+  var batch=db.batch();
+  linhas.forEach(function(l){
+    var ref=db.collection(l.col).doc(l.id);
+    if(l.nested){
+      var patch={};patch[l.nested]={dp:dp};
+      batch.set(ref,patch,{merge:true});
+    }else{
+      batch.set(ref,{dp:dp},{merge:true});
+    }
+  });
+  return batch.commit();
+}
+
+function confirmarBaixa(){
+  var sel=relSelecionadas();
+  if(!sel.length)return;
+  var data=val('bx-data'),resp=val('bx-resp');
+  if(!data||!resp){toast('Informe data e responsável.','err');return;}
+  gravarDP(sel,{status:'AJUSTADO',data:data,responsavel:resp,compFolha:val('bx-comp'),obs:val('bx-obs')})
+    .then(function(){toast(sel.length+' registro(s) marcado(s) como ajustado.','ok');closeModal('modal-baixa');})
+    .catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+function reabrirBaixa(){
+  var sel=relSelecionadas();
+  if(!sel.length)return;
+  if(!confirm('Voltar '+sel.length+' registro(s) para pendente?'))return;
+  gravarDP(sel,{status:'PENDENTE',data:'',responsavel:'',compFolha:'',obs:''})
+    .then(function(){toast('Registros reabertos.','ok');closeModal('modal-baixa');})
+    .catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ── Exportação Excel ──
+function exportarRel(){
+  var linhas=relFiltradas();
+  if(!linhas.length){toast('Nada para exportar nesta seleção.','warn');return;}
+  var chaves=Object.keys(linhas[0].cols);
+  var cab=['Status DP'].concat(chaves,['DP responsável','DP data','DP competência folha','DP observações']);
+  var aoa=[cab];
+  linhas.forEach(function(l){
+    var dp=l.raw.dp||{};
+    aoa.push([dpStatus(l.raw)]
+      .concat(chaves.map(function(k){var v=l.cols[k];return (v===''||v==null)?'':v;}))
+      .concat([dp.responsavel||'',dp.data?fmtDate(dp.data):'',dp.compFolha?fmtComp(dp.compFolha):'',dp.obs||'']));
+  });
+  var ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=cab.map(function(c){return {wch:Math.min(30,Math.max(12,String(c).length+4))};});
+  var wb=XLSX.utils.book_new();
+  var nomes={movs:'Movimentações',efet:'Efetivações',mult:'Multiplicadores',moto:'Motoristas',aux:'Auxílio-Educação'};
+  var fonte=document.getElementById('rl-fonte').value;
+  XLSX.utils.book_append_sheet(wb,ws,nomes[fonte].slice(0,31));
+  XLSX.writeFile(wb,'Relatorio_DP_'+nomes[fonte].replace(/[^\wÀ-ú]/g,'')+'_'+today()+'.xlsx');
+  toast('Relatório exportado.','ok');
 }
 
 // ════ INIT ════

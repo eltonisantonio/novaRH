@@ -217,6 +217,7 @@ iframe{flex:1;border:none;width:100%;height:100%;}
           <div class="nav-item" id="nav-dashboard" onclick="loadMod('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
           <div class="nav-item" id="nav-equipe" onclick="loadMod('equipe')"><i class="ti ti-sitemap"></i> Equipe</div>
           <div class="nav-item" id="nav-salario" onclick="loadMod('salario')"><i class="ti ti-cash"></i> Tabela Salarial</div>
+          <div class="nav-item" id="nav-movimentacao" onclick="loadMod('movimentacao')"><i class="ti ti-arrows-exchange"></i> Movimentações</div>
         </div>
       </div>
 
@@ -284,6 +285,7 @@ iframe{flex:1;border:none;width:100%;height:100%;}
             <label class="mod-check"><input type="checkbox" value="solicitacao" checked> Solicitações</label>
             <label class="mod-check"><input type="checkbox" value="equipe" checked> Equipe</label>
             <label class="mod-check"><input type="checkbox" value="salario" checked> Tabela Salarial</label>
+            <label class="mod-check"><input type="checkbox" value="movimentacao" checked> Movimentações</label>
           </div>
         </div>
         <div style="margin-top:12px">
@@ -414,6 +416,7 @@ var MODS = {
   solicitacao: {nome:'Solicitações de Vaga',   tag:'Módulo 7', file:'nova-solicitacao.html',icon:'ti-send',        desc:'Solicitações de abertura de vaga enviadas pelos gestores. Aprove e abra no R&S.'},
   equipe:      {nome:'Gestão de Equipe',       tag:'Módulo 8', file:'nova-equipe.html',      icon:'ti-sitemap',     desc:'Organograma, funções, agenda de demandas e relatórios de entrega por colaborador.'},
   salario:     {nome:'Tabela Salarial',        tag:'Módulo 9', file:'nova-salario.html',     icon:'ti-cash',        desc:'Tabela salarial por cargo, faixas A–F, filtros, sinalização de mudança após experiência e importação/exportação em Excel.'},
+  movimentacao:{nome:'Movimentações',          tag:'Módulo 10',file:'nova-gestao.html',      icon:'ti-arrows-exchange', desc:'Movimentações internas, prêmio multiplicadores, efetivações, motoristas (cesta/ticket) e auxílio-educação.'},
 };
 
 // ────────────────────────────────────────────────

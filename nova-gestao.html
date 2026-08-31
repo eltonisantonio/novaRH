@@ -113,8 +113,16 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 /* EMPTY */
 .empty{text-align:center;padding:40px 20px;color:var(--text2);}
 .empty i{font-size:36px;color:var(--text3);display:block;margin-bottom:10px;}
+/* ABAS DO MÓDULO */
+.modtabs{display:flex;gap:2px;background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;overflow-x:auto;flex-shrink:0;}
+.modtab{display:flex;align-items:center;gap:6px;padding:12px 14px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:all .15s;user-select:none;}
+.modtab:hover{color:var(--text);background:var(--s2);}
+.modtab.active{color:var(--text);border-bottom-color:var(--lime);}
+.modtab i{font-size:15px;}
+.modtab-dp{margin-left:auto;}
+.modtab-dp.active{border-bottom-color:var(--gold);}
 /* NAV BADGE */
-.nav-badge{margin-left:auto;background:var(--lime);color:var(--black);font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;}
+.nav-badge{background:var(--gold);color:#fff;font-size:10px;font-weight:800;padding:1px 6px;border-radius:10px;}
 /* TABELA RELATÓRIO */
 .rel-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:auto;max-height:calc(100vh - 300px);}
 .rel-table{width:100%;border-collapse:collapse;font-size:12px;}
@@ -143,29 +151,20 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 </head>
 <body>
 <div class="app">
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-mark"><span class="logo-text">NOVA</span><span class="logo-dot"></span></div>
-      <div class="logo-sub">Sistema de RH</div>
-    </div>
-    <nav class="sidebar-nav">
-      <div class="nav-s">Gestão de Pessoas</div>
-      <div class="nav-item active" id="nav-ind" onclick="setView('ind')"><i class="ti ti-chart-bar"></i> Indicadores</div>
-      <div class="nav-item" id="nav-movs" onclick="setView('movs')"><i class="ti ti-arrows-exchange"></i> Movimentações</div>
-      <div class="nav-item" id="nav-mult" onclick="setView('mult')"><i class="ti ti-award"></i> Multiplicadores</div>
-      <div class="nav-item" id="nav-exp" onclick="setView('exp')"><i class="ti ti-user-check"></i> Efetivações</div>
-      <div class="nav-item" id="nav-moto" onclick="setView('moto')"><i class="ti ti-truck"></i> Motoristas</div>
-      <div class="nav-item" id="nav-aux" onclick="setView('aux')"><i class="ti ti-school"></i> Auxílio-Educação</div>
-      <div class="nav-s" style="margin-top:14px">Departamento Pessoal</div>
-      <div class="nav-item" id="nav-rel" onclick="setView('rel')"><i class="ti ti-report"></i> Relatório DP <span class="nav-badge" id="badge-dp" style="display:none">0</span></div>
-    </nav>
-    <div class="sidebar-footer">Módulo 8 · Gestão de Pessoas</div>
-  </aside>
-
   <div class="main">
     <div class="topbar">
       <span class="topbar-title" id="topbar-title">Indicadores</span>
       <div class="topbar-actions" id="topbar-actions"></div>
+    </div>
+
+    <div class="modtabs">
+      <div class="modtab active" id="nav-ind" onclick="setView('ind')"><i class="ti ti-chart-bar"></i> Indicadores</div>
+      <div class="modtab" id="nav-movs" onclick="setView('movs')"><i class="ti ti-arrows-exchange"></i> Movimentações</div>
+      <div class="modtab" id="nav-mult" onclick="setView('mult')"><i class="ti ti-award"></i> Multiplicadores</div>
+      <div class="modtab" id="nav-exp" onclick="setView('exp')"><i class="ti ti-user-check"></i> Efetivações</div>
+      <div class="modtab" id="nav-moto" onclick="setView('moto')"><i class="ti ti-truck"></i> Motoristas</div>
+      <div class="modtab" id="nav-aux" onclick="setView('aux')"><i class="ti ti-school"></i> Auxílio-Educação</div>
+      <div class="modtab modtab-dp" id="nav-rel" onclick="setView('rel')"><i class="ti ti-report"></i> Relatório DP <span class="nav-badge" id="badge-dp" style="display:none">0</span></div>
     </div>
 
     <!-- ═══════ INDICADORES ═══════ -->

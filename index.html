@@ -632,8 +632,7 @@ function loadMod(key){
   document.getElementById('mod-topbar-nome').textContent=m.nome;
   document.getElementById('mod-topbar-tag').textContent=m.tag;
   document.getElementById('mod-loading').style.display='flex';
-  document.getElementById('mod-iframe').style.display='none';
-  setActive('nav-'+key);
+  document.getElementById('mod-iframe').src=m.file+'?v='+Date.now();  setActive('nav-'+key);
   document.title='Nova. RH — '+m.nome;
   document.getElementById('mod-iframe').src=m.file;
   if(key==='solicitacao') updateBadgeSol();

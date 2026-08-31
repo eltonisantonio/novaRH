@@ -234,7 +234,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 
     <!-- ═══════ EFETIVAÇÕES ═══════ -->
     <div class="content" id="view-exp" style="display:none">
-      <div class="notice notice-amber" style="margin-bottom:18px"><i class="ti ti-info-circle"></i><span>Lista integrada ao módulo <strong>Período de Experiência</strong>: funcionários vindos da Admissão. O registro de efetivação fica salvo no mesmo acompanhamento.</span></div>
+      <div class="notice notice-amber" style="margin-bottom:18px"><i class="ti ti-info-circle"></i><span>Lista integrada ao módulo <strong>Período de Experiência</strong>: funcionários vindos da Admissão. O registro de efetivação fica salvo no mesmo acompanhamento. As abas de pendentes mostram apenas admissões a partir de <strong id="corte-label">—</strong>, quando o controle passou a existir; quem entrou antes só aparece em "Registrados".</span></div>
       <div class="filters">
         <button class="tab-btn active" id="ex-tab-venc" onclick="setExpTab('venc',this)">Vencendo / vencidos</button>
         <button class="tab-btn" id="ex-tab-todos" onclick="setExpTab('todos',this)">Todos em experiência</button>
@@ -660,6 +660,10 @@ var _usuario = null;
 
 var MOTIVOS = ['PROMOÇÃO','MOV. LATERAL','READAPTAÇÃO','AJUSTE EXCEPCIONAL','RECRUTAMENTO INTERNO'];
 
+// Efetivações só são cobradas para quem entrou depois que o controle passou a existir.
+// Admitidos antes desta data só aparecem se já tiverem registro de efetivação.
+var CORTE_EFETIVACAO = '2026-01-01';
+
 // Sessão do usuário (preenchida pelo index.html)
 try{
   var s = sessionStorage.getItem('nova_rh_session_v1');
@@ -805,12 +809,13 @@ function renderInd(){
   // Experiência: fim de 90 dias dentro do período
   var prev=0,efet=0;
   _funcs.forEach(function(f){
+    var e=_expData[f.id]&&_expData[f.id].efetivacao;
+    if(f.admissao<CORTE_EFETIVACAO&&!e)return;
     var fim=addDays(f.admissao,90);
     var compFim=fim.slice(0,7);
     var dentro=(per.tipo==='comp')?compFim===per.comp:compFim.slice(0,4)===per.ano;
     if(!dentro)return;
     prev++;
-    var e=_expData[f.id]&&_expData[f.id].efetivacao;
     if(e&&e.efetivado==='SIM')efet++;
   });
   document.getElementById('ist-prev').textContent=prev;
@@ -1092,9 +1097,10 @@ function renderExp(){
   var lista=_funcs.filter(function(f){
     var e=_expData[f.id]&&_expData[f.id].efetivacao;
     var dr=diffDays(today(),addDays(f.admissao,90));
-    if(_expTab==='venc'){if(e)return false;return dr<=15;}          // vence em até 15 dias ou já venceu, sem registro
-    if(_expTab==='todos'){if(e)return false;return dr>0;}          // em experiência, sem registro
-    return !!e;                                                     // registrados
+    // Sem registro: só cobra quem foi admitido a partir da data de corte
+    if(_expTab==='venc'){if(e||f.admissao<CORTE_EFETIVACAO)return false;return dr<=15;}
+    if(_expTab==='todos'){if(e||f.admissao<CORTE_EFETIVACAO)return false;return dr>0;}
+    return !!e;                                                     // registrados: sempre aparecem
   }).filter(function(f){
     return !busca||(f.nome||'').toLowerCase().includes(busca);
   });
@@ -1689,6 +1695,8 @@ function exportarRel(){
 
 // ════ INIT ════
 (function(){
+  var lbl=document.getElementById('corte-label');
+  if(lbl)lbl.textContent=fmtDate(CORTE_EFETIVACAO);
   setVal('ind-comp',compAtual());
   var selAno=document.getElementById('ind-ano');
   var anoAtual=new Date().getFullYear();

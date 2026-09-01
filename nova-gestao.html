@@ -234,10 +234,9 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 
     <!-- ═══════ EFETIVAÇÕES ═══════ -->
     <div class="content" id="view-exp" style="display:none">
-      <div class="notice notice-amber" style="margin-bottom:18px"><i class="ti ti-info-circle"></i><span>Lista integrada ao módulo <strong>Período de Experiência</strong>: funcionários vindos da Admissão. O registro de efetivação fica salvo no mesmo acompanhamento. As abas de pendentes mostram apenas admissões a partir de <strong id="corte-label">—</strong>, quando o controle passou a existir; quem entrou antes só aparece em "Registrados".</span></div>
+      <div class="notice notice-amber" style="margin-bottom:18px"><i class="ti ti-info-circle"></i><span>Lista integrada ao módulo <strong>Período de Experiência</strong>: funcionários vindos da Admissão. O registro de efetivação fica salvo no mesmo acompanhamento. <strong>Em experiência</strong> traz só quem está dentro dos 90 dias; passado o prazo, o colaborador vai para <strong>Registrados</strong>, com ou sem registro de efetivação.</span></div>
       <div class="filters">
-        <button class="tab-btn active" id="ex-tab-venc" onclick="setExpTab('venc',this)">Vencendo / vencidos</button>
-        <button class="tab-btn" id="ex-tab-todos" onclick="setExpTab('todos',this)">Todos em experiência</button>
+        <button class="tab-btn active" id="ex-tab-venc" onclick="setExpTab('venc',this)">Em experiência</button>
         <button class="tab-btn" id="ex-tab-reg" onclick="setExpTab('reg',this)">Registrados</button>
         <div class="search-wrap">
           <i class="ti ti-search"></i>
@@ -668,8 +667,8 @@ var _usuario = null;
 
 var MOTIVOS = ['PROMOÇÃO','MOV. LATERAL','READAPTAÇÃO','AJUSTE EXCEPCIONAL','RECRUTAMENTO INTERNO'];
 
-// Efetivações só são cobradas para quem entrou depois que o controle passou a existir.
-// Admitidos antes desta data só aparecem se já tiverem registro de efetivação.
+// Nos indicadores, admissões anteriores a esta data não entram na conta de
+// previsão/efetivação — antes disso não havia controle, e distorceriam o percentual.
 var CORTE_EFETIVACAO = '2026-01-01';
 
 // Sessão do usuário (preenchida pelo index.html)
@@ -1110,14 +1109,18 @@ function renderExp(){
   var lista=_funcs.filter(function(f){
     var e=_expData[f.id]&&_expData[f.id].efetivacao;
     var dr=diffDays(today(),addDays(f.admissao,90));
-    // Sem registro: só cobra quem foi admitido a partir da data de corte
-    if(_expTab==='venc'){if(e||f.admissao<CORTE_EFETIVACAO)return false;return dr<=15;}
-    if(_expTab==='todos'){if(e||f.admissao<CORTE_EFETIVACAO)return false;return dr>0;}
-    return !!e;                                                     // registrados: sempre aparecem
+    // "Em experiência": ainda dentro dos 90 dias e sem registro de efetivação
+    if(_expTab==='venc')return !e&&dr>0;
+    // "Registrados": quem já tem registro ou já passou do prazo
+    return !!e||dr<=0;
   }).filter(function(f){
     return !busca||(f.nome||'').toLowerCase().includes(busca);
   });
-  lista.sort(function(a,b){return (a.admissao||'').localeCompare(b.admissao||'');});
+  lista.sort(function(a,b){
+    return _expTab==='reg'
+      ? (b.admissao||'').localeCompare(a.admissao||'')   // registrados: mais recentes primeiro
+      : (a.admissao||'').localeCompare(b.admissao||'');  // em experiência: quem vence antes primeiro
+  });
 
   var el=document.getElementById('lista-exp');
   if(!lista.length){el.innerHTML='<div class="empty"><i class="ti ti-user-check"></i><p>Nenhum funcionário nesta categoria.</p></div>';return;}
@@ -1132,9 +1135,10 @@ function renderExp(){
       statusBadge=e.efetivado==='SIM'
         ?'<span class="badge badge-lime"><i class="ti ti-check"></i> Efetivado</span>'
         :'<span class="badge badge-red">Não efetivado</span>';
+    }else if(dr<=0){
+      statusBadge='<span class="badge badge-gray">Prazo encerrado · sem registro</span>';
     }else{
-      statusBadge=dr<=0?'<span class="badge badge-red">Vencido há '+Math.abs(dr)+'d</span>'
-        :dr<=5?'<span class="badge badge-red">Vence em '+dr+'d</span>'
+      statusBadge=dr<=5?'<span class="badge badge-red">Vence em '+dr+'d</span>'
         :dr<=15?'<span class="badge badge-amber">'+dr+'d restantes</span>'
         :'<span class="badge badge-lime">'+dr+'d restantes</span>';
     }

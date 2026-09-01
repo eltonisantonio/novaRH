@@ -613,6 +613,13 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       </div>
       <div class="fg"><label class="fl">Competência da folha</label><input class="fi" type="month" id="bx-comp"></div>
       <div class="fg"><label class="fl">Observações do DP</label><textarea class="ft" id="bx-obs" rows="2" placeholder="Divergências, verbas incluídas, etc."></textarea></div>
+      <div id="bx-dossie-wrap" style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+        <label style="display:flex;gap:8px;align-items:flex-start;cursor:pointer">
+          <input type="checkbox" id="bx-dossie" checked style="margin-top:2px">
+          <span style="font-size:12px;line-height:1.5"><strong>Registrar no Dossiê</strong><br>
+          <span style="color:var(--text2)">Cria o evento de movimentação na linha do tempo e atualiza cargo, departamento e salário atuais do colaborador.</span></span>
+        </label>
+      </div>
     </div>
     <div class="modal-f">
       <div><button class="btn btn-sm" onclick="reabrirBaixa()"><i class="ti ti-arrow-back-up"></i> Reabrir (voltar a pendente)</button></div>
@@ -645,6 +652,7 @@ var _mult = [];          // gp_mult
 var _moto = [];          // gp_motoristas
 var _aux = [];           // gp_auxedu
 var _funcs = [];         // adm_processos (mesma origem do módulo Experiência)
+var _dossieFuncs = [];   // dossie_funcs (funcionários manuais do Dossiê)
 var _expData = {};       // exp_data (compartilhado com módulo Experiência)
 var _viewAtiva = 'ind';
 var _indModo = 'comp';
@@ -726,6 +734,11 @@ function iniciarListeners(){
     snap.docs.forEach(function(d){_expData[d.id]=d.data();});
     renderAll();
   });
+
+  // Funcionários cadastrados manualmente no Dossiê — usados para vincular movimentações
+  db.collection('dossie_funcs').onSnapshot(function(snap){
+    _dossieFuncs=snap.docs.map(function(d){var o=d.data();o.id=d.id;return o;});
+  },function(){/* sem acesso ao dossiê: segue só com adm_processos */});
 }
 
 function renderAll(){
@@ -1634,21 +1647,92 @@ function abrirBaixa(){
   setVal('bx-resp',_usuario?_usuario.nome:'');
   setVal('bx-comp',compAtual());
   setVal('bx-obs','');
+  // Integração com o dossiê só faz sentido para movimentações
+  var fonte=document.getElementById('rl-fonte').value;
+  var wrap=document.getElementById('bx-dossie-wrap');
+  wrap.style.display=(fonte==='movs'?'block':'none');
+  if(fonte==='movs'){
+    var sem=sel.filter(function(l){return !acharFunc(l.nome);});
+    var av=document.getElementById('bx-dossie-aviso');
+    if(av)av.remove();
+    if(sem.length){
+      wrap.insertAdjacentHTML('beforeend','<div id="bx-dossie-aviso" class="notice notice-amber" style="margin:10px 0 0"><i class="ti ti-alert-triangle"></i><span>'
+        +sem.length+' nome(s) sem cadastro na Admissão ou no Dossiê — não gerarão evento: <strong>'
+        +sem.map(function(l){return esc(l.nome);}).join(', ')+'</strong></span></div>');
+    }
+  }
   openModal('modal-baixa');
 }
 
-function gravarDP(linhas,dp){
-  var batch=db.batch();
+// ── Vínculo com o Dossiê ──
+// Resolve o nome da movimentação para um funcionário do Dossiê.
+// Prioriza processos de admissão (funcId 'adm_<id>'); cai para cadastro manual.
+function acharFunc(nome){
+  var n=normNome(nome);
+  if(!n)return null;
+  var f=_funcs.find(function(x){return normNome(x.nome)===n;});
+  if(f)return {funcId:f.id,admId:f.id.replace(/^adm_/,''),fonte:'admissao',nome:f.nome};
+  var m=_dossieFuncs.find(function(x){return normNome(x.nome)===n;});
+  if(m)return {funcId:m.id,admId:null,fonte:'manual',nome:m.nome};
+  return null;
+}
+
+// Monta o texto do evento a partir do que de fato mudou
+function resumoMov(m){
+  var p=[];
+  if(m.cargoNovo&&normNome(m.cargoNovo)!=='O MESMO'&&normNome(m.cargoNovo)!==normNome(m.cargoAnt))
+    p.push('Cargo: '+(m.cargoAnt||'—')+' → '+m.cargoNovo);
+  if(m.deptoNovo&&normNome(m.deptoNovo)!==normNome(m.deptoAnt))
+    p.push('Departamento: '+(m.deptoAnt||'—')+' → '+m.deptoNovo);
+  if(m.salarioNovo&&Number(m.salarioNovo)!==Number(m.salarioAnt))
+    p.push('Salário: '+fmtMoney(m.salarioAnt)+' → '+fmtMoney(m.salarioNovo));
+  if(m.liderNovo&&normNome(m.liderNovo)!==normNome(m.liderAnt))
+    p.push('Líder: '+(m.liderAnt||'—')+' → '+m.liderNovo);
+  if(m.escalaNovo&&normNome(m.escalaNovo)!=='A MESMA'&&normNome(m.escalaNovo)!==normNome(m.escalaAnt))
+    p.push('Escala: '+(m.escalaAnt||'—')+' → '+m.escalaNovo);
+  if(m.mudancaSindicato==='SIM')p.push('Mudança de sindicato');
+  if(m.insalPeric==='SIM')p.push('Insalubridade/periculosidade');
+  return p.join(' · ');
+}
+
+// Acrescenta ao batch: evento no dossiê + atualização do cargo/depto atual
+// Devolve o que foi feito, para o aviso ao usuário
+function integrarDossie(batch,linhas,dp){
+  var res={eventos:0,atualizados:0,semVinculo:[]};
   linhas.forEach(function(l){
-    var ref=db.collection(l.col).doc(l.id);
-    if(l.nested){
-      var patch={};patch[l.nested]={dp:dp};
-      batch.set(ref,patch,{merge:true});
-    }else{
-      batch.set(ref,{dp:dp},{merge:true});
+    var m=l.raw;
+    var alvo=acharFunc(l.nome);
+    if(!alvo){res.semVinculo.push(l.nome);return;}
+
+    var resumo=resumoMov(m);
+    var evRef=db.collection('dossie_eventos').doc();
+    batch.set(evRef,{
+      id:evRef.id,funcId:alvo.funcId,tipoId:'promocao',
+      titulo:(m.motivo||'Movimentação')+(m.cargoNovo&&normNome(m.cargoNovo)!=='O MESMO'?' — '+m.cargoNovo:''),
+      data:dp.data,
+      obs:resumo+(m.obs?' · '+m.obs:''),
+      resp:m.responsavel||'',
+      criadoEm:new Date().toISOString(),especial:true,
+      origem:'gp_movs',origemId:l.id
+    });
+    res.eventos++;
+    l._eventoId=evRef.id;
+
+    // Atualiza o cadastro atual (só o que mudou de verdade)
+    if(alvo.fonte==='admissao'&&alvo.admId){
+      var upd={};
+      if(m.cargoNovo&&normNome(m.cargoNovo)!=='O MESMO')upd['dados.cargo']=m.cargoNovo;
+      if(m.deptoNovo)upd['dados.estrutura']=m.deptoNovo;
+      if(m.salarioNovo)upd['dados.salario']=m.salarioNovo;
+      if(Object.keys(upd).length){batch.update(db.collection('adm_processos').doc(alvo.admId),upd);res.atualizados++;}
+    }else if(alvo.fonte==='manual'){
+      var updm={};
+      if(m.cargoNovo&&normNome(m.cargoNovo)!=='O MESMO')updm.cargo=m.cargoNovo;
+      if(m.deptoNovo)updm.departamento=m.deptoNovo;
+      if(Object.keys(updm).length){batch.set(db.collection('dossie_funcs').doc(alvo.funcId),updm,{merge:true});res.atualizados++;}
     }
   });
-  return batch.commit();
+  return res;
 }
 
 function confirmarBaixa(){
@@ -1656,16 +1740,50 @@ function confirmarBaixa(){
   if(!sel.length)return;
   var data=val('bx-data'),resp=val('bx-resp');
   if(!data||!resp){toast('Informe data e responsável.','err');return;}
-  gravarDP(sel,{status:'AJUSTADO',data:data,responsavel:resp,compFolha:val('bx-comp'),obs:val('bx-obs')})
-    .then(function(){toast(sel.length+' registro(s) marcado(s) como ajustado.','ok');closeModal('modal-baixa');})
-    .catch(function(e){toast('Erro: '+e.message,'err');});
+  var dp={status:'AJUSTADO',data:data,responsavel:resp,compFolha:val('bx-comp'),obs:val('bx-obs')};
+  var fonte=document.getElementById('rl-fonte').value;
+  var integra=(fonte==='movs'&&document.getElementById('bx-dossie').checked);
+
+  var batch=db.batch();
+  var res=integra?integrarDossie(batch,sel,dp):null;
+  sel.forEach(function(l){
+    var ref=db.collection(l.col).doc(l.id);
+    var dpFinal=l._eventoId?Object.assign({eventoDossie:l._eventoId},dp):dp;
+    if(l.nested){var patch={};patch[l.nested]={dp:dpFinal};batch.set(ref,patch,{merge:true});}
+    else batch.set(ref,{dp:dpFinal},{merge:true});
+  });
+
+  batch.commit().then(function(){
+    var msg=sel.length+' registro(s) ajustado(s)';
+    if(res)msg+=' · '+res.eventos+' evento(s) no dossiê';
+    toast(msg+'.','ok');
+    closeModal('modal-baixa');
+    if(res&&res.semVinculo.length){
+      setTimeout(function(){
+        alert('Ajuste concluído.\n\nEstes nomes não foram encontrados na Admissão nem no Dossiê, então não geraram evento:\n\n· '
+          +res.semVinculo.join('\n· ')
+          +'\n\nCadastre a pessoa no Dossiê e refaça a baixa se quiser o histórico.');
+      },400);
+    }
+  }).catch(function(e){toast('Erro: '+e.message,'err');});
 }
 
 function reabrirBaixa(){
   var sel=relSelecionadas();
   if(!sel.length)return;
-  if(!confirm('Voltar '+sel.length+' registro(s) para pendente?'))return;
-  gravarDP(sel,{status:'PENDENTE',data:'',responsavel:'',compFolha:'',obs:''})
+  var comEvento=sel.filter(function(l){return l.raw.dp&&l.raw.dp.eventoDossie;});
+  var aviso='Voltar '+sel.length+' registro(s) para pendente?';
+  if(comEvento.length)aviso+='\n\n'+comEvento.length+' evento(s) serão removidos do dossiê. O cargo/departamento atual do colaborador NÃO volta sozinho — ajuste manualmente se necessário.';
+  if(!confirm(aviso))return;
+  var batch=db.batch();
+  sel.forEach(function(l){
+    if(l.raw.dp&&l.raw.dp.eventoDossie)batch.delete(db.collection('dossie_eventos').doc(l.raw.dp.eventoDossie));
+    var ref=db.collection(l.col).doc(l.id);
+    var dp={status:'PENDENTE',data:'',responsavel:'',compFolha:'',obs:'',eventoDossie:''};
+    if(l.nested){var patch={};patch[l.nested]={dp:dp};batch.set(ref,patch,{merge:true});}
+    else batch.set(ref,{dp:dp},{merge:true});
+  });
+  batch.commit()
     .then(function(){toast('Registros reabertos.','ok');closeModal('modal-baixa');})
     .catch(function(e){toast('Erro: '+e.message,'err');});
 }

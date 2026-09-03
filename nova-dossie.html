@@ -14,6 +14,7 @@
 <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css"></noscript>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
 :root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
 *{box-sizing:border-box;margin:0;padding:0;}
@@ -66,6 +67,8 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .b-green{background:#e8f8ef;color:#1a5c35;border:1px solid #a8d8b8;}
 .b-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
 .tag-emp{background:var(--black);color:var(--lime);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;}
+.ltab{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--white);color:var(--text2);transition:all .15s;}
+.ltab.active{background:var(--black);color:#fff;border-color:var(--black);}
 .ev-count{font-size:11px;font-weight:700;color:var(--text3);margin-left:auto;white-space:nowrap;}
 /* DOSSIÊ */
 .dossie-header{display:flex;align-items:flex-start;gap:16px;background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:20px 24px;margin-bottom:20px;}
@@ -75,8 +78,6 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .dossie-actions{margin-left:auto;display:flex;gap:6px;}
 /* FILTRO TIPOS */
 .tipo-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
-.ltab{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--white);color:var(--text2);transition:all .15s;}
-.ltab.active{background:var(--black);color:#fff;border-color:var(--black);}
 .tipo-btn{padding:5px 12px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--white);color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s;}
 .tipo-btn.active{background:var(--black);color:var(--lime);border-color:var(--black);}
 /* TIMELINE */
@@ -223,8 +224,11 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="cfg-tabs">
         <div class="cfg-tab active" id="cfgtab-tipos" onclick="showCfgTab('tipos')">Tipos de Evento</div>
         <div class="cfg-tab" id="cfgtab-trein" onclick="showCfgTab('trein')">Relatório de Treinamentos</div>
+        <div class="cfg-tab" id="cfgtab-nr" onclick="showCfgTab('nr')">Vencimento NR</div>
         <div class="cfg-tab" id="cfgtab-adiant" onclick="showCfgTab('adiant')">Relatório de Adiantamentos</div>
         <div class="cfg-tab" id="cfgtab-disc" onclick="showCfgTab('disc')">Medidas Disciplinares</div>
+        <div class="cfg-tab" id="cfgtab-badges" onclick="showCfgTab('badges')">Brigada · CIPA · Multiplicador</div>
+        <div class="cfg-tab" id="cfgtab-evtipo" onclick="showCfgTab('evtipo')">Relatório por Tipo</div>
       </div>
 
       <div id="cfgview-tipos">
@@ -258,6 +262,23 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         </div>
       </div>
 
+      <div id="cfgview-nr" style="display:none">
+        <div class="cfg-section">
+          <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Norma</label>
+              <select class="fs" id="rel-nr-norma" style="width:180px" onchange="renderRelNR()"><option value="">Todas</option></select></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Situação</label>
+              <select class="fs" id="rel-nr-sit" style="width:180px" onchange="renderRelNR()">
+                <option value="">Todas</option>
+                <option value="vencido">Vencidos</option>
+                <option value="vencendo">Vencendo em 60 dias</option>
+                <option value="valido">Válidos</option>
+              </select></div>
+          </div>
+          <div id="rel-nr-corpo"></div>
+        </div>
+      </div>
+
       <div id="cfgview-adiant" style="display:none">
         <div class="cfg-section">
           <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
@@ -279,6 +300,90 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           <div id="rel-disc-corpo"></div>
         </div>
       </div>
+
+      <div id="cfgview-badges" style="display:none">
+        <div class="cfg-section">
+          <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Tipo</label>
+              <select class="fs" id="rel-badge-tipo" style="width:180px" onchange="renderRelBadges()">
+                <option value="">Todos</option><option value="brig">Brigadista</option><option value="cipa">CIPA</option><option value="mult">Multiplicador</option></select></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Situação</label>
+              <select class="fs" id="rel-badge-sit" style="width:160px" onchange="renderRelBadges()">
+                <option value="">Todas</option><option value="ativo">Ativas</option><option value="encerrado">Encerradas</option></select></div>
+            <div style="margin-left:auto"><button class="btn btn-primary" onclick="exportBadgesExcel()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button></div>
+          </div>
+          <div id="rel-badge-corpo"></div>
+        </div>
+      </div>
+
+      <div id="cfgview-evtipo" style="display:none">
+        <div class="cfg-section">
+          <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Tipo de Evento</label>
+              <select class="fs" id="rel-evt-tipo" style="width:300px" onchange="renderRelEvtTipo()"><option value="">Todos os tipos</option></select></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">De</label>
+              <input class="fs" type="date" id="rel-evt-ini" style="width:150px" onchange="renderRelEvtTipo()"></div>
+            <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Até</label>
+              <input class="fs" type="date" id="rel-evt-fim" style="width:150px" onchange="renderRelEvtTipo()"></div>
+            <div style="margin-left:auto"><button class="btn btn-primary" onclick="exportEvtTipoExcel()"><i class="ti ti-file-spreadsheet"></i> Exportar Excel</button></div>
+          </div>
+          <div id="rel-evt-corpo"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PÍLULAS -->
+    <div class="content" id="view-pilulas" style="display:none">
+      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+        <i class="ti ti-pill" style="font-size:20px;color:#7c5cc4"></i>
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:14px">Pílulas — Raguife Notícias</div>
+          <div style="font-size:12px;color:var(--text2)">Registro dos envios ao grupo de WhatsApp. Cada pílula aparece também na linha do tempo dos colaboradores ativos.</div>
+        </div>
+      </div>
+      <div class="search-bar">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input class="search-input" type="text" id="pil-busca" placeholder="Buscar por tema..." oninput="renderPilulas()">
+        </div>
+        <select class="form-select" id="pil-f-cat" onchange="renderPilulas()" style="width:185px">
+          <option value="">Todas as categorias</option>
+          <option value="Convivência">Convivência</option>
+          <option value="Qualidade">Qualidade</option>
+          <option value="Segurança">Segurança</option>
+        </select>
+      </div>
+      <div id="pil-lista"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PÍLULA -->
+<div class="overlay" id="modal-pilula">
+  <div class="modal">
+    <div class="modal-h"><span class="modal-title">Nova Pílula</span><button class="btn-icon" onclick="closeModal('modal-pilula')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div style="background:var(--s2);border-radius:var(--r);padding:10px 12px;font-size:12px;color:var(--text2);margin-bottom:16px">
+        <i class="ti ti-brand-whatsapp" style="font-size:13px;margin-right:4px;color:#25d366"></i>
+        Registro de envio ao grupo <strong>Raguife Notícias</strong>.
+      </div>
+      <div class="fg"><label class="fl">Categoria <span style="color:#c0392b">*</span></label>
+        <select class="fs" id="pil-cat">
+          <option value="">Selecione</option>
+          <option value="Convivência">Convivência</option>
+          <option value="Qualidade">Qualidade</option>
+          <option value="Segurança">Segurança</option>
+        </select></div>
+      <div class="fg"><label class="fl">Tema / Título <span style="color:#c0392b">*</span></label>
+        <input class="fi" type="text" id="pil-tema" placeholder="Ex: Uso correto de EPI"></div>
+      <div class="fg"><label class="fl">Data do envio <span style="color:#c0392b">*</span></label>
+        <input class="fi" type="date" id="pil-data"></div>
+      <div class="fg"><label class="fl">Observações</label>
+        <textarea class="ft" id="pil-obs" rows="3" placeholder="Detalhes, link do conteúdo, etc."></textarea></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-pilula')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarPilula()"><i class="ti ti-device-floppy"></i> Registrar</button>
     </div>
   </div>
 </div>
@@ -293,7 +398,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="fg"><label class="fl">Título / Assunto <span style="color:#c0392b">*</span></label>
         <input class="fi" type="text" id="ev-titulo" placeholder="Descreva brevemente o evento"></div>
       <div class="fg"><label class="fl">Data <span style="color:#c0392b">*</span></label>
-        <input class="fi" type="date" id="ev-data"></div>
+        <input class="fi" type="date" id="ev-data" onchange="atualizarVencimentoNR()"></div>
       <div class="fg"><label class="fl">Observações / Detalhes</label>
         <textarea class="ft" id="ev-obs" rows="4" placeholder="Descreva os detalhes do evento..."></textarea></div>
 
@@ -324,6 +429,39 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           <input class="fi" type="number" id="ev-adiant-valor" placeholder="0,00" min="0" step="0.01"></div>
         <div style="margin-top:8px;font-size:11px;color:var(--text2)"><i class="ti ti-info-circle" style="font-size:11px;margin-right:3px"></i>As devoluções serão registradas separadamente no card do dossiê.</div>
       </div>
+
+      <!-- EXTRA: Treinamento NR -->
+      <div class="extra-block" id="extra-nr" style="display:none">
+        <div class="extra-block-title"><i class="ti ti-hard-hat" style="color:#d35400"></i> Treinamento NR</div>
+        <div class="fg" style="margin-bottom:10px"><label class="fl">Norma <span style="color:#c0392b">*</span></label>
+          <select class="fs" id="ev-nr-norma" onchange="onNrNormaChange()">
+            <option value="">Selecione</option>
+            <option value="NR-05">NR-05 · CIPA</option>
+            <option value="NR-06">NR-06 · EPI</option>
+            <option value="NR-10">NR-10 · Segurança em Instalações Elétricas</option>
+            <option value="NR-11">NR-11 · Operação de Empilhadeira</option>
+            <option value="NR-12">NR-12 · Máquinas e Equipamentos</option>
+            <option value="NR-17">NR-17 · Ergonomia</option>
+            <option value="NR-18">NR-18 · Construção Civil</option>
+            <option value="NR-20">NR-20 · Inflamáveis e Combustíveis</option>
+            <option value="NR-23">NR-23 · Combate a Incêndio</option>
+            <option value="NR-33">NR-33 · Espaço Confinado</option>
+            <option value="NR-35">NR-35 · Trabalho em Altura</option>
+            <option value="outra">Outra…</option>
+          </select></div>
+        <div class="fg" id="ev-nr-outra-wrap" style="display:none;margin-bottom:10px"><label class="fl">Especifique a norma</label>
+          <input class="fi" type="text" id="ev-nr-outra" placeholder="Ex: NR-13"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+          <div class="fg" style="margin-bottom:0"><label class="fl">Validade (meses)</label>
+            <input class="fi" type="number" id="ev-nr-validade" min="0" step="1" placeholder="Ex: 12" onchange="atualizarVencimentoNR()"></div>
+          <div class="fg" style="margin-bottom:0"><label class="fl">Carga horária (horas)</label>
+            <input class="fi" type="number" id="ev-nr-carga" min="0" step="0.5" placeholder="Ex: 8"></div>
+        </div>
+        <div class="fg" style="margin-bottom:10px"><label class="fl">Instrutor / Empresa certificadora</label>
+          <input class="fi" type="text" id="ev-nr-instrutor" placeholder="Opcional"></div>
+        <div id="ev-nr-vencimento-info" style="font-size:12px;color:var(--text2)"></div>
+      </div>
+
       <div class="fg"><label class="fl">Responsável pelo registro</label>
         <input class="fi" type="text" id="ev-resp" placeholder="Seu nome"></div>
     </div>
@@ -537,9 +675,13 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           <select class="fs" id="eg-empresa" onchange="filtrarEG()" style="flex:1;font-size:12px;padding:7px 9px">
             <option value="">Todas as empresas</option>
           </select>
-          <select class="fs" id="eg-depto" onchange="filtrarEG()" style="flex:1;font-size:12px;padding:7px 9px">
-            <option value="">Todos os setores</option>
-          </select>
+          <div style="flex:1;position:relative">
+            <button type="button" class="fs" id="eg-depto-btn" onclick="toggleEGDeptoPanel(event)" style="width:100%;text-align:left;font-size:12px;padding:7px 9px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:6px">
+              <span id="eg-depto-label" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Todos os setores</span>
+              <i class="ti ti-chevron-down" style="font-size:14px;flex-shrink:0"></i>
+            </button>
+            <div id="eg-depto-panel" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;z-index:30;background:var(--white);border:1px solid var(--border);border-radius:var(--r);box-shadow:0 8px 24px rgba(0,0,0,.14);max-height:230px;overflow-y:auto;padding:4px"></div>
+          </div>
         </div>
         <div id="eg-lista" style="max-height:290px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r);background:var(--white)"></div>
       </div>
@@ -570,6 +712,7 @@ var TIPOS_DEFAULT = [
   {id:'ddq',   nome:'DDQ - Diálogo de Qualidade',          cor:'#2196a0', icon:'ti-star'},
   {id:'notif', nome:'Notificação de Segurança',             cor:'#e05252', icon:'ti-alert-triangle'},
   {id:'trein', nome:'Treinamento',                          cor:'#9b72cf', icon:'ti-certificate'},
+  {id:'nr',    nome:'Treinamento NR (Norma Regulamentadora)', cor:'#d35400', icon:'ti-hard-hat'},
   {id:'feed',  nome:'Feedback',                             cor:'#4a7fc1', icon:'ti-message'},
   {id:'adv',   nome:'Advertência',                          cor:'#e05252', icon:'ti-file-alert'},
   {id:'suspensao', nome:'Suspensão',                         cor:'#b03030', icon:'ti-ban'},
@@ -589,18 +732,31 @@ var _abaDossie = 'ativos'; // 'ativos' | 'desligados'
 // ════ UNIFICAÇÃO DE EMPRESAS (só exibição/filtro — não altera dados) ════
 var _EMPRESAS_CANON = [
   { canon:'NEVES QUEIROZ ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA',
-    aliases:['NEVES QUEIROZ ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA','NOVA ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA'] },
+    aliases:['NEVES QUEIROZ ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA','NOVA ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA'], prefixes:[] },
   { canon:'RAGUIFE INDUSTRIA E COMERCIO DE RACOES LTDA',
-    aliases:['RAGUIFE INDUSTRIA E COMERCIO DE RACOES LTDA','RAGUIFE INDUSTRIA E COMERCIO DE RACOES'] },
+    aliases:[], prefixes:['RAGUIFE'] },
 ];
 function _normEmp(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
-var _EMP_LOOKUP = (function(){ var m={}; _EMPRESAS_CANON.forEach(function(g){ g.aliases.forEach(function(a){ m[_normEmp(a)]=g.canon; }); }); return m; })();
-function canonEmpresa(nome){ if(!nome) return nome; return _EMP_LOOKUP[_normEmp(nome)] || nome; }
+var _EMP_LOOKUP = (function(){ var m={}; _EMPRESAS_CANON.forEach(function(g){ (g.aliases||[]).forEach(function(a){ m[_normEmp(a)]=g.canon; }); }); return m; })();
+function canonEmpresa(nome){
+  if(!nome) return nome;
+  var n=_normEmp(nome);
+  if(_EMP_LOOKUP[n]) return _EMP_LOOKUP[n];
+  for(var i=0;i<_EMPRESAS_CANON.length;i++){
+    var pfx=_EMPRESAS_CANON[i].prefixes||[];
+    for(var j=0;j<pfx.length;j++){ if(n.indexOf(_normEmp(pfx[j]))===0) return _EMPRESAS_CANON[i].canon; }
+  }
+  return nome;
+}
+
 var _eventos  = [];
 var _tipos    = [];
+var _pilulas  = [];
 var _funcAtivo = null;
 var _tipoFiltro = '';
 var _funcEditId = null;
+var _pilFiltroCat = '';
+var _egSetores = {};
 
 function toast(msg, tp) {
   var el = document.getElementById('toast');
@@ -638,6 +794,44 @@ function getTipo(id) {
 }
 function fmtVal(v) {
   return 'R$ ' + (Number(v)||0).toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+// ════ TREINAMENTO NR — VENCIMENTO ════
+var NR_VALIDADE_SUGERIDA = {'NR-05':12,'NR-06':12,'NR-10':24,'NR-11':12,'NR-12':12,'NR-17':0,'NR-18':12,'NR-20':12,'NR-23':12,'NR-33':12,'NR-35':24};
+function calcVencimentoNR(dataStr, meses) {
+  if (!dataStr || !meses) return '';
+  var p = String(dataStr).split('-');
+  if (p.length!==3) return '';
+  var d = new Date(Number(p[0]), Number(p[1])-1, Number(p[2]));
+  d.setMonth(d.getMonth() + Number(meses));
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function statusVencimentoNR(dataVenc) {
+  if (!dataVenc) return {label:'Sem vencimento', cls:'b-gray', dias:null};
+  var hoje = new Date(); hoje.setHours(0,0,0,0);
+  var v = String(dataVenc).split('-');
+  var dv = new Date(Number(v[0]), Number(v[1])-1, Number(v[2]));
+  var dias = Math.round((dv - hoje) / 86400000);
+  if (dias < 0) return {label:'Vencido há '+Math.abs(dias)+'d', cls:'b-red', dias:dias};
+  if (dias <= 60) return {label:'Vencendo em '+dias+'d', cls:'b-amber', dias:dias};
+  return {label:'Válido', cls:'b-green', dias:dias};
+}
+function onNrNormaChange() {
+  var norma = document.getElementById('ev-nr-norma').value;
+  document.getElementById('ev-nr-outra-wrap').style.display = norma==='outra' ? 'block' : 'none';
+  var sug = NR_VALIDADE_SUGERIDA[norma];
+  if (sug !== undefined) document.getElementById('ev-nr-validade').value = sug || '';
+  atualizarVencimentoNR();
+}
+function atualizarVencimentoNR() {
+  var data = document.getElementById('ev-data') ? document.getElementById('ev-data').value : '';
+  var validadeEl = document.getElementById('ev-nr-validade');
+  var meses = validadeEl ? validadeEl.value : '';
+  var info = document.getElementById('ev-nr-vencimento-info');
+  if (!info) return;
+  if (!meses || Number(meses)<=0) { info.innerHTML = '<i class="ti ti-info-circle" style="font-size:11px;margin-right:3px"></i>Sem validade definida — este treinamento não vencerá.'; return; }
+  var venc = calcVencimentoNR(data, meses);
+  if (!venc) { info.innerHTML = '<i class="ti ti-info-circle" style="font-size:11px;margin-right:3px"></i>Informe a data do treinamento para calcular o vencimento.'; return; }
+  info.innerHTML = '<i class="ti ti-calendar-due" style="font-size:11px;margin-right:3px"></i>Vencimento previsto: <strong>'+fmtDate(venc)+'</strong>';
 }
 
 // ════ DEDUPLICAÇÃO DE FUNCIONÁRIOS ════
@@ -735,6 +929,12 @@ function iniciarListeners() {
     _eventos.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
     if (_funcAtivo) renderDossie(_funcAtivo);
   });
+  db.collection('dossie_pilulas').onSnapshot(function(snap) {
+    _pilulas = snap.docs.map(function(d){ return Object.assign({id:d.id}, d.data()); });
+    _pilulas.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+    if (document.getElementById('view-pilulas').style.display !== 'none') renderPilulas();
+    if (_funcAtivo) renderDossie(_funcAtivo);
+  });
   db.collection('dossie_tipos').onSnapshot(function(snap) {
     _tipos = snap.docs.map(function(d){ return d.data(); });
     if (!_tipos.length) {
@@ -742,6 +942,17 @@ function iniciarListeners() {
       var batch = db.batch();
       _tipos.forEach(function(t){ batch.set(db.collection('dossie_tipos').doc(t.id), t); });
       batch.commit();
+    } else {
+      // Garante que tipos padrão novos (ex: adicionados em atualizações) existam mesmo em bases já populadas
+      var idsExistentes = {};
+      _tipos.forEach(function(t){ idsExistentes[t.id] = true; });
+      var faltantes = TIPOS_DEFAULT.filter(function(t){ return !idsExistentes[t.id]; });
+      if (faltantes.length) {
+        var batch2 = db.batch();
+        faltantes.forEach(function(t){ batch2.set(db.collection('dossie_tipos').doc(t.id), t); });
+        batch2.commit();
+        _tipos = _tipos.concat(faltantes);
+      }
     }
     popularSelectTipos();
   });
@@ -758,9 +969,10 @@ function popularSelectTipos() {
 
 // ════ TABS ════
 function showTab(t) {
-  document.getElementById('view-lista').style.display  = t==='lista'  ? 'block' : 'none';
-  document.getElementById('view-dossie').style.display = t==='dossie' ? 'block' : 'none';
-  document.getElementById('view-cfg').style.display    = t==='cfg'    ? 'block' : 'none';
+  document.getElementById('view-lista').style.display   = t==='lista'   ? 'block' : 'none';
+  document.getElementById('view-dossie').style.display  = t==='dossie'  ? 'block' : 'none';
+  document.getElementById('view-cfg').style.display     = t==='cfg'     ? 'block' : 'none';
+  document.getElementById('view-pilulas').style.display = t==='pilulas' ? 'block' : 'none';
 
   var tb = document.getElementById('topbar-title');
   var ta = document.getElementById('topbar-actions');
@@ -769,8 +981,16 @@ function showTab(t) {
     _funcAtivo=null;
     tb.innerHTML = 'Dossiê de Funcionários';
     ta.innerHTML = '<button class="btn btn-sm" onclick="showTab(\'cfg\')"><i class="ti ti-settings"></i> Configurações</button>'
+      +'<button class="btn btn-sm" onclick="showTab(\'pilulas\')"><i class="ti ti-pill"></i> Pílulas</button>'
       +'<button class="btn btn-sm" onclick="openEventoGrupo()"><i class="ti ti-users"></i> Evento em Grupo</button>'
       +'<button class="btn btn-primary btn-sm" onclick="openCadastrarFunc()"><i class="ti ti-user-plus"></i> Novo Funcionário</button>';
+  }
+  if (t==='pilulas') {
+    _funcAtivo=null;
+    tb.innerHTML = 'Pílulas — Raguife Notícias';
+    ta.innerHTML = '<button class="btn btn-sm" onclick="showTab(\'lista\')"><i class="ti ti-arrow-left"></i> Voltar</button>'
+      +'<button class="btn btn-primary btn-sm" onclick="openNovaPilula()"><i class="ti ti-plus"></i> Nova Pílula</button>';
+    renderPilulas();
   }
   if (t==='dossie' && _funcAtivo) {
     tb.innerHTML = _funcAtivo.nome;
@@ -803,8 +1023,8 @@ function renderLista() {
   var fe  = document.getElementById('f-empresa').value;
   function isDeslig(f){return f.desligado||f.status==='desligado';}
 
-  // Contagem por aba (respeitando busca + empresa)
-  var visiveis = _funcs.filter(function(f){
+  // Base visível (busca + empresa), usada para contar as abas
+  var visiveis = _funcs.filter(function(f) {
     if (q && !(f.nome||'').toLowerCase().includes(q) && !(f.cargo||'').toLowerCase().includes(q) && !(f.empresa||'').toLowerCase().includes(q)) return false;
     if (fe && canonEmpresa(f.empresa) !== fe) return false;
     return true;
@@ -815,7 +1035,7 @@ function renderLista() {
   if(ta){ta.textContent='Ativos ('+nAtivos+')';ta.classList.toggle('active',_abaDossie==='ativos');}
   if(td){td.textContent='Desligados ('+nDeslig+')';td.classList.toggle('active',_abaDossie==='desligados');}
 
-  var lista = visiveis.filter(function(f) {
+  var lista = visiveis.filter(function(f){
     return _abaDossie==='desligados' ? isDeslig(f) : !isDeslig(f);
   });
   lista.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||''); });
@@ -890,25 +1110,38 @@ function renderDossie(f) {
     +'<div class="stat"><div class="stat-v" style="color:#e05252">'+adv+'</div><div class="stat-l">Advertências</div></div>'
     +'<div class="stat"><div class="stat-v" style="color:#8ab800">'+elo+'</div><div class="stat-l">Elogios</div></div>';
 
+  // Pílulas do grupo aparecem na linha do tempo dos colaboradores ATIVOS (mural — sem duplicar no banco)
+  var pilPseudo = isDeslig ? [] : _pilulas.map(function(p){
+    return { id:p.id, _pilula:true, tipoId:'pilula', categoria:p.categoria, titulo:p.tema, data:p.data, obs:p.obs||'' };
+  });
+  var itens = evs.concat(pilPseudo);
+  itens.sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+
   // Filtros por tipo
   var tiposUsados = _tipos.filter(function(t){
     return evs.find(function(ev){ return ev.tipoId===t.id; });
   });
-  var filtersHtml = '<button class="tipo-btn'+(_tipoFiltro===''?' active':'')+'" onclick="filtrarTipo(\'\')">Todos ('+evs.length+')</button>';
+  var filtersHtml = '<button class="tipo-btn'+(_tipoFiltro===''?' active':'')+'" onclick="filtrarTipo(\'\')">Todos ('+itens.length+')</button>';
   tiposUsados.forEach(function(t) {
     var n = evs.filter(function(ev){ return ev.tipoId===t.id; }).length;
     filtersHtml += '<button class="tipo-btn'+(_tipoFiltro===t.id?' active':'')+'" style="'+(_tipoFiltro===t.id?'background:'+t.cor+';color:#fff;border-color:'+t.cor:'')+'" onclick="filtrarTipo(\''+t.id+'\')">'+t.nome+' ('+n+')</button>';
   });
+  if (pilPseudo.length) {
+    var cp = '#7c5cc4';
+    filtersHtml += '<button class="tipo-btn'+(_tipoFiltro==='pilula'?' active':'')+'" style="'+(_tipoFiltro==='pilula'?'background:'+cp+';color:#fff;border-color:'+cp:'')+'" onclick="filtrarTipo(\'pilula\')"><i class="ti ti-pill" style="font-size:12px;margin-right:3px"></i>Pílulas ('+pilPseudo.length+')</button>';
+  }
   document.getElementById('tipo-filters').innerHTML = filtersHtml;
 
   // Timeline
-  var filtrados = _tipoFiltro ? evs.filter(function(ev){ return ev.tipoId===_tipoFiltro; }) : evs;
+  var filtrados = _tipoFiltro ? itens.filter(function(ev){ return (ev._pilula?'pilula':ev.tipoId)===_tipoFiltro; }) : itens;
   if (!filtrados.length) {
     document.getElementById('timeline').innerHTML = '<div class="empty" style="padding:30px 0"><i class="ti ti-notebook"></i><p>Nenhum evento registrado.</p></div>';
     return;
   }
   document.getElementById('timeline').innerHTML = filtrados.map(function(ev) {
-    var tp = getTipo(ev.tipoId);
+    var tp = ev._pilula
+      ? { nome:'Pílula · '+ev.categoria, cor:corPilula(ev.categoria), icon:iconPilula(ev.categoria) }
+      : getTipo(ev.tipoId);
     var extraHtml = '';
 
     // Treinamento — carga horária e remuneração
@@ -920,6 +1153,16 @@ function renderDossie(f) {
         tagsT += '<span class="badge b-amber"><i class="ti ti-cash" style="font-size:11px"></i> Remunerado · '+rotRem+'</span>';
       }
       extraHtml += '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'+tagsT+'</div>';
+    }
+
+    // Treinamento NR — norma, carga e vencimento
+    if (ev.tipoId === 'nr' && ev.nrNorma) {
+      var tagsNr = '<span class="badge b-gray"><i class="ti ti-hard-hat" style="font-size:11px"></i> '+ev.nrNorma+'</span> ';
+      if (ev.nrCarga) tagsNr += '<span class="badge b-gray"><i class="ti ti-clock" style="font-size:11px"></i> '+ev.nrCarga+'h</span> ';
+      var stNr = statusVencimentoNR(ev.nrDataVencimento);
+      tagsNr += '<span class="badge '+stNr.cls+'"><i class="ti ti-calendar-due" style="font-size:11px"></i> '+(ev.nrDataVencimento?stNr.label+' · '+fmtDate(ev.nrDataVencimento):'Sem vencimento')+'</span>';
+      extraHtml += '<div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">'+tagsNr+'</div>';
+      if (ev.nrInstrutor) extraHtml += '<div class="ev-obs" style="margin-top:4px"><i class="ti ti-user-check" style="font-size:11px;margin-right:3px"></i>'+ev.nrInstrutor+'</div>';
     }
 
     // Adiantamento por Afastamento — card com saldo e devoluções
@@ -962,7 +1205,9 @@ function renderDossie(f) {
       +'<span class="ev-tipo" style="color:'+tp.cor+'"><i class="ti '+tp.icon+'" style="margin-right:4px;font-size:12px"></i>'+tp.nome+'</span>'
       +'<div style="display:flex;align-items:center;gap:8px">'
       +'<span class="ev-data">'+fmtDate(ev.data)+'</span>'
-      +'<button class="btn-icon" style="font-size:11px" onclick="removerEvento(\''+ev.id+'\')" title="Remover"><i class="ti ti-trash"></i></button>'
+      +(ev._pilula
+        ? '<span class="badge b-gray" title="Enviada ao grupo Raguife Notícias" style="font-size:10px"><i class="ti ti-brand-whatsapp" style="font-size:10px;margin-right:2px"></i>Grupo</span>'
+        : '<button class="btn-icon" style="font-size:11px" onclick="removerEvento(\''+ev.id+'\')" title="Remover"><i class="ti ti-trash"></i></button>')
       +'</div></div>'
       +'<div class="ev-titulo">'+ev.titulo+'</div>'
       +(ev.obs?'<div class="ev-obs">'+ev.obs+'</div>':'')
@@ -991,6 +1236,13 @@ function openNovoEvento() {
   document.getElementById('extra-trein-rem').style.display = 'none';
   document.getElementById('ev-trein-tipo-rem').value = 'horas_treinamento';
   document.getElementById('ev-adiant-valor').value = '';
+  document.getElementById('ev-nr-norma').value = '';
+  document.getElementById('ev-nr-outra').value = '';
+  document.getElementById('ev-nr-outra-wrap').style.display = 'none';
+  document.getElementById('ev-nr-validade').value = '';
+  document.getElementById('ev-nr-carga').value = '';
+  document.getElementById('ev-nr-instrutor').value = '';
+  document.getElementById('ev-nr-vencimento-info').innerHTML = '';
   onTipoChange();
   openModal('modal-ev');
 }
@@ -999,6 +1251,8 @@ function onTipoChange() {
   var tipoId = document.getElementById('ev-tipo').value;
   document.getElementById('extra-trein').style.display  = tipoId==='trein' ? 'block' : 'none';
   document.getElementById('extra-adiant').style.display = tipoId==='adiant_afastamento' ? 'block' : 'none';
+  document.getElementById('extra-nr').style.display     = tipoId==='nr' ? 'block' : 'none';
+  if (tipoId==='nr') atualizarVencimentoNR();
 }
 
 function salvarEvento() {
@@ -1038,6 +1292,26 @@ function salvarEvento() {
   // Medida disciplinar — inicia controle de devolução ao RH
   if (tipoId==='adv' || tipoId==='suspensao' || tipoId==='orientacao_corretiva') {
     payload.discRecebido = false;
+  }
+
+  // Extra: Treinamento NR
+  if (tipoId === 'nr') {
+    var norma = document.getElementById('ev-nr-norma').value;
+    if (!norma) { toast('Selecione a norma (NR).','err'); return; }
+    if (norma === 'outra') {
+      var normaOutra = (document.getElementById('ev-nr-outra').value||'').trim();
+      if (!normaOutra) { toast('Especifique a norma.','err'); return; }
+      payload.nrNorma = normaOutra;
+    } else {
+      payload.nrNorma = norma;
+    }
+    var validadeMeses = parseInt(document.getElementById('ev-nr-validade').value||'0', 10);
+    payload.nrValidadeMeses = validadeMeses || 0;
+    payload.nrDataVencimento = validadeMeses>0 ? calcVencimentoNR(data, validadeMeses) : '';
+    var cargaNr = parseFloat(document.getElementById('ev-nr-carga').value||'0');
+    if (cargaNr>0) payload.nrCarga = cargaNr;
+    var instrutor = (document.getElementById('ev-nr-instrutor').value||'').trim();
+    if (instrutor) payload.nrInstrutor = instrutor;
   }
 
   var docRef = db.collection('dossie_eventos').doc();
@@ -1224,14 +1498,17 @@ function renderCfg() {
 function funcNome(id){ var f=_funcs.find(function(x){return x.id===id;}); return f?f.nome:'(funcionário removido)'; }
 
 function showCfgTab(tab){
-  ['tipos','trein','adiant','disc'].forEach(function(t){
+  ['tipos','trein','nr','adiant','disc','badges','evtipo'].forEach(function(t){
     document.getElementById('cfgview-'+t).style.display = (t===tab)?'block':'none';
     document.getElementById('cfgtab-'+t).classList.toggle('active', t===tab);
   });
   if (tab==='tipos')  renderCfg();
   if (tab==='trein')  { var c=document.getElementById('rel-trein-comp'); if(!c.value) c.value=new Date().toISOString().slice(0,7); renderRelTreinamento(); }
+  if (tab==='nr')     renderRelNR();
   if (tab==='adiant') renderRelAdiantamento();
   if (tab==='disc')   renderRelDisciplinar();
+  if (tab==='badges') renderRelBadges();
+  if (tab==='evtipo') { popularSelectEvtTipo(); renderRelEvtTipo(); }
 }
 
 function renderRelTreinamento(){
@@ -1256,6 +1533,51 @@ function renderRelTreinamento(){
           +'<td>'+ev.titulo+'</td>'
           +'<td>'+(ev.treinCarga?ev.treinCarga+'h':'—')+'</td>'
           +'<td>'+(ev.treinRemunerado?'<span class="badge b-amber">'+(rotRem[ev.treinTipoRem]||'Sim')+'</span>':'<span style="color:var(--text3)">—</span>')+'</td></tr>';
+      }).join('')
+    +'</tbody></table>';
+}
+
+function renderRelNR(){
+  var normaSel = document.getElementById('rel-nr-norma');
+  if (!normaSel.dataset.pop) {
+    var normas = {};
+    _eventos.forEach(function(ev){ if (ev.tipoId==='nr' && ev.nrNorma) normas[ev.nrNorma]=true; });
+    Object.keys(normas).sort().forEach(function(n){
+      var o=document.createElement('option'); o.value=n; o.textContent=n; normaSel.appendChild(o);
+    });
+    normaSel.dataset.pop = '1';
+  }
+  var norma = normaSel.value;
+  var sit = document.getElementById('rel-nr-sit').value;
+  var evs = _eventos.filter(function(ev){
+    if (ev.tipoId!=='nr' || !ev.nrNorma) return false;
+    if (norma && ev.nrNorma!==norma) return false;
+    return true;
+  });
+  var comStatus = evs.map(function(ev){ return {ev:ev, st:statusVencimentoNR(ev.nrDataVencimento)}; });
+  if (sit) comStatus = comStatus.filter(function(x){
+    if (sit==='vencido') return x.st.dias!==null && x.st.dias<0;
+    if (sit==='vencendo') return x.st.dias!==null && x.st.dias>=0 && x.st.dias<=60;
+    if (sit==='valido') return x.st.dias===null || x.st.dias>60;
+    return true;
+  });
+  comStatus.sort(function(a,b){
+    var da = a.ev.nrDataVencimento||'9999-99-99', db_ = b.ev.nrDataVencimento||'9999-99-99';
+    return da.localeCompare(db_);
+  });
+  var corpo = document.getElementById('rel-nr-corpo');
+  if (!comStatus.length) { corpo.innerHTML = '<div class="empty" style="padding:24px 0"><i class="ti ti-hard-hat"></i><p>Nenhum treinamento NR encontrado.</p></div>'; return; }
+  var nVenc = comStatus.filter(function(x){return x.st.dias!==null && x.st.dias<0;}).length;
+  var nVence = comStatus.filter(function(x){return x.st.dias!==null && x.st.dias>=0 && x.st.dias<=60;}).length;
+  corpo.innerHTML = '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+comStatus.length+' registro(s) · <span style="color:#8b1c1c;font-weight:700">'+nVenc+' vencido(s)</span> · <span style="color:#7d4e00;font-weight:700">'+nVence+' vencendo em 60 dias</span></div>'
+    +'<table class="cfg-table"><thead><tr><th>Funcionário</th><th>Norma</th><th>Realização</th><th>Vencimento</th><th>Situação</th></tr></thead><tbody>'
+    + comStatus.map(function(x){
+        var ev=x.ev, st=x.st;
+        return '<tr><td style="font-weight:600">'+funcNome(ev.funcId)+'</td>'
+          +'<td>'+ev.nrNorma+'</td>'
+          +'<td style="white-space:nowrap">'+fmtDate(ev.data)+'</td>'
+          +'<td style="white-space:nowrap">'+(ev.nrDataVencimento?fmtDate(ev.nrDataVencimento):'—')+'</td>'
+          +'<td><span class="badge '+st.cls+'">'+st.label+'</span></td></tr>';
       }).join('')
     +'</tbody></table>';
 }
@@ -1316,12 +1638,157 @@ function renderRelDisciplinar(){
     +'</tbody></table>';
 }
 
+// ════ RELATÓRIO BRIGADA / CIPA / MULTIPLICADOR ════
+function coletarBadges(){
+  var tipo = document.getElementById('rel-badge-tipo').value; // '', brig, cipa, mult
+  var sit  = document.getElementById('rel-badge-sit').value;  // '', ativo, encerrado
+  var rows = [];
+  _funcs.forEach(function(f){
+    function push(kind, label, obj){
+      if(!obj || !obj.inicio) return;
+      rows.push({nome:f.nome, kind:kind, label:label, inicio:obj.inicio, fim:obj.fim||'', ativo:!!obj.ativo, nivel:obj.nivel, pontos:obj.pontos});
+    }
+    push('brig','Brigadista', f.brigadista);
+    push('cipa','CIPA', f.cipa);
+    push('mult','Multiplicador', f.multiplicador);
+  });
+  if(tipo) rows = rows.filter(function(r){return r.kind===tipo;});
+  if(sit==='ativo')     rows = rows.filter(function(r){return r.ativo;});
+  if(sit==='encerrado') rows = rows.filter(function(r){return !r.ativo;});
+  rows.sort(function(a,b){ return a.ativo===b.ativo ? (a.nome||'').localeCompare(b.nome||'') : (a.ativo?-1:1); });
+  return rows;
+}
+
+function renderRelBadges(){
+  var rows = coletarBadges();
+  var corpo = document.getElementById('rel-badge-corpo');
+  if(!rows.length){ corpo.innerHTML='<div class="empty" style="padding:24px 0"><i class="ti ti-award"></i><p>Nenhuma designação encontrada.</p></div>'; return; }
+  var nAtivos = rows.filter(function(r){return r.ativo;}).length;
+  var cores = {brig:'#c0392b', cipa:'#2e7d32', mult:'#1a5276'};
+  corpo.innerHTML = '<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+rows.length+' registro(s) · '+nAtivos+' ativo(s)</div>'
+    +'<table class="cfg-table"><thead><tr><th>Funcionário</th><th>Designação</th><th>Início</th><th>Situação</th><th>Nível / Pontos</th></tr></thead><tbody>'
+    + rows.map(function(r){
+        var sitTxt = r.ativo ? '<span class="badge b-green">Ativo</span>'
+                             : '<span class="badge b-gray">Encerrado'+(r.fim?' · '+fmtDate(r.fim):'')+'</span>';
+        var np = r.kind==='mult' ? ('Nível '+(r.nivel||1)+' · '+(r.pontos||0)+' pts') : '<span style="color:var(--text3)">—</span>';
+        return '<tr><td style="font-weight:600">'+(r.nome||'—')+'</td>'
+          +'<td style="color:'+cores[r.kind]+';font-weight:700">'+r.label+'</td>'
+          +'<td style="white-space:nowrap">'+fmtDate(r.inicio)+'</td>'
+          +'<td>'+sitTxt+'</td>'
+          +'<td>'+np+'</td></tr>';
+      }).join('')
+    +'</tbody></table>';
+}
+
+function exportBadgesExcel(){
+  if(typeof XLSX==='undefined'){ toast('Biblioteca de exportação ainda carregando, tente novamente.','err'); return; }
+  var rows = coletarBadges();
+  if(!rows.length){ toast('Nada para exportar com os filtros atuais.','warn'); return; }
+  var aoa = [['Funcionário','Designação','Início','Situação','Data Fim','Nível','Pontos']];
+  rows.forEach(function(r){
+    aoa.push([
+      r.nome||'',
+      r.label,
+      fmtDate(r.inicio),
+      r.ativo?'Ativo':'Encerrado',
+      r.fim?fmtDate(r.fim):'',
+      r.kind==='mult'?(r.nivel||1):'',
+      r.kind==='mult'?(r.pontos||0):''
+    ]);
+  });
+  var wb = XLSX.utils.book_new();
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:34},{wch:16},{wch:12},{wch:12},{wch:12},{wch:8},{wch:8}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Designações');
+  var dt = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, 'designacoes_brigada_cipa_mult_'+dt+'.xlsx');
+  toast('Planilha gerada!','ok');
+}
+
+// ════ RELATÓRIO POR TIPO DE EVENTO ════
+function nomeTipo(id){ var t=_tipos.find(function(x){return x.id===id;}); return t?t.nome:(id||'—'); }
+
+function popularSelectEvtTipo(){
+  var sel=document.getElementById('rel-evt-tipo');
+  var atual=sel.value;
+  var opts='<option value="">Todos os tipos</option>';
+  _tipos.slice().sort(function(a,b){return (a.nome||'').localeCompare(b.nome||'');}).forEach(function(t){
+    opts+='<option value="'+t.id+'">'+t.nome+'</option>';
+  });
+  sel.innerHTML=opts;
+  sel.value=atual;
+}
+
+function coletarEvtTipo(){
+  var tipo=document.getElementById('rel-evt-tipo').value;
+  var ini=document.getElementById('rel-evt-ini').value;
+  var fim=document.getElementById('rel-evt-fim').value;
+  var evs=_eventos.filter(function(ev){
+    if(tipo && ev.tipoId!==tipo) return false;
+    var dt=String(ev.data||'');
+    if(ini && dt && dt<ini) return false;
+    if(fim && dt && dt>fim) return false;
+    return true;
+  });
+  evs.sort(function(a,b){return String(b.data||'').localeCompare(String(a.data||''));});
+  return evs;
+}
+
+function renderRelEvtTipo(){
+  var evs=coletarEvtTipo();
+  var corpo=document.getElementById('rel-evt-corpo');
+  if(!evs.length){ corpo.innerHTML='<div class="empty" style="padding:24px 0"><i class="ti ti-clipboard-list"></i><p>Nenhum evento encontrado com os filtros.</p></div>'; return; }
+  // Contagem por mês
+  var porMes={};
+  evs.forEach(function(ev){ var m=String(ev.data||'').slice(0,7)||'—'; porMes[m]=(porMes[m]||0)+1; });
+  var nomesMes=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  function labelMes(m){ if(m==='—'||m==='')return 'Sem data'; var p=m.split('-'); return nomesMes[parseInt(p[1],10)-1]+'/'+p[0]; }
+  var resumoMes=Object.keys(porMes).sort().reverse().map(function(m){
+    return '<span class="badge b-gray" style="margin:2px 3px">'+labelMes(m)+': <strong>'+porMes[m]+'</strong></span>';
+  }).join('');
+
+  corpo.innerHTML =
+     '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:6px">'
+    +'<span style="font-size:24px;font-weight:900">'+evs.length+'</span>'
+    +'<span style="font-size:12px;font-weight:700;color:var(--text2)">registro(s) no total</span></div>'
+    +'<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;align-items:center">'
+    +'<span style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-right:8px">Por mês:</span>'+resumoMes+'</div>'
+    +'<table class="cfg-table"><thead><tr><th>Data</th><th>Funcionário</th><th>Tipo</th><th>Título</th><th>Responsável</th><th>Observação</th></tr></thead><tbody>'
+    + evs.map(function(ev){
+        return '<tr><td style="white-space:nowrap">'+fmtDate(ev.data)+'</td>'
+          +'<td style="font-weight:600">'+funcNome(ev.funcId)+'</td>'
+          +'<td>'+nomeTipo(ev.tipoId)+'</td>'
+          +'<td>'+(ev.titulo||'—')+'</td>'
+          +'<td>'+(ev.resp||'—')+'</td>'
+          +'<td style="color:var(--text2);font-size:12px">'+(ev.obs||'')+'</td></tr>';
+      }).join('')
+    +'</tbody></table>';
+}
+
+function exportEvtTipoExcel(){
+  if(typeof XLSX==='undefined'){ toast('Biblioteca de exportação ainda carregando, tente novamente.','err'); return; }
+  var evs=coletarEvtTipo();
+  if(!evs.length){ toast('Nada para exportar com os filtros atuais.','warn'); return; }
+  var aoa=[['Data','Funcionário','Tipo','Título','Responsável','Observação']];
+  evs.forEach(function(ev){
+    aoa.push([fmtDate(ev.data), funcNome(ev.funcId), nomeTipo(ev.tipoId), ev.titulo||'', ev.resp||'', ev.obs||'']);
+  });
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols']=[{wch:12},{wch:30},{wch:28},{wch:34},{wch:20},{wch:44}];
+  XLSX.utils.book_append_sheet(wb, ws, 'Eventos');
+  var tipoSel=document.getElementById('rel-evt-tipo').value;
+  var nomeArq='eventos_'+(tipoSel||'todos')+'_'+new Date().toISOString().slice(0,10)+'.xlsx';
+  XLSX.writeFile(wb, nomeArq);
+  toast('Planilha gerada!','ok');
+}
 
 // ════ EVENTO EM GRUPO ════
 var _egSelecionados = {};
 
 function openEventoGrupo() {
   _egSelecionados = {};
+  _egSetores = {};
   var sel = document.getElementById('eg-tipo');
   sel.innerHTML = '<option value="">Selecione</option>'
     + _tipos.map(function(t){ return '<option value="'+t.id+'">'+t.nome+'</option>'; }).join('');
@@ -1341,9 +1808,17 @@ function openEventoGrupo() {
   var selEmp = document.getElementById('eg-empresa');
   selEmp.innerHTML = '<option value="">Todas as empresas</option>'
     + Object.keys(emps).sort().map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join('');
-  var selDep = document.getElementById('eg-depto');
-  selDep.innerHTML = '<option value="">Todos os setores</option>'
-    + Object.keys(deptos).sort().map(function(d){ return '<option value="'+d+'">'+d+'</option>'; }).join('');
+
+  var panel = document.getElementById('eg-depto-panel');
+  panel.style.display = 'none';
+  panel.innerHTML = Object.keys(deptos).sort().map(function(d){
+    var idSafe = 'egdep_' + d.replace(/[^a-zA-Z0-9]/g,'_');
+    return '<label style="display:flex;align-items:center;gap:8px;padding:7px 8px;font-size:12px;cursor:pointer;border-radius:6px" '
+      +'onmouseover="this.style.background=\'var(--s2)\'" onmouseout="this.style.background=\'transparent\'">'
+      +'<input type="checkbox" id="'+idSafe+'" style="accent-color:var(--black);width:14px;height:14px" onchange="toggleEGSetor(\''+d.replace(/'/g,"\\'")+'\')">'
+      +'<span>'+d+'</span></label>';
+  }).join('') || '<div style="padding:10px;font-size:12px;color:var(--text3);text-align:center">Nenhum setor cadastrado.</div>';
+  atualizarLabelEGSetores();
 
   renderEGLista();
   openModal('modal-grupo');
@@ -1352,12 +1827,12 @@ function openEventoGrupo() {
 function renderEGLista() {
   var q     = (document.getElementById('eg-busca').value||'').toLowerCase();
   var femp  = document.getElementById('eg-empresa').value;
-  var fdep  = document.getElementById('eg-depto').value;
+  var setores = egSetoresAtivos();
   var lista = _funcs.filter(function(f){
     if (f.desligado || f.status === 'desligado') return false;
     if (q && !(f.nome||'').toLowerCase().includes(q)) return false;
     if (femp && (f.empresa||'') !== femp) return false;
-    if (fdep && (f.departamento||'') !== fdep) return false;
+    if (setores.length && setores.indexOf(f.departamento||'') === -1) return false;
     return true;
   });
   lista.sort(function(a,b){ return (a.nome||'').localeCompare(b.nome||''); });
@@ -1380,12 +1855,12 @@ function filtrarEG(){ renderEGLista(); }
 function selecionarTodosEG(){
   var q    = (document.getElementById('eg-busca').value||'').toLowerCase();
   var femp = document.getElementById('eg-empresa').value;
-  var fdep = document.getElementById('eg-depto').value;
+  var setores = egSetoresAtivos();
   _funcs.filter(function(f){
     if (f.desligado || f.status==='desligado') return false;
     if (q && !(f.nome||'').toLowerCase().includes(q)) return false;
     if (femp && (f.empresa||'') !== femp) return false;
-    if (fdep && (f.departamento||'') !== fdep) return false;
+    if (setores.length && setores.indexOf(f.departamento||'') === -1) return false;
     return true;
   }).forEach(function(f){ _egSelecionados[f.id]=true; });
   renderEGLista();
@@ -1419,6 +1894,104 @@ function salvarEventoGrupo(){
     closeModal('modal-grupo');
     _egSelecionados={};
   }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ── Multi-seleção de setores no Evento em Grupo ──
+function egSetoresAtivos(){
+  return Object.keys(_egSetores).filter(function(k){ return _egSetores[k]; });
+}
+function toggleEGDeptoPanel(e){
+  if (e) e.stopPropagation();
+  var panel = document.getElementById('eg-depto-panel');
+  panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+}
+function toggleEGSetor(dep){
+  _egSetores[dep] = !_egSetores[dep];
+  atualizarLabelEGSetores();
+  renderEGLista();
+}
+function atualizarLabelEGSetores(){
+  var sels = egSetoresAtivos();
+  var lbl = document.getElementById('eg-depto-label');
+  if (!sels.length) lbl.textContent = 'Todos os setores';
+  else if (sels.length === 1) lbl.textContent = sels[0];
+  else lbl.textContent = sels.length + ' setores';
+}
+// Fecha o painel de setores ao clicar fora
+document.addEventListener('click', function(e){
+  var panel = document.getElementById('eg-depto-panel');
+  var btn   = document.getElementById('eg-depto-btn');
+  if (!panel || panel.style.display === 'none') return;
+  if (panel.contains(e.target) || (btn && btn.contains(e.target))) return;
+  panel.style.display = 'none';
+});
+
+// ════ PÍLULAS ════
+var CAT_PILULA = {
+  'Convivência': {cor:'#7c5cc4', icon:'ti-heart-handshake'},
+  'Qualidade':   {cor:'#2f80c4', icon:'ti-award'},
+  'Segurança':   {cor:'#d98a1f', icon:'ti-shield-check'}
+};
+function corPilula(cat){ return (CAT_PILULA[cat]||{}).cor || '#7c5cc4'; }
+function iconPilula(cat){ return (CAT_PILULA[cat]||{}).icon || 'ti-pill'; }
+
+function openNovaPilula(){
+  document.getElementById('pil-cat').value = '';
+  document.getElementById('pil-tema').value = '';
+  document.getElementById('pil-obs').value = '';
+  document.getElementById('pil-data').value = new Date().toISOString().split('T')[0];
+  openModal('modal-pilula');
+}
+
+function salvarPilula(){
+  var cat  = document.getElementById('pil-cat').value;
+  var tema = (document.getElementById('pil-tema').value||'').trim();
+  var data = document.getElementById('pil-data').value;
+  var obs  = (document.getElementById('pil-obs').value||'').trim();
+  if(!cat){ toast('Selecione a categoria.','err'); return; }
+  if(!tema){ toast('Informe o tema.','err'); return; }
+  if(!data){ toast('Informe a data.','err'); return; }
+  var ref = db.collection('dossie_pilulas').doc();
+  ref.set({ id:ref.id, categoria:cat, tema:tema, data:data, obs:obs, criadoEm:new Date().toISOString() })
+    .then(function(){ toast('Pílula registrada!','ok'); closeModal('modal-pilula'); })
+    .catch(function(e){ toast('Erro: '+e.message,'err'); });
+}
+
+function removerPilula(id){
+  if(!confirm('Remover esta pílula? Ela deixará de aparecer na linha do tempo dos colaboradores.')) return;
+  db.collection('dossie_pilulas').doc(id).delete()
+    .then(function(){ toast('Pílula removida.','warn'); })
+    .catch(function(e){ toast('Erro: '+e.message,'err'); });
+}
+
+function renderPilulas(){
+  var q   = (document.getElementById('pil-busca').value||'').toLowerCase();
+  var fc  = document.getElementById('pil-f-cat').value;
+  var lista = _pilulas.filter(function(p){
+    if (fc && p.categoria !== fc) return false;
+    if (q && !((p.tema||'').toLowerCase().includes(q))) return false;
+    return true;
+  });
+  var alvo = document.getElementById('pil-lista');
+  if(!lista.length){
+    alvo.innerHTML = '<div class="empty" style="padding:40px 0"><i class="ti ti-pill"></i><p>Nenhuma pílula registrada.</p></div>';
+    return;
+  }
+  alvo.innerHTML = lista.map(function(p){
+    var cor = corPilula(p.categoria);
+    return '<div style="background:var(--white);border:1px solid var(--border);border-left:4px solid '+cor+';border-radius:var(--r);padding:14px 16px;margin-bottom:10px;display:flex;gap:12px;align-items:flex-start">'
+      +'<div style="width:34px;height:34px;border-radius:9px;background:'+cor+'18;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      +'<i class="ti '+iconPilula(p.categoria)+'" style="font-size:18px;color:'+cor+'"></i></div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">'
+      +'<span style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;color:'+cor+'">'+p.categoria+'</span>'
+      +'<span style="font-size:12px;color:var(--text3)">· '+fmtDate(p.data)+'</span></div>'
+      +'<div style="font-size:14px;font-weight:600;margin-top:2px">'+p.tema+'</div>'
+      +(p.obs?'<div style="font-size:12px;color:var(--text2);margin-top:4px">'+p.obs+'</div>':'')
+      +'</div>'
+      +'<button class="btn-icon" style="font-size:12px" onclick="removerPilula(\''+p.id+'\')" title="Remover"><i class="ti ti-trash"></i></button>'
+      +'</div>';
+  }).join('');
 }
 
 // ════ DESLIGAMENTO MANUAL ════

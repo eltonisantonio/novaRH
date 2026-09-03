@@ -478,6 +478,22 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
   </div>
 </div>
 
+<!-- MODAL DESLIGAMENTO MANUAL -->
+<div class="overlay" id="modal-desligar">
+  <div class="modal" style="width:420px;max-width:96vw">
+    <div class="modal-h"><span class="modal-title">Marcar como desligado</span><button class="btn-icon" onclick="closeModal('modal-desligar')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b" style="padding:20px">
+      <div id="desl-desc" style="font-size:13px;color:var(--text2);margin-bottom:16px"></div>
+      <div class="fg" style="margin-bottom:0"><label class="fl">Data do desligamento <span style="color:#c0392b">*</span></label>
+        <input class="fi" type="date" id="desl-data"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-desligar')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarDesligar()"><i class="ti ti-user-off"></i> Confirmar desligamento</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL EVENTO EM GRUPO -->
 <div class="overlay" id="modal-grupo">
   <div class="modal" style="width:720px;max-width:97vw">
@@ -684,6 +700,7 @@ function iniciarListeners() {
         tel: d2.telefone||'', email: d2.email||'',
         status: p.status==='concluido' ? 'ativo' : 'em_admissao',
         desligado: !!p.desligado,
+        desligadoEm: p.desligadoEm||'',
         multiplicador: p.multiplicador||null,
         brigadista: p.brigadista||null,
         cipa: p.cipa||null,
@@ -839,14 +856,19 @@ function renderDossie(f) {
     +'<div class="dossie-nome">'+f.nome+'</div>'
     +'<div class="dossie-meta">'+(f.cargo||'')+(f.empresa?' · '+f.empresa:'')+(f.departamento?' · '+f.departamento:'')+(f.admissao?' · Admissão: '+fmtDate(f.admissao):'')+'</div>'
     +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
-    +(isDeslig?'<span class="badge b-red">Desligado</span>':'<span class="badge b-green">Ativo</span>')
+    +(isDeslig?'<span class="badge b-red">Desligado'+(f.desligadoEm?' · '+fmtDate((f.desligadoEm||'').split('T')[0]):'')+'</span>':'<span class="badge b-green">Ativo</span>')
     +(f.matricula?'<span class="badge b-gray">Mat. '+f.matricula+'</span>':'')
     +(f.cpf?'<span class="badge b-gray">CPF: '+f.cpf+'</span>':'')
     +'</div>'
     +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
     + badgeBrig(f) + badgeCipa(f) + badgeMult(f)
     +'</div></div>'
-    +'<div class="dossie-actions"><button class="btn btn-sm" onclick="openPromocao()"><i class="ti ti-arrow-up-circle"></i> Promoção / Movimentação</button></div>';
+    +'<div class="dossie-actions">'
+    +'<button class="btn btn-sm" onclick="openPromocao()"><i class="ti ti-arrow-up-circle"></i> Promoção / Movimentação</button>'
+    +(isDeslig
+      ?'<button class="btn btn-sm" onclick="reativarFunc()"><i class="ti ti-user-check"></i> Reativar</button>'
+      :'<button class="btn btn-sm" onclick="openDesligar()"><i class="ti ti-user-off"></i> Marcar como desligado</button>')
+    +'</div>';
 
   // Stats
   var evs = eventosDoFunc(f);
@@ -1386,6 +1408,55 @@ function salvarEventoGrupo(){
     closeModal('modal-grupo');
     _egSelecionados={};
   }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ════ DESLIGAMENTO MANUAL ════
+// Refs de TODOS os registros mesclados da pessoa (adm_processos + dossie_funcs)
+function _refsFunc(f){
+  var ids = (f && f._ids) ? f._ids : (f ? [f.id] : []);
+  return ids.map(function(id){
+    return id.indexOf('adm_')===0
+      ? db.collection('adm_processos').doc(id.slice(4))
+      : db.collection('dossie_funcs').doc(id);
+  });
+}
+function openDesligar(){
+  if(!_funcAtivo) return;
+  document.getElementById('desl-desc').textContent = 'Registrar o desligamento de '+_funcAtivo.nome+'. Isso move a pessoa para a aba Desligados e libera nova admissão (recontratação).';
+  document.getElementById('desl-data').value = new Date().toISOString().split('T')[0];
+  openModal('modal-desligar');
+}
+function confirmarDesligar(){
+  if(!_funcAtivo) return;
+  var data = document.getElementById('desl-data').value;
+  if(!data){ toast('Informe a data do desligamento.','err'); return; }
+  var f = _funcAtivo;
+  var now = new Date().toISOString();
+  var batch = db.batch();
+  _refsFunc(f).forEach(function(ref){
+    batch.update(ref, { desligado:true, desligadoEm:data, desligadoPor:'RH (manual)', atualizadoEm:now });
+  });
+  batch.commit().then(function(){
+    f.desligado=true; f.desligadoEm=data;
+    toast(f.nome+' marcado como desligado.','warn');
+    closeModal('modal-desligar');
+    renderDossie(f); renderLista();
+  }).catch(function(e){ toast('Erro: '+e.message,'err'); });
+}
+function reativarFunc(){
+  if(!_funcAtivo) return;
+  if(!confirm('Reativar '+_funcAtivo.nome+'? A pessoa volta para a aba Ativos.')) return;
+  var f = _funcAtivo;
+  var now = new Date().toISOString();
+  var batch = db.batch();
+  _refsFunc(f).forEach(function(ref){
+    batch.update(ref, { desligado:false, desligadoEm:'', atualizadoEm:now });
+  });
+  batch.commit().then(function(){
+    f.desligado=false; f.desligadoEm='';
+    toast(f.nome+' reativado.','ok');
+    renderDossie(f); renderLista();
+  }).catch(function(e){ toast('Erro: '+e.message,'err'); });
 }
 
 // ════ HELPERS DE REFERÊNCIA ════

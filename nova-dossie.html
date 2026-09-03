@@ -1496,6 +1496,7 @@ function renderCfg() {
 }
 
 function funcNome(id){ var f=_funcs.find(function(x){return x.id===id;}); return f?f.nome:'(funcionário removido)'; }
+function funcDepto(id){ var f=_funcs.find(function(x){return x.id===id || (x._ids&&x._ids.indexOf(id)!==-1);}); return f&&f.departamento?f.departamento:'—'; }
 
 function showCfgTab(tab){
   ['tipos','trein','nr','adiant','disc','badges','evtipo'].forEach(function(t){
@@ -1753,10 +1754,11 @@ function renderRelEvtTipo(){
     +'<span style="font-size:12px;font-weight:700;color:var(--text2)">registro(s) no total</span></div>'
     +'<div style="margin-bottom:14px;display:flex;flex-wrap:wrap;align-items:center">'
     +'<span style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;margin-right:8px">Por mês:</span>'+resumoMes+'</div>'
-    +'<table class="cfg-table"><thead><tr><th>Data</th><th>Funcionário</th><th>Tipo</th><th>Título</th><th>Responsável</th><th>Observação</th></tr></thead><tbody>'
+    +'<table class="cfg-table"><thead><tr><th>Data</th><th>Funcionário</th><th>Departamento</th><th>Tipo</th><th>Título</th><th>Responsável</th><th>Observação</th></tr></thead><tbody>'
     + evs.map(function(ev){
         return '<tr><td style="white-space:nowrap">'+fmtDate(ev.data)+'</td>'
           +'<td style="font-weight:600">'+funcNome(ev.funcId)+'</td>'
+          +'<td>'+funcDepto(ev.funcId)+'</td>'
           +'<td>'+nomeTipo(ev.tipoId)+'</td>'
           +'<td>'+(ev.titulo||'—')+'</td>'
           +'<td>'+(ev.resp||'—')+'</td>'
@@ -1769,13 +1771,13 @@ function exportEvtTipoExcel(){
   if(typeof XLSX==='undefined'){ toast('Biblioteca de exportação ainda carregando, tente novamente.','err'); return; }
   var evs=coletarEvtTipo();
   if(!evs.length){ toast('Nada para exportar com os filtros atuais.','warn'); return; }
-  var aoa=[['Data','Funcionário','Tipo','Título','Responsável','Observação']];
+  var aoa=[['Data','Funcionário','Departamento','Tipo','Título','Responsável','Observação']];
   evs.forEach(function(ev){
-    aoa.push([fmtDate(ev.data), funcNome(ev.funcId), nomeTipo(ev.tipoId), ev.titulo||'', ev.resp||'', ev.obs||'']);
+    aoa.push([fmtDate(ev.data), funcNome(ev.funcId), funcDepto(ev.funcId), nomeTipo(ev.tipoId), ev.titulo||'', ev.resp||'', ev.obs||'']);
   });
   var wb=XLSX.utils.book_new();
   var ws=XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols']=[{wch:12},{wch:30},{wch:28},{wch:34},{wch:20},{wch:44}];
+  ws['!cols']=[{wch:12},{wch:30},{wch:24},{wch:28},{wch:34},{wch:20},{wch:44}];
   XLSX.utils.book_append_sheet(wb, ws, 'Eventos');
   var tipoSel=document.getElementById('rel-evt-tipo').value;
   var nomeArq='eventos_'+(tipoSel||'todos')+'_'+new Date().toISOString().slice(0,10)+'.xlsx';

@@ -585,6 +585,17 @@ var TIPOS_DEFAULT = [
 
 var _funcs    = [];
 var _abaDossie = 'ativos'; // 'ativos' | 'desligados'
+
+// ════ UNIFICAÇÃO DE EMPRESAS (só exibição/filtro — não altera dados) ════
+var _EMPRESAS_CANON = [
+  { canon:'NEVES QUEIROZ ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA',
+    aliases:['NEVES QUEIROZ ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA','NOVA ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA'] },
+  { canon:'RAGUIFE INDUSTRIA E COMERCIO DE RACOES LTDA',
+    aliases:['RAGUIFE INDUSTRIA E COMERCIO DE RACOES LTDA','RAGUIFE INDUSTRIA E COMERCIO DE RACOES'] },
+];
+function _normEmp(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
+var _EMP_LOOKUP = (function(){ var m={}; _EMPRESAS_CANON.forEach(function(g){ g.aliases.forEach(function(a){ m[_normEmp(a)]=g.canon; }); }); return m; })();
+function canonEmpresa(nome){ if(!nome) return nome; return _EMP_LOOKUP[_normEmp(nome)] || nome; }
 var _eventos  = [];
 var _tipos    = [];
 var _funcAtivo = null;
@@ -783,7 +794,7 @@ function renderLista() {
   var selEmp = document.getElementById('f-empresa');
   if (selEmp && selEmp.options.length <= 1) {
     var emps = {};
-    _funcs.forEach(function(f){ if(f.empresa) emps[f.empresa]=1; });
+    _funcs.forEach(function(f){ if(f.empresa) emps[canonEmpresa(f.empresa)]=1; });
     Object.keys(emps).sort().forEach(function(e){
       var o=document.createElement('option'); o.value=e; o.textContent=e; selEmp.appendChild(o);
     });
@@ -795,7 +806,7 @@ function renderLista() {
   // Contagem por aba (respeitando busca + empresa)
   var visiveis = _funcs.filter(function(f){
     if (q && !(f.nome||'').toLowerCase().includes(q) && !(f.cargo||'').toLowerCase().includes(q) && !(f.empresa||'').toLowerCase().includes(q)) return false;
-    if (fe && !(f.empresa||'').toUpperCase().includes(fe.split(' ')[0].toUpperCase())) return false;
+    if (fe && canonEmpresa(f.empresa) !== fe) return false;
     return true;
   });
   var nAtivos=visiveis.filter(function(f){return!isDeslig(f);}).length;
@@ -827,9 +838,9 @@ function renderLista() {
       +'<div class="func-avatar">'+iniciais(f.nome)+'</div>'
       +'<div class="func-info">'
       +'<div class="func-nome">'+f.nome+'</div>'
-      +'<div class="func-meta">'+(f.cargo||'')+(f.empresa?' · '+f.empresa:'')+(f.admissao?' · Admissão: '+fmtDate(f.admissao):'')+'</div>'
+      +'<div class="func-meta">'+(f.cargo||'')+(f.empresa?' · '+canonEmpresa(f.empresa):'')+(f.admissao?' · Admissão: '+fmtDate(f.admissao):'')+'</div>'
       +'<div class="func-badge">'
-      +(f.empresa?'<span class="tag-emp">'+f.empresa+'</span>':'')
+      +(f.empresa?'<span class="tag-emp">'+canonEmpresa(f.empresa)+'</span>':'')
       +(f.desligado||f.status==='desligado'?'<span class="badge b-red">Desligado</span>':'<span class="badge b-green">Ativo</span>')
       +(isAdm?'<span class="badge b-amber">via Admissão</span>':'<span class="badge b-gray">Manual</span>')
       +'</div></div>'
@@ -854,7 +865,7 @@ function renderDossie(f) {
     '<div class="dossie-avatar">'+iniciais(f.nome)+'</div>'
     +'<div style="flex:1">'
     +'<div class="dossie-nome">'+f.nome+'</div>'
-    +'<div class="dossie-meta">'+(f.cargo||'')+(f.empresa?' · '+f.empresa:'')+(f.departamento?' · '+f.departamento:'')+(f.admissao?' · Admissão: '+fmtDate(f.admissao):'')+'</div>'
+    +'<div class="dossie-meta">'+(f.cargo||'')+(f.empresa?' · '+canonEmpresa(f.empresa):'')+(f.departamento?' · '+f.departamento:'')+(f.admissao?' · Admissão: '+fmtDate(f.admissao):'')+'</div>'
     +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
     +(isDeslig?'<span class="badge b-red">Desligado'+(f.desligadoEm?' · '+fmtDate((f.desligadoEm||'').split('T')[0]):'')+'</span>':'<span class="badge b-green">Ativo</span>')
     +(f.matricula?'<span class="badge b-gray">Mat. '+f.matricula+'</span>':'')

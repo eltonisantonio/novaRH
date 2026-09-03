@@ -166,7 +166,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="filters">
         <button class="tab-btn active" id="tab-ativos" onclick="setTabAtivos('ativos',this)">Em experiência</button>
         <button class="tab-btn" id="tab-efetivados" onclick="setTabAtivos('efetivados',this)">Efetivados</button>
-        <button class="tab-btn" id="tab-alteracoes" onclick="setTabAtivos('alteracoes',this)">Com alteração</button>
+        <button class="tab-btn" id="tab-desligados" onclick="setTabAtivos('desligados',this)">Desligados</button>
         <div class="search-wrap">
           <i class="ti ti-search"></i>
           <input class="search-input" type="text" id="f-busca" placeholder="Buscar por nome..." oninput="renderFuncs()">
@@ -262,7 +262,6 @@ var db = firebase.firestore();
 
 var _funcs    = [];
 var _expData  = {}; // {funcId: {checks:{}}}
-var _dossieEventos = []; // eventos do Dossiê (para detectar alterações na experiência)
 var _cfg      = {videos:[], contatos:[]};
 var _tabAtiva = 'ativos';
 var _funcAtivoId = null;
@@ -296,29 +295,6 @@ function mesAlteracaoSalario(expFim){
   return nomes[prox.getMonth()]+'/'+prox.getFullYear();
 }
 
-// ════ ALTERAÇÕES DURANTE A EXPERIÊNCIA ════
-// Detecta promoções/movimentações (cargo, setor, salário) registradas no Dossiê
-// dentro da janela da experiência (admissão → admissão+90d).
-function alteracoesExp(f){
-  if(!f || !f.admissao) return [];
-  var fim = addDays(f.admissao,90);
-  return _dossieEventos.filter(function(e){
-    if(e.funcId!==f.id) return false;
-    if(e.tipoId!=='promocao') return false;
-    var dt=String(e.data||'');
-    return dt>=f.admissao && dt<=fim;
-  }).sort(function(a,b){return String(a.data||'').localeCompare(String(b.data||''));});
-}
-function temAlteracaoExp(f){ return alteracoesExp(f).length>0; }
-function descAlteracao(e){
-  var partes=[];
-  var sub=String(e.titulo||'').split(' · ')[0].trim();
-  if(sub) partes.push(sub);
-  if(e.cargoNovo) partes.push('Cargo: '+e.cargoNovo);
-  if(e.setorNovo) partes.push('Setor: '+e.setorNovo);
-  return partes.join(' · ') || (e.titulo||'Alteração');
-}
-
 // ════ LISTENERS ════
 function iniciarListeners(){
   db.collection('adm_processos').onSnapshot(function(snap){
@@ -331,7 +307,8 @@ function iniciarListeners(){
         if (parts.length === 3) adm = parts[2]+'-'+parts[1].padStart(2,'0')+'-'+parts[0].padStart(2,'0');
       }
       return {id:'adm_'+d.id,_admId:d.id,nome:dd.nome||'',cargo:dd.cargo||'',empresa:dd.empresa||'',
-        departamento:dd.estrutura||'',admissao:adm,status:p.status,temAlteracao:false};
+        departamento:dd.estrutura||'',admissao:adm,status:p.status,temAlteracao:false,
+        desligado:!!p.desligado,desligadoEm:p.desligadoEm||''};
     }).filter(function(f){return !!f.admissao;});
     _funcs=admFuncs;
     renderLista();
@@ -339,10 +316,6 @@ function iniciarListeners(){
   db.collection('exp_data').onSnapshot(function(snap){
     _expData={};
     snap.docs.forEach(function(d){_expData[d.id]=d.data();});
-    renderLista();
-  });
-  db.collection('dossie_eventos').onSnapshot(function(snap){
-    _dossieEventos=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
     renderLista();
   });
   db.collection('exp_cfg').doc('config').onSnapshot(function(doc){
@@ -365,8 +338,9 @@ function setTabAtivos(tab,el){
   renderFuncs();
 }
 
-function getFuncsEmExp(){return _funcs.filter(function(f){return f.admissao&&diasRestantes(f.admissao)>0;});}
-function getFuncsEfetivados(){return _funcs.filter(function(f){return f.admissao&&diasRestantes(f.admissao)<=0;});}
+function getFuncsEmExp(){return _funcs.filter(function(f){return f.admissao&&!f.desligado&&diasRestantes(f.admissao)>0;});}
+function getFuncsEfetivados(){return _funcs.filter(function(f){return f.admissao&&!f.desligado&&diasRestantes(f.admissao)<=0;});}
+function getFuncsDesligados(){return _funcs.filter(function(f){return f.admissao&&f.desligado;});}
 
 function getAlertas(f){
   var exp=_expData[f.id]||{checks:{}};
@@ -399,6 +373,9 @@ function renderLista(){
   document.getElementById('st-pend').textContent=pend;
   document.getElementById('st-efet').textContent=efetivados_mes(efetiv);
   document.getElementById('st-cap').textContent=cap;
+  var nDesl=getFuncsDesligados().length;
+  var tabDesl=document.getElementById('tab-desligados');
+  if(tabDesl)tabDesl.textContent='Desligados'+(nDesl?' ('+nDesl+')':'');
   renderFuncs();
 }
 
@@ -426,9 +403,7 @@ function renderFuncs(){
     });
   }
 
-  var base = _tabAtiva==='ativos' ? getFuncsEmExp()
-           : _tabAtiva==='efetivados' ? getFuncsEfetivados()
-           : _funcs.filter(temAlteracaoExp);
+  var base=_tabAtiva==='desligados'?getFuncsDesligados():(_tabAtiva==='ativos'?getFuncsEmExp():getFuncsEfetivados());
   var lista=base.filter(function(f){
     if (emp   && f.empresa !== emp) return false;
     if (setor && (f.departamento||'') !== setor) return false;
@@ -446,29 +421,22 @@ function renderFuncs(){
     var dr=diasRestantes(f.admissao);
     var pct=Math.min(100,Math.round(dd/90*100));
     var alertas=getAlertas(f);
-    var alts=alteracoesExp(f);
-    var statusBadge=dr>0
+    var statusBadge=f.desligado
+      ?'<span class="badge badge-gray"><i class="ti ti-user-off" style="font-size:9px"></i> Desligado'+(f.desligadoEm?' · '+fmtDate((f.desligadoEm||'').split('T')[0]):'')+'</span>'
+      :dr>0
       ?(dr<=5?'<span class="badge badge-red">Vence em '+dr+'d</span>'
         :dr<=15?'<span class="badge badge-amber">'+dr+'d restantes</span>'
         :'<span class="badge badge-lime">'+dr+'d restantes</span>')
       :'<span class="badge badge-lime">Efetivado</span>';
-    var detAlt = (_tabAtiva==='alteracoes' && alts.length)
-      ? '<div style="margin-top:6px;font-size:11px;color:#7d4e00;background:#fef8ec;border:1px solid #f0d080;border-radius:6px;padding:6px 9px">'
-        + alts.map(function(e){ return '<div><i class="ti ti-arrow-up-circle" style="font-size:10px"></i> '+fmtDate(e.data)+' — '+descAlteracao(e)+'</div>'; }).join('')
-        + '</div>'
-      : '';
     return '<div class="func-card" data-func-id="'+f.id+'">'
       +'<div class="func-top">'
       +'<div><div class="func-nome">'+f.nome+'</div>'
       +'<div class="func-meta">'+(f.cargo||'')+(f.empresa?' · '+f.empresa:'')+(f.admissao?' · Admissão: '+fmtDate(f.admissao):'')+'</div>'
       +'<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'
       +statusBadge
-      +(alertas.length?'<span class="alert-badge"><i class="ti ti-alert-triangle" style="font-size:9px"></i> '+alertas.length+' pendência'+(alertas.length!==1?'s':'')+'</span>':'')
-      +(alts.length?'<span class="badge badge-amber"><i class="ti ti-arrow-up-circle" style="font-size:9px"></i> Alteração na experiência</span>':'')
+      +(!f.desligado&&alertas.length?'<span class="alert-badge"><i class="ti ti-alert-triangle" style="font-size:9px"></i> '+alertas.length+' pendência'+(alertas.length!==1?'s':'')+'</span>':'')
       +'<span class="badge-empresa">'+f.empresa+'</span>'
-      +'</div>'
-      +detAlt
-      +'</div></div>'
+      +'</div></div></div>'
       +'<div class="func-footer">'
       +'<span style="font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap">Dia '+Math.min(90,dd)+' de 90</span>'
       +'<div class="progress-wrap"><div class="progress-fill" style="width:'+pct+'%"></div></div>'
@@ -523,13 +491,11 @@ function renderDetalhe(){
     +'<div class="det-progress"><div class="det-progress-fill" style="width:'+pct+'%"></div></div>'
     +'</div>';
 
-  var altsExp=alteracoesExp(f);
-  if(altsExp.length){
+  if(f.temAlteracao){
     var mes=mesAlteracaoSalario(expFim);
     var d=new Date(expFim+'T12:00:00');
     var regra=d.getDate()<=15?'vence até dia 15 — alteração no mesmo mês':'vence após dia 15 — alteração no mês seguinte';
-    var listaAlt=altsExp.map(function(e){ return '<div style="margin-top:3px">• '+fmtDate(e.data)+' — '+descAlteracao(e)+'</div>'; }).join('');
-    html+='<div class="notice notice-amber"><i class="ti ti-alert-triangle"></i><span><strong>Alteração na experiência.</strong> Alteração de cargo/salário registrada durante o período. Competência DP: '+mes+' ('+regra+').'+listaAlt+'</span></div>';
+    html+='<div class="notice notice-amber"><i class="ti ti-alert-triangle"></i><span><strong>Alerta DP:</strong> Alteração de cargo/salário na efetivação. Competência: '+mes+' ('+regra+').</span></div>';
   }
 
   html+='<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px">Linha do tempo</div>';

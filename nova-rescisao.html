@@ -206,6 +206,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         <div class="stat-card s-amber"><div class="stat-label">Pendências</div><div class="stat-value" id="st-pend">0</div><div class="stat-sub">itens não concluídos</div></div>
         <div class="stat-card s-black"><div class="stat-label">Finalizados</div><div class="stat-value" id="st-fin">0</div><div class="stat-sub">este mês</div></div>
       </div>
+      <div class="setor-tabs" id="lista-abas" style="margin-bottom:14px"></div>
       <div id="lista-procs"></div>
     </div>
 
@@ -446,6 +447,7 @@ var _setor     = null;
 var _procAtual = null;
 var _setorTab  = null;
 var _selSetor  = null;
+var _abaLista  = 'ativos'; // 'ativos' | 'concluidos'
 
 function toast(msg,tp){var el=document.getElementById('toast');el.textContent=msg;el.className='toast '+(tp||'');el.classList.add('show');setTimeout(function(){el.classList.remove('show');},2800);}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
@@ -538,8 +540,6 @@ function entrarSetor(){
 
 // ════ LISTENERS ════
 var _funcAtivos = []; // funcionários da Admissão
-var _dossieFuncs = []; // cadastro manual do Dossiê
-var _dossieEventos = []; // eventos do Dossiê (inclui promoções)
 
 function iniciarListeners(){
   // Funcionários ativos da Admissão
@@ -548,18 +548,9 @@ function iniciarListeners(){
       var p=d.data(), dd=p.dados||{};
       var adm=dd.admissao||'';
       if(adm&&adm.includes('/')){var pts=adm.split('/');if(pts.length===3)adm=pts[2]+'-'+pts[1].padStart(2,'0')+'-'+pts[0].padStart(2,'0');}
-      return {id:'adm_'+d.id, nome:dd.nome||'', cargo:dd.cargo||'', setor:dd.estrutura||dd.setor||dd.departamento||'', empresa:dd.empresa||'', admissao:adm};
+      return {id:'adm_'+d.id, nome:dd.nome||'', cargo:dd.cargo||'', empresa:dd.empresa||'', admissao:adm};
     }).filter(function(f){return !!f.nome;});
     _funcAtivos.sort(function(a,b){return (a.nome||'').localeCompare(b.nome||'');});
-    if(document.getElementById('view-lista').style.display!=='none')renderLista();
-  });
-  db.collection('dossie_funcs').onSnapshot(function(snap){
-    _dossieFuncs = snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-    if(document.getElementById('view-lista').style.display!=='none')renderLista();
-  });
-  db.collection('dossie_eventos').onSnapshot(function(snap){
-    _dossieEventos = snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
-    if(document.getElementById('view-lista').style.display!=='none')renderLista();
   });
   db.collection('rescisao_processos').onSnapshot(function(snap){
     _processos=snap.docs.map(function(d){return Object.assign({id:d.id},d.data());});
@@ -638,33 +629,45 @@ function logout(){
 }
 
 // ════ LISTA ════
+function setAbaLista(aba){_abaLista=aba;renderLista();}
+
 function renderLista(){
   var ativos=_processos.filter(function(p){return!p.finalizado;});
-  var fin=_processos.filter(function(p){return p.finalizado;}).length;
+  var concluidos=_processos.filter(function(p){return p.finalizado;});
   var urgentes=ativos.filter(function(p){return prazoInfo(p.deslig).cls.includes('red');}).length;
   var pendentes=ativos.reduce(function(s,p){var pr=progress(p);return s+(pr.total-pr.done);},0);
 
   document.getElementById('st-ativos').textContent=ativos.length;
   document.getElementById('st-urgentes').textContent=urgentes;
   document.getElementById('st-pend').textContent=pendentes;
-  document.getElementById('st-fin').textContent=fin;
+  document.getElementById('st-fin').textContent=concluidos.length;
 
+  // Abas Em andamento / Concluídos
+  document.getElementById('lista-abas').innerHTML=
+    '<button class="setor-tab'+(_abaLista==='ativos'?' active':'')+'" onclick="setAbaLista(\'ativos\')"><i class="ti ti-clock" style="font-size:13px;vertical-align:-2px;margin-right:3px"></i>Em andamento ('+ativos.length+')</button>'
+    +'<button class="setor-tab'+(_abaLista==='concluidos'?' active':'')+'" onclick="setAbaLista(\'concluidos\')"><i class="ti ti-circle-check" style="font-size:13px;vertical-align:-2px;margin-right:3px"></i>Concluídos ('+concluidos.length+')</button>';
+
+  var lista=_abaLista==='concluidos'?concluidos:ativos;
   var el=document.getElementById('lista-procs');
-  if(!_processos.length){el.innerHTML='<div class="empty"><i class="ti ti-file-minus"></i><p>Nenhum processo de rescisão. Clique em "Novo Processo" para começar.</p></div>';return;}
+
+  if(!lista.length){
+    var msg=_abaLista==='concluidos'?'Nenhuma rescisão concluída ainda.':'Nenhum processo em andamento. Clique em "Novo Processo" para começar.';
+    el.innerHTML='<div class="empty"><i class="ti ti-file-minus"></i><p>'+msg+'</p></div>';return;
+  }
 
   el.onclick=function(e){var c=e.target.closest('[data-proc-id]');if(c)abrirChecklist(c.dataset.procId);};
-  el.innerHTML=_processos.map(function(p){
+  el.innerHTML=lista.map(function(p){
     var pi=prazoInfo(p.deslig);
     var pr=progress(p);
     return '<div class="proc-card" data-proc-id="'+p.id+'">'
       +'<div class="proc-top">'
       +'<div><div class="proc-nome">'+p.nome+'</div>'
-      +'<div class="proc-meta">'+metaCargoSetor(p)+(p.empresa?' · '+p.empresa:'')+(p.deslig?' · Desligamento: '+fmtDate(p.deslig):'')+'</div></div>'
+      +'<div class="proc-meta">'+(p.cargo||'')+(p.empresa?' · '+p.empresa:'')+(p.deslig?' · Desligamento: '+fmtDate(p.deslig):'')+'</div></div>'
       +'<span class="badge '+(p.finalizado?'b-green':'b-amber')+'">'+(p.finalizado?'Finalizado':'Em andamento')+'</span>'
       +'</div>'
       +'<div class="proc-footer">'
       +(p.empresa?'<span class="tag-emp">'+p.empresa+'</span>':'')
-      +'<span class="badge '+pi.cls+'">'+pi.lbl+'</span>'
+      +(p.finalizado?'':'<span class="badge '+pi.cls+'">'+pi.lbl+'</span>')
       +'<div style="flex:1"></div>'
       +'<span style="font-size:11px;font-weight:600;color:var(--text2)">'+pr.done+'/'+pr.total+'</span>'
       +'<div class="progress-wrap"><div class="progress-fill" style="width:'+pr.pct+'%"></div></div>'
@@ -707,13 +710,15 @@ function renderChecklist(){
   var html='<div class="proc-header">'
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
     +'<div><div class="proc-nome-det">'+p.nome+'</div>'
-    +'<div class="proc-meta-det">'+metaCargoSetor(p)+(p.empresa?' · '+p.empresa:'')+'</div>'
+    +'<div class="proc-meta-det">'+(p.cargo||'')+(p.empresa?' · '+p.empresa:'')+'</div>'
     +'<div class="proc-meta-det">Desligamento: '+fmtDate(p.deslig)+' · Tipo: '+(p.tipo||'—').replace(/_/g,' ')+'</div>'
     +(p.tipo==='termino_experiencia'&&(p.expTipo||p.expIniciativa)?'<div class="proc-meta-det"><span class="badge b-amber" style="margin-right:6px">Experiência: '+(p.expTipo==='antecipado'?'Antecipado':'Normal')+'</span><span class="badge b-gray">Iniciativa: '+(p.expIniciativa==='empregado'?'Empregado':'Empregador')+'</span></div>':'')
     +'</div>'
     +'<div style="text-align:right"><div style="font-size:28px;font-weight:900;color:var(--lime)">'+pr.pct+'%</div>'
     +'<div style="font-size:11px;color:rgba(242,238,229,.6)">'+pr.done+'/'+pr.total+' itens</div></div></div>'
-    +'<span class="prazo-badge '+pi.cls+'">'+pi.lbl+'</span>'
+    +(p.finalizado
+      ?'<span class="prazo-badge al-green"><i class="ti ti-circle-check"></i> Finalizado'+((p.homologacao&&p.homologacao.data)?' · homologado em '+fmtDate(p.homologacao.data):'')+'</span>'
+      :'<span class="prazo-badge '+pi.cls+'">'+pi.lbl+'</span>')
     +'</div>';
 
   // Tabs de setor
@@ -1011,52 +1016,6 @@ function excluirProcesso(){
 }
 
 // ════ NOVO PROCESSO ════
-// ════ RESOLVER CARGO/SETOR ATUAL (fonte: Dossiê) ════
-// Aplica as promoções/movimentações registradas no Dossiê sobre o cargo/setor base.
-// A promoção mais recente (por data) com valor preenchido prevalece, por campo.
-function aplicarPromocoes(funcId, baseCargo, baseSetor){
-  var cargo = baseCargo||'', setor = baseSetor||'';
-  if(funcId){
-    _dossieEventos
-      .filter(function(e){return e.funcId===funcId && e.tipoId==='promocao';})
-      .sort(function(a,b){return String(a.data||'').localeCompare(String(b.data||''));})
-      .forEach(function(e){
-        if(e.cargoNovo) cargo = e.cargoNovo;
-        if(e.setorNovo) setor = e.setorNovo;
-      });
-  }
-  return {cargo:cargo, setor:setor, funcId:funcId||''};
-}
-
-// Resolve o cargo/setor atual de um funcionário identificado por nome
-function resolverCargoSetorPorNome(nome){
-  var alvo=(nome||'').trim().toUpperCase();
-  if(!alvo) return null;
-  var fa=_funcAtivos.find(function(f){return (f.nome||'').trim().toUpperCase()===alvo;});
-  if(fa) return aplicarPromocoes(fa.id, fa.cargo, fa.setor);
-  var fm=_dossieFuncs.find(function(f){return (f.nome||'').trim().toUpperCase()===alvo;});
-  if(fm) return aplicarPromocoes(fm.id, fm.cargo||'', fm.departamento||fm.setor||'');
-  return null;
-}
-
-// Cargo/setor a exibir para um processo: prioriza o atual do Dossiê; cai no congelado
-function cargoSetorDoProcesso(p){
-  var atual = resolverCargoSetorPorNome(p.nome);
-  if(atual && (atual.cargo || atual.setor)) {
-    return {cargo: atual.cargo||p.cargo||'', setor: atual.setor||p.setor||'', mudou: !!(p.cargo && atual.cargo && atual.cargo!==p.cargo)};
-  }
-  return {cargo:p.cargo||'', setor:p.setor||'', mudou:false};
-}
-
-// Monta a string de meta (cargo · setor) com aviso opcional de alteração
-function metaCargoSetor(p){
-  var cs=cargoSetorDoProcesso(p);
-  var txt = cs.cargo||'';
-  if(cs.setor) txt += (txt?' · ':'')+cs.setor;
-  if(cs.mudou) txt += ' <span class="badge b-amber" style="margin-left:4px" title="Cargo na admissão: '+(p.cargo||'')+'">atual</span>';
-  return txt;
-}
-
 function openNovoProcesso(){
   popularSelectPerfis();
   // Popular select de funcionários
@@ -1080,21 +1039,17 @@ function openNovoProcesso(){
   openModal('modal-proc');
 }
 
-var _novoProcMeta = {funcId:'', setor:''};
 function preencherDadosFunc(val){
   var manual = val==='__manual__';
   document.getElementById('bloco-nome-manual').style.display = manual?'block':'none';
-  _novoProcMeta = {funcId:'', setor:''};
   if(!val||manual){
     if(manual){document.getElementById('np2-nome').value='';document.getElementById('np2-cargo').value='';document.getElementById('np2-empresa').value='';}
     return;
   }
   var f=_funcAtivos.find(function(x){return x.id===val;});
   if(!f)return;
-  var cs=aplicarPromocoes(f.id, f.cargo, f.setor);
-  document.getElementById('np2-cargo').value=cs.cargo||'';
+  document.getElementById('np2-cargo').value=f.cargo||'';
   document.getElementById('np2-empresa').value=f.empresa||'';
-  _novoProcMeta = {funcId:f.id, setor:cs.setor||''};
 }
 
 function onTipoDesligChange(){
@@ -1121,15 +1076,12 @@ function criarProcesso(){
     if(!expTipo||!expIniciativa){toast('Informe o Tipo e a Iniciativa do término de experiência.','err');return;}
   }
   var perfilId=document.getElementById('np2-perfil').value;
-  var resolved = _novoProcMeta.funcId ? _novoProcMeta : (resolverCargoSetorPorNome(nome)||{funcId:'',setor:''});
   var docRef=db.collection('rescisao_processos').doc();
   docRef.set({
     id:docRef.id,
     criadoEm:new Date().toISOString(),
     nome:nome,
     cargo:(document.getElementById('np2-cargo').value||'').trim().toUpperCase(),
-    setor:resolved.setor||'',
-    funcId:resolved.funcId||'',
     empresa:document.getElementById('np2-empresa').value,
     deslig:deslig,
     tipo:tipoDeslig,

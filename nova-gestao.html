@@ -359,6 +359,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
           <select class="fs" id="m-motivo">
             <option value="">Selecione...</option>
             <option>PROMOÇÃO</option>
+            <option>EFETIVAÇÃO</option>
             <option>MOV. LATERAL</option>
             <option>READAPTAÇÃO</option>
             <option>AJUSTE EXCEPCIONAL</option>
@@ -630,6 +631,29 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
   </div>
 </div>
 
+<!-- ═══════ MODAL CONCLUIR MOVIMENTAÇÃO ═══════ -->
+<div class="overlay" id="modal-concluir">
+  <div class="modal modal-sm">
+    <div class="modal-h"><span class="modal-title">Concluir movimentação</span><button class="btn-icon" onclick="closeModal('modal-concluir')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div style="font-size:13px;font-weight:700;margin-bottom:14px" id="cc-resumo"></div>
+      <div class="fgrid">
+        <div class="fg"><label class="fl">Data da conclusão *</label><input class="fi" type="date" id="cc-data"></div>
+        <div class="fg"><label class="fl">Responsável *</label><input class="fi" type="text" id="cc-resp"></div>
+      </div>
+      <div class="fg"><label class="fl">Observações</label><textarea class="ft" id="cc-obs" rows="2" placeholder="Opcional"></textarea></div>
+      <div class="notice notice-amber" style="margin-bottom:0"><i class="ti ti-info-circle"></i><span>Marca a movimentação como <strong>concluída</strong> (mesmo status da baixa do DP). Ela sai de <strong>Aguardando DP</strong>. Para reabrir, use a aba <strong>Relatório para o DP</strong>.</span></div>
+    </div>
+    <div class="modal-f">
+      <div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeModal('modal-concluir')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarConcluirMov()"><i class="ti ti-check"></i> Concluir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -665,7 +689,7 @@ var _auxEditId = null;
 var _efetFuncId = null;
 var _usuario = null;
 
-var MOTIVOS = ['PROMOÇÃO','MOV. LATERAL','READAPTAÇÃO','AJUSTE EXCEPCIONAL','RECRUTAMENTO INTERNO'];
+var MOTIVOS = ['PROMOÇÃO','EFETIVAÇÃO','MOV. LATERAL','READAPTAÇÃO','AJUSTE EXCEPCIONAL','RECRUTAMENTO INTERNO'];
 
 // Nos indicadores, admissões anteriores a esta data não entram na conta de
 // previsão/efetivação — antes disso não havia controle, e distorceriam o percentual.
@@ -917,7 +941,7 @@ function renderMovs(){
   var el=document.getElementById('lista-movs');
   if(!lista.length){el.innerHTML='<div class="empty"><i class="ti ti-arrows-exchange"></i><p>Nenhuma movimentação encontrada.</p></div>';return;}
 
-  el.onclick=function(e){var c=e.target.closest('[data-mov-id]');if(c)editarMov(c.dataset.movId);};
+  el.onclick=function(e){var b=e.target.closest('[data-concluir-id]');if(b){e.stopPropagation();abrirConcluirMov(b.dataset.concluirId);return;}var c=e.target.closest('[data-mov-id]');if(c)editarMov(c.dataset.movId);};
   el.innerHTML=lista.map(function(m){
     var pend=pendenciasMov(m);
     var badges='<span class="badge badge-blue">'+esc(m.motivo||'—')+'</span>';
@@ -944,8 +968,32 @@ function renderMovs(){
       +'<div class="mov-box"><span>Para</span><b>'+esc(m.cargoNovo||'—')+'</b> · '+esc(m.deptoNovo||'—')+' · '+salNovo+'</div>'
       +'</div>'
       +(m.obs?'<div style="font-size:11px;color:var(--text3);margin-top:8px"><i class="ti ti-note" style="font-size:11px;vertical-align:-2px"></i> '+esc(m.obs)+'</div>':'')
+      +(dpStatus(m)!=='AJUSTADO'
+        ?'<div style="display:flex;justify-content:flex-end;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)"><button class="btn btn-sm btn-primary" data-concluir-id="'+m.id+'"><i class="ti ti-check"></i> Concluir</button></div>'
+        :'')
       +'</div>';
   }).join('');
+}
+
+var _concluirMovId=null;
+function abrirConcluirMov(id){
+  var m=_movs.filter(function(x){return x.id===id;})[0];
+  if(!m)return;
+  _concluirMovId=id;
+  document.getElementById('cc-resumo').textContent=m.nome+' · '+(m.motivo||'Movimentação')+' · Comp. '+fmtComp(m.competencia);
+  setVal('cc-data',today());
+  setVal('cc-resp',_usuario?_usuario.nome:'');
+  setVal('cc-obs','');
+  openModal('modal-concluir');
+}
+function salvarConcluirMov(){
+  if(!_concluirMovId)return;
+  var data=val('cc-data'),resp=val('cc-resp');
+  if(!data||!resp){toast('Informe data e responsável.','err');return;}
+  var dp={status:'AJUSTADO',data:data,responsavel:resp,compFolha:'',obs:val('cc-obs')};
+  db.collection('gp_movs').doc(_concluirMovId).set({dp:dp},{merge:true})
+    .then(function(){toast('Movimentação concluída.','ok');closeModal('modal-concluir');_concluirMovId=null;})
+    .catch(function(e){toast('Erro: '+e.message,'err');});
 }
 
 function toggleRisco(){

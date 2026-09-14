@@ -157,6 +157,29 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .badge-talent{background:#f0ffe0;color:#3a5c00;border:1px solid #c0e840;}
 .perfil-row{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--s2);border-radius:var(--r);margin-bottom:6px;border:1px solid var(--border);}
 .perfil-nome{flex:1;font-weight:700;font-size:13px;}
+/* TABELA DE VAGAS */
+.rs-table-wrap{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow-x:auto;}
+.rs-table{width:100%;border-collapse:collapse;font-size:13px;}
+.rs-table thead th{text-align:left;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);padding:11px 14px;border-bottom:1px solid var(--border);white-space:nowrap;background:var(--s2);position:sticky;top:0;}
+.rs-table tbody td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.rs-table tbody tr{cursor:pointer;transition:background .12s;}
+.rs-table tbody tr:hover{background:var(--s2);}
+.rs-table tbody tr:last-child td{border-bottom:none;}
+.rs-table tr.enc td{opacity:.5;}
+.rs-table tr.pau td:first-child{box-shadow:inset 3px 0 0 var(--gold);}
+.rs-table tr.bt td:first-child{box-shadow:inset 3px 0 0 var(--lime);}
+.rs-code{font-size:11px;font-weight:700;color:var(--text2);white-space:nowrap;}
+.rs-cargo{font-weight:700;letter-spacing:-.1px;}
+.rs-esc{color:var(--text2);font-weight:600;}
+.rs-cands{font-weight:700;text-align:center;}
+.rs-muted{color:var(--text3);font-weight:500;}
+.rs-actions{text-align:right;white-space:nowrap;}
+/* PAINEL DE DETALHES DA VAGA */
+.vd-sec{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:var(--text3);padding:16px 0 2px;}
+.vd-sec:first-child{padding-top:0;}
+.vd-row{display:flex;justify-content:space-between;gap:16px;padding:9px 0;border-bottom:1px solid var(--border);font-size:13px;}
+.vd-l{color:var(--text2);font-weight:600;flex-shrink:0;}
+.vd-v{text-align:right;font-weight:600;word-break:break-word;}
 </style>
 </head>
 <body>
@@ -311,6 +334,26 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
   </div>
 </div>
 
+<!-- MODAL DETALHES DA VAGA -->
+<div class="modal-overlay" id="modal-vagadet">
+  <div class="modal" style="width:520px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="vd-title">—</div>
+        <div style="font-size:12px;color:var(--text2);font-weight:500;margin-top:2px" id="vd-sub">—</div>
+      </div>
+      <button class="btn-icon" onclick="closeModal('modal-vagadet')"><i class="ti ti-x"></i></button>
+    </div>
+    <div class="modal-body" id="vd-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-sm" onclick="exportarVagaExcel(vagaDetId)"><i class="ti ti-file-spreadsheet"></i> Exportar</button>
+      <div style="flex:1"></div>
+      <button class="btn" onclick="closeModal('modal-vagadet')">Fechar</button>
+      <button class="btn btn-primary" onclick="verFunilDaVaga()"><i class="ti ti-layout-kanban"></i> Ver funil de candidatos</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL CANDIDATO (edição completa) -->
 <div class="modal-overlay" id="modal-cand">
   <div class="modal" style="width:640px;">
@@ -433,6 +476,7 @@ var db = firebase.firestore();
 var _vagas   = [];
 var _eventos = [];
 var _perfis  = [];
+var _solEscalas = {}; // { solicitacaoId: escala } — escala vive na solicitação, não na vaga
 var PERFIS_DEFAULT = [
   {id:'p1',nome:'OPERACIONAL',sla:10},{id:'p2',nome:'MOTORISTA',sla:25},
   {id:'p3',nome:'MANUTENCAO',sla:45},{id:'p4',nome:'GESTAO',sla:30},
@@ -458,6 +502,20 @@ function iniciarListeners() {
     _perfis = snap.docs.map(function(d) { return Object.assign({id: d.id}, d.data()); });
     if (!_perfis.length) _perfis = PERFIS_DEFAULT;
   });
+  // Escala está na solicitação (não é copiada para a vaga). Mapeamos por solicitacaoId.
+  db.collection('solicitacoes').onSnapshot(function(snap) {
+    _solEscalas = {};
+    snap.docs.forEach(function(d) {
+      var s = d.data();
+      if (s && s.escala) _solEscalas[d.id] = s.escala;
+    });
+    if (document.getElementById('lista-vagas')) renderVagas();
+  }, function(e) { console.warn('[RS] solicitacoes:', e); });
+}
+
+// Escala efetiva de uma vaga: usa a própria vaga se existir, senão busca na solicitação vinculada.
+function vagaEscala(v) {
+  return (v && (v.escala || _solEscalas[v.solicitacaoId])) || '—';
 }
 
 // ════════════════════════════════════════════
@@ -533,6 +591,7 @@ var DB = {
 // STATE
 // ════════════════════════════════════════════
 var vagaAtivaId = null;
+var vagaDetId   = null;
 var candEditId  = null;
 var dragId      = null;
 var pendingTransition = {candId:null, toEtapa:null, vagaId:null};
@@ -643,7 +702,11 @@ function renderVagas() {
   var fs = document.getElementById('fs-vaga').value;
   var vagas = DB.vagas.getAll().filter(function(v) {
     if (v.isBancoTalentos) return false;
-    if (q && !(v.cargo||'').toLowerCase().includes(q) && !(v.empresa||'').toLowerCase().includes(q) && !(v.departamento||'').toLowerCase().includes(q)) return false;
+    if (q && !(v.cargo||'').toLowerCase().includes(q)
+          && !(v.empresa||'').toLowerCase().includes(q)
+          && !(v.departamento||'').toLowerCase().includes(q)
+          && !(v.codigo||'').toLowerCase().includes(q)
+          && !vagaEscala(v).toLowerCase().includes(q)) return false;
     if (fe && !(v.empresa||'').toUpperCase().includes(fe.split(' ')[0].toUpperCase())) return false;
     if (fs && v.status !== fs) return false;
     return true;
@@ -652,17 +715,22 @@ function renderVagas() {
 
   var bt = DB.vagas.getAll().find(function(v) { return v.isBancoTalentos; });
   var el = document.getElementById('lista-vagas');
-  var html = '';
-  if (bt && !q && !fe && !fs) html += vagaCard(bt);
-  if (!vagas.length && !html) {
+  var rows = '';
+  if (bt && !q && !fe && !fs) rows += vagaRow(bt);
+  rows += vagas.map(vagaRow).join('');
+  if (!rows) {
     el.innerHTML = '<div class="empty"><i class="ti ti-briefcase"></i><p>Nenhuma vaga encontrada.</p></div>';
     return;
   }
-  html += vagas.map(vagaCard).join('');
-  el.innerHTML = html;
+  el.innerHTML =
+    '<div class="rs-table-wrap"><table class="rs-table">'
+    + '<thead><tr>'
+    +   '<th>Código</th><th>Cargo</th><th>Departamento</th><th>Escala</th>'
+    +   '<th style="text-align:center">Candidatos</th><th>Status</th><th>Prazo</th><th></th>'
+    + '</tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 
-function vagaCard(v) {
+function vagaRow(v) {
   var pi = prazoInfo(v);
   var nAtivos = (v.candidatos||[]).filter(function(c) { return c.etapa < 7; }).length;
   var nInteg  = (v.candidatos||[]).filter(function(c) { return c.etapa === 6; }).length;
@@ -672,21 +740,66 @@ function vagaCard(v) {
     pausada:   '<span class="badge badge-amber">Pausada</span>',
     cancelada: '<span class="badge badge-cancel">Cancelada</span>',
   };
-  var cls = 'vaga-card'+(v.status!=='aberta'?' '+v.status:'')+(v.isBancoTalentos?' banco-talentos-card':'');
-  return '<div class="'+cls+'" onclick="abrirDetalhe(\''+v.id+'\')">'
-    +'<div class="vaga-top">'
-    +'<div><div class="vaga-cargo">'+(v.isBancoTalentos?'<i class="ti ti-star" style="color:var(--lime);margin-right:4px"></i>':'')+v.cargo+'</div>'
-    +'<div class="vaga-meta">'+(v.empresa||'')+(v.departamento?' · '+v.departamento:'')+(v.perfil?' · '+v.perfil:'')+'</div></div>'
-    +(statusBadge[v.status]||'')
-    +'</div>'
-    +'<div class="vaga-footer">'
-    +(v.codigo?'<span class="badge badge-gray"><i class="ti ti-hash" style="font-size:9px"></i> '+v.codigo+'</span>':'')
-    +'<span class="badge badge-gray"><i class="ti ti-users" style="font-size:9px"></i> '+nAtivos+' ativos</span>'
-    +(nInteg?'<span class="badge badge-lime"><i class="ti ti-check" style="font-size:9px"></i> '+nInteg+' integração</span>':'')
-    +(pi.label?'<span class="'+pi.cls+'" style="font-size:11px;font-weight:700">'+pi.label+'</span>':'')
-    +'<div style="flex:1"></div>'
-    +'<button class="btn btn-sm" onclick="event.stopPropagation();exportarVagaExcel(\''+v.id+'\')"><i class="ti ti-file-spreadsheet"></i></button>'
-    +'</div></div>';
+  var isBT = !!v.isBancoTalentos;
+  var trCls = isBT ? 'bt' : (v.status==='encerrada' ? 'enc' : (v.status==='pausada' ? 'pau' : ''));
+  var onclick = isBT ? "abrirDetalhe('"+v.id+"')" : "abrirVagaDetalhe('"+v.id+"')";
+  var cargoCell = (isBT ? '<i class="ti ti-star" style="color:var(--lime);margin-right:4px;vertical-align:-1px"></i>' : '') + (v.cargo||'—');
+  var integBadge = nInteg ? ' <span class="badge badge-lime" style="margin-left:4px;padding:1px 6px"><i class="ti ti-check" style="font-size:9px"></i> '+nInteg+'</span>' : '';
+  return '<tr class="'+trCls+'" onclick="'+onclick+'">'
+    + '<td class="rs-code">'+(v.codigo||'—')+'</td>'
+    + '<td class="rs-cargo">'+cargoCell+'</td>'
+    + '<td>'+(v.departamento||'<span class="rs-muted">—</span>')+'</td>'
+    + '<td class="rs-esc">'+vagaEscala(v)+'</td>'
+    + '<td class="rs-cands">'+nAtivos+integBadge+'</td>'
+    + '<td>'+(statusBadge[v.status]||statusBadge.aberta)+'</td>'
+    + '<td>'+(pi.label?'<span class="'+pi.cls+'" style="font-size:12px">'+pi.label+'</span>':'<span class="rs-muted">—</span>')+'</td>'
+    + '<td class="rs-actions"><button class="btn-icon" onclick="event.stopPropagation();exportarVagaExcel(\''+v.id+'\')" title="Exportar candidatos"><i class="ti ti-file-spreadsheet"></i></button></td>'
+    + '</tr>';
+}
+
+// ════════════════════════════════════════════
+// PAINEL DE DETALHES DA VAGA (clique na linha)
+// ════════════════════════════════════════════
+function abrirVagaDetalhe(id) {
+  var v = DB.vagas.getAll().find(function(x) { return x.id === id; });
+  if (!v) return;
+  if (v.isBancoTalentos) { abrirDetalhe(id); return; } // BT vai direto ao funil
+  vagaDetId = id;
+  var pi = prazoInfo(v);
+  var nAtivos = (v.candidatos||[]).filter(function(c) { return c.etapa < 7; }).length;
+  var nInteg  = (v.candidatos||[]).filter(function(c) { return c.etapa === 6; }).length;
+  var statusTxt = {aberta:'Aberta', encerrada:'Encerrada', pausada:'Pausada', cancelada:'Cancelada'}[v.status] || v.status || '—';
+
+  document.getElementById('vd-title').textContent = v.cargo || '—';
+  document.getElementById('vd-sub').textContent   = (v.codigo||'') + (v.empresa? ' · '+v.empresa : '');
+
+  function row(l, val) { return '<div class="vd-row"><span class="vd-l">'+l+'</span><span class="vd-v">'+(val||'—')+'</span></div>'; }
+
+  var html = ''
+    + '<div class="vd-sec">Vaga</div>'
+    + row('Status', statusTxt)
+    + row('Departamento', v.departamento)
+    + row('Perfil / SLA', (v.perfil||'—') + (v.sla ? ' · '+v.sla+'d' : ''))
+    + row('Escala', vagaEscala(v))
+    + row('Motivo', v.motivo)
+    + (v.substituto ? row('Substituindo', v.substituto) : '')
+    + row('Nº de vagas', v.qtd || 1)
+    + '<div class="vd-sec">Prazos</div>'
+    + row('Abertura', fmtDate(v.abertura))
+    + row('Prazo', v.prazo ? (pi.label ? '<span class="'+pi.cls+'">'+pi.label+'</span>' : fmtDate(v.prazo)) : '—')
+    + '<div class="vd-sec">Candidatos</div>'
+    + row('Em processo', nAtivos)
+    + row('Em integração', nInteg)
+    + (v.obs ? '<div class="vd-sec">Observações</div><div style="font-size:13px;font-weight:500;color:var(--text);padding:6px 0;white-space:pre-wrap">'+v.obs+'</div>' : '')
+    + (v.solicitacaoCodigo ? '<div class="vd-sec">Origem</div>'+row('Solicitação', v.solicitacaoCodigo) : '');
+
+  document.getElementById('vd-body').innerHTML = html;
+  openModal('modal-vagadet');
+}
+
+function verFunilDaVaga() {
+  closeModal('modal-vagadet');
+  if (vagaDetId) abrirDetalhe(vagaDetId);
 }
 
 // ════════════════════════════════════════════

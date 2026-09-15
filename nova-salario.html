@@ -271,7 +271,7 @@ table.val td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:
     <div class="content" id="view-validacao" style="display:none">
       <div class="val-intro">
         <div style="font-size:14px;font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:8px"><i class="ti ti-clipboard-check" style="font-size:18px;color:var(--gold)"></i> Validar remuneração pela Relação de Funcionários</div>
-        <div style="font-size:12.5px;color:var(--text2);line-height:1.6">Suba a planilha da <b>Relação de Funcionários</b> (FoRelaFunc2) com a coluna <b>Salário</b>. Para cada pessoa, o sistema compara o <b>salário pago</b> com o valor da faixa (A–F) no cadastro e sinaliza se está <b>correto</b> ou <b>divergente</b> (conferência exata, centavo a centavo). O casamento é por cargo + departamento, ignorando acentos e maiúsculas. O Excel baixa <b>apenas as inconsistências</b>.</div>
+        <div style="font-size:12.5px;color:var(--text2);line-height:1.6">Suba a planilha da <b>Relação de Funcionários</b> (FoRelaFunc2) com a coluna <b>Salário</b>. Para cada pessoa, o sistema compara o <b>salário pago</b> com o valor da faixa (A–F) no cadastro e sinaliza se está <b>correto</b> ou <b>divergente</b> (conferência exata, centavo a centavo). O casamento é por cargo + departamento, ignorando acentos e maiúsculas. Para cargos <b>com gratificação</b>, a planilha traz apenas a base — o sistema soma <b>+40%</b> e compara com a faixa do cadastro (tolerância de R$ 0,02 p/ arredondamento). O Excel baixa <b>apenas as inconsistências</b>.</div>
         <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-primary btn-sm" onclick="document.getElementById('file-valida').click()"><i class="ti ti-upload"></i> Subir planilha</button>
           <input type="file" id="file-valida" accept=".xlsx,.xls" style="display:none" onchange="processarValidacao(this.files[0]); this.value='';">
@@ -986,7 +986,7 @@ function construirValidacao(aoa){
       else { via='ambiguo'; }
     }
 
-    var esperada=null, diff=null, status, obs='';
+    var esperada=null, diff=null, status, obs='', grat=match?!!match.grat:false, salConsid=salPago;
     if(!match && via==='ambiguo'){ status='amb'; obs='Cargo existe em vários deptos com faixas diferentes'; }
     else if(!match){ status='naoenc'; obs='Cargo/depto não encontrado no cadastro'; }
     else if(!faixa){ status='semfaixa'; obs='Faixa não informada na planilha'; }
@@ -995,13 +995,17 @@ function construirValidacao(aoa){
       if(esperada==null){ status='faixavazia'; obs='Faixa '+faixa+' sem valor no cadastro'; }
       else if(salPago==null){ status='semsalario'; obs='Salário não informado na planilha'; }
       else {
-        diff=Math.round((salPago-esperada)*100)/100;
-        if(Math.round(salPago*100)===Math.round(esperada*100)){ status='ok'; if(via!=='cargo+depto') obs=via; }
-        else { status='divergente'; obs='Pago '+brl(salPago)+' vs faixa '+faixa+' '+brl(esperada)+(via!=='cargo+depto'?' · '+via:''); }
+        // Cargos com gratificação: a planilha traz só a base; a faixa do cadastro é base + 40%.
+        // Reconstrói a remuneração (base + 40%) e compara com tolerância de R$ 0,02 p/ absorver arredondamento.
+        salConsid = grat ? Math.round(salPago*1.4*100)/100 : salPago;
+        diff=Math.round((salConsid-esperada)*100)/100;
+        var bate = grat ? (Math.abs(diff)<=0.02) : (Math.round(salConsid*100)===Math.round(esperada*100));
+        if(bate){ status='ok'; if(grat) obs='Base '+brl(salPago)+' + 40% grat. = '+brl(salConsid); else if(via!=='cargo+depto') obs=via; }
+        else { status='divergente'; obs=(grat?'Base '+brl(salPago)+' + 40% = '+brl(salConsid):'Pago '+brl(salConsid))+' vs faixa '+faixa+' '+brl(esperada)+(via!=='cargo+depto'?' · '+via:''); }
       }
     }
     res.push({chapa:chapa,nome:nome,filial:filial,cargo:cargo,depto:depto,faixa:faixa,
-      salPago:salPago,esperada:esperada,diff:diff,status:status,obs:obs, cargoCad:match?match.cargo:'', deptoCad:match?match.depto:''});
+      salBase:salPago,salPago:salConsid,grat:grat,esperada:esperada,diff:diff,status:status,obs:obs, cargoCad:match?match.cargo:'', deptoCad:match?match.depto:''});
   }
   if(!res.length){ toast('Nenhuma linha de funcionário reconhecida na planilha.','err'); return; }
   _validacao=res;

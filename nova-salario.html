@@ -972,6 +972,8 @@ function construirValidacao(aoa){
     if(!/^\d{3,}$/.test(chapa)) continue; // pula rodapés, cabeçalhos repetidos e linhas em branco
     var nome=cNome>=0?String(row[cNome]||'').trim():'';
     var cargo=cCargo>=0?String(row[cCargo]||'').trim():'';
+    var cargoNorm=normTxt(cargo);
+    if(cargoNorm==='MENOR APRENDIZ' || cargoNorm==='ESTAGIARIO') continue; // fora da tabela salarial — desconsiderados
     var depto=cDepto>=0?String(row[cDepto]||'').trim():'';
     var filial=cFil>=0?String(row[cFil]||'').trim():'';
     var fRaw=cFaixa>=0?String(row[cFaixa]||'').trim().toUpperCase():'';

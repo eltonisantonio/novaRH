@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova. RH — Headcount</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="preconnect" href="https://www.gstatic.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"></noscript>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css"></noscript>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;}
+.app{display:flex;min-height:100vh;}
+.sidebar{width:230px;background:var(--black);color:#fff;flex-shrink:0;display:flex;flex-direction:column;}
+.sidebar-logo{padding:28px 24px 22px;border-bottom:1px solid rgba(255,255,255,.08);}
+.logo-mark{display:flex;align-items:baseline;}
+.logo-text{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--cream);}
+.logo-dot{width:9px;height:9px;background:var(--lime);border-radius:50%;display:inline-block;margin-left:2px;margin-bottom:1px;}
+.logo-sub{font-size:10px;font-weight:500;color:rgba(242,238,229,.4);letter-spacing:2px;text-transform:uppercase;margin-top:5px;}
+.sidebar-nav{padding:20px 0;flex:1;}
+.nav-s{padding:8px 24px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:13px;font-weight:500;cursor:pointer;color:rgba(255,255,255,.5);transition:all .15s;border-left:2px solid transparent;}
+.nav-item.active{color:var(--lime);border-left-color:var(--lime);background:rgba(215,255,61,.06);}
+.nav-item.dis{opacity:.25;cursor:not-allowed;pointer-events:none;}
+.nav-item i{font-size:16px;}
+.sidebar-footer{padding:18px 24px;border-top:1px solid rgba(255,255,255,.08);font-size:11px;color:rgba(255,255,255,.25);}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.topbar-title{font-size:15px;font-weight:700;}
+.topbar-sub{font-size:11px;color:var(--text3);font-weight:500;}
+.content{flex:1;padding:28px 32px;overflow-y:auto;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;}
+.btn:hover{background:var(--s2);}
+.btn-primary{background:var(--black);color:var(--lime);border-color:var(--black);}
+.btn-primary:hover{background:#1e2026;}
+.btn-sm{padding:7px 12px;font-size:12px;}
+.btn-icon{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r);border:none;background:transparent;cursor:pointer;color:var(--text2);}
+.btn-icon:hover{background:var(--s2);}
+.btn-icon.danger:hover{background:#fdeaea;color:#8b1c1c;}
+/* MODES + FILIAL BAR */
+.hc-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.hc-modes{display:flex;gap:4px;}
+.mode-tab{padding:8px 16px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--white);color:var(--text2);font-family:'Inter',sans-serif;}
+.mode-tab.active{background:var(--black);color:var(--lime);border-color:var(--black);}
+.filial-bar{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;}
+.filial-tab{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--white);color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s;}
+.filial-tab.active{background:var(--black);color:var(--lime);border-color:var(--black);}
+/* STATS */
+.stats-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;}
+.stat-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:16px 20px;position:relative;overflow:hidden;}
+.stat-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;}
+.stat-card.s-lime::after{background:var(--lime);}
+.stat-card.s-black::after{background:var(--black);}
+.stat-card.s-gold::after{background:var(--gold);}
+.stat-card.s-gray::after{background:var(--border2);}
+.stat-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:8px;}
+.stat-value{font-size:28px;font-weight:900;letter-spacing:-1px;line-height:1;}
+.stat-sub{font-size:11px;color:var(--text3);font-weight:500;margin-top:4px;}
+/* QUADRO TABLE */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;margin-bottom:16px;}
+.card-hd{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.card-hd-title{font-size:13px;font-weight:800;}
+.hc-table-wrap{overflow-x:auto;}
+.hc-table{width:100%;border-collapse:collapse;}
+.hc-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);padding:11px 12px;text-align:center;border-bottom:1px solid var(--border);background:var(--s2);white-space:nowrap;}
+.hc-table th.left{text-align:left;}
+.hc-table td{font-size:13px;padding:8px 12px;border-bottom:1px solid var(--border);text-align:center;vertical-align:middle;}
+.hc-table tr:last-child td{border-bottom:none;}
+.hc-area-row td{background:var(--s2);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);text-align:left;padding:9px 14px;}
+.hc-depto-nome{font-size:13px;font-weight:700;text-align:left;min-width:160px;}
+.hc-num{width:62px;padding:7px 6px;border:1px solid var(--border2);border-radius:var(--r);text-align:center;font-family:inherit;font-size:13px;font-weight:600;outline:none;background:var(--white);}
+.hc-num:focus{border-color:var(--black);}
+.hc-obs{width:100%;min-width:180px;padding:7px 10px;border:1px solid var(--border2);border-radius:var(--r);font-family:inherit;font-size:12px;font-weight:500;outline:none;background:var(--white);}
+.hc-obs:focus{border-color:var(--black);}
+.ql-badge{display:inline-block;min-width:36px;padding:4px 10px;border-radius:20px;background:var(--black);color:var(--lime);font-weight:800;font-size:13px;}
+/* ESTRUTURA */
+.estr-grid{display:grid;grid-template-columns:300px 1fr;gap:16px;align-items:start;}
+@media(max-width:820px){.estr-grid{grid-template-columns:1fr;}}
+.sec{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:18px;margin-bottom:16px;}
+.sec-title{font-size:13px;font-weight:800;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.inline-form{display:flex;gap:8px;align-items:center;margin-bottom:12px;}
+.fi{padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;width:100%;}
+.fi:focus{border-color:var(--black);}
+.estr-row{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--border);border-radius:var(--r);margin-bottom:6px;cursor:pointer;transition:all .12s;}
+.estr-row:hover{background:var(--s2);}
+.estr-row.sel{border-color:var(--black);background:#f6f8ec;}
+.estr-nome{font-size:13px;font-weight:700;flex:1;}
+.estr-count{font-size:10px;font-weight:700;color:var(--text3);background:var(--s2);padding:2px 8px;border-radius:10px;}
+.area-block{border:1px solid var(--border);border-radius:var(--rl);margin-bottom:10px;overflow:hidden;}
+.area-hd{display:flex;align-items:center;gap:8px;padding:11px 14px;background:var(--s2);border-bottom:1px solid var(--border);}
+.area-hd .estr-nome{font-weight:800;font-size:13px;}
+.depto-row{display:flex;align-items:center;gap:8px;padding:9px 14px;border-bottom:1px solid var(--border);}
+.depto-row:last-child{border-bottom:none;}
+.depto-nome{font-size:13px;font-weight:600;flex:1;}
+.inline-add{display:flex;gap:8px;padding:10px 14px;background:var(--white);align-items:center;}
+.turno-chip{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);margin-bottom:6px;}
+.turno-chip .estr-nome{font-size:13px;}
+.notice{display:flex;align-items:flex-start;gap:8px;padding:11px 14px;border-radius:var(--r);font-size:12px;font-weight:500;margin-bottom:16px;}
+.notice-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
+.notice-blue{background:#eef3fb;color:#1e3a6e;border:1px solid #b0c8e4;}
+.empty{text-align:center;padding:44px 20px;color:var(--text2);}
+.empty i{font-size:38px;color:var(--text3);display:block;margin-bottom:12px;}
+.empty-t{font-size:14px;font-weight:700;margin-bottom:4px;}
+.empty-s{font-size:12px;color:var(--text3);}
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(14,15,18,.55);z-index:100;align-items:center;justify-content:center;}
+.overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--rl);width:420px;max-width:96vw;display:flex;flex-direction:column;}
+.modal-h{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-title{font-size:15px;font-weight:800;}
+.modal-b{padding:24px;}
+.modal-f{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+.fl{font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:6px;}
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--black);color:var(--cream);padding:12px 18px;border-radius:var(--r);font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.err{background:#8b1c1c;}
+.toast.ok{background:#1a5c35;}
+.toast.warn{background:#7d4e00;}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"><span class="logo-text">NOVA</span><span class="logo-dot"></span></div>
+      <div class="logo-sub">Sistema de RH</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-s">Módulos</div>
+      <div class="nav-item dis"><i class="ti ti-user-search"></i> R&amp;S</div>
+      <div class="nav-item dis"><i class="ti ti-file-check"></i> Admissão</div>
+      <div class="nav-item dis"><i class="ti ti-clock"></i> Experiência</div>
+      <div class="nav-item dis"><i class="ti ti-notebook"></i> Dossiê</div>
+      <div class="nav-item dis"><i class="ti ti-file-minus"></i> Rescisão</div>
+      <div class="nav-item active"><i class="ti ti-users-group"></i> Headcount</div>
+    </nav>
+    <div class="sidebar-footer">Módulo 8 · Headcount</div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title">Headcount</div>
+        <div class="topbar-sub">Quadro orçado por filial, área, departamento e turno</div>
+      </div>
+      <div class="topbar-actions"></div>
+    </div>
+
+    <div class="content">
+      <!-- CABEÇALHO: filial + modos -->
+      <div class="hc-head">
+        <div class="filial-bar" id="filial-bar"></div>
+        <div class="hc-modes">
+          <div class="mode-tab active" id="tab-quadro" onclick="setMode('quadro')"><i class="ti ti-table"></i> Quadro</div>
+          <div class="mode-tab" id="tab-estrutura" onclick="setMode('estrutura')"><i class="ti ti-sitemap"></i> Estrutura</div>
+        </div>
+      </div>
+
+      <!-- VIEW QUADRO -->
+      <div id="view-quadro"></div>
+
+      <!-- VIEW ESTRUTURA -->
+      <div id="view-estrutura" style="display:none"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL RENOMEAR -->
+<div class="overlay" id="modal-rn">
+  <div class="modal">
+    <div class="modal-h"><span class="modal-title" id="rn-title">Renomear</span><button class="btn-icon" onclick="closeModal('modal-rn')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <input type="hidden" id="rn-type"><input type="hidden" id="rn-id">
+      <label class="fl">Nome</label>
+      <input class="fi" type="text" id="rn-nome" onkeydown="if(event.key==='Enter')salvarRename()">
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-rn')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarRename()"><i class="ti ti-check"></i> Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── FIREBASE ──
+if(!firebase.apps.length){
+  firebase.initializeApp({
+    apiKey:"AIzaSyAhoLSoe7bRdDakJ6apJcnWMBL5RHmQtDI",
+    authDomain:"novarh-4fbc6.firebaseapp.com",
+    projectId:"novarh-4fbc6",
+    storageBucket:"novarh-4fbc6.firebasestorage.app",
+    messagingSenderId:"805399291743",
+    appId:"1:805399291743:web:ac13f2572f875c0ec1b8ea"
+  });
+}
+var db = firebase.firestore();
+var FV = firebase.firestore.FieldValue;
+
+// usuário logado (para carimbar quem editou)
+var _user = (function(){ try{var s=sessionStorage.getItem('nova_rh_session_v1'); if(s)return (JSON.parse(s).nome||'');}catch(e){} return ''; })();
+
+// ── ESTADO ──
+var _filiais=[], _turnos=[], _areas=[], _deptos=[], _quadro=[];
+var _filialSel=null, _mode='quadro', _ready={};
+
+function mapDocs(s){ return s.docs.map(function(d){return Object.assign({id:d.id},d.data());}); }
+function byOrdem(a,b){ return (a.ordem||0)-(b.ordem||0) || (a.nome||'').localeCompare(b.nome||''); }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+
+// ── LISTENERS (tempo real) ──
+function iniciar(){
+  db.collection('hc_filiais').onSnapshot(function(s){ _filiais=mapDocs(s); _ready.f=1; ensureSel(); render(); }, err('filiais'));
+  db.collection('hc_turnos').onSnapshot(function(s){ _turnos=mapDocs(s); render(); }, err('turnos'));
+  db.collection('hc_areas').onSnapshot(function(s){ _areas=mapDocs(s); render(); }, err('áreas'));
+  db.collection('hc_departamentos').onSnapshot(function(s){ _deptos=mapDocs(s); render(); }, err('departamentos'));
+  db.collection('hc_quadro').onSnapshot(function(s){ _quadro=mapDocs(s); render(); }, err('quadro'));
+}
+function err(nome){ return function(e){ console.warn('['+nome+']', e); toast('Falha ao ler '+nome+'.','err'); }; }
+
+function ensureSel(){
+  if(_filialSel && _filiais.some(function(f){return f.id===_filialSel;})) return;
+  var ord=_filiais.slice().sort(byOrdem);
+  _filialSel = ord.length ? ord[0].id : null;
+}
+
+// ── HELPERS DE FILTRO ──
+function turnosDaFilial(fid){ return _turnos.filter(function(t){return t.filialId===fid;}).sort(byOrdem); }
+function areasDaFilial(fid){ return _areas.filter(function(a){return a.filialId===fid;}).sort(byOrdem); }
+function deptosDaArea(aid){ return _deptos.filter(function(d){return d.areaId===aid;}).sort(byOrdem); }
+function quadroDe(deptoId){ return _quadro.find(function(q){return q.id===deptoId;}) || null; }
+function qtdDe(deptoId,turnoId){ var q=quadroDe(deptoId); return (q&&q.turnos&&q.turnos[turnoId])?q.turnos[turnoId]:''; }
+function qlDe(deptoId){ var q=quadroDe(deptoId); if(!q||!q.turnos)return 0; return Object.keys(q.turnos).reduce(function(s,k){return s+(parseInt(q.turnos[k],10)||0);},0); }
+function obsDe(deptoId){ var q=quadroDe(deptoId); return q?(q.obs||''):''; }
+
+// ── RENDER PRINCIPAL ──
+function setMode(m){
+  _mode=m;
+  document.getElementById('tab-quadro').classList.toggle('active',m==='quadro');
+  document.getElementById('tab-estrutura').classList.toggle('active',m==='estrutura');
+  document.getElementById('view-quadro').style.display = m==='quadro'?'block':'none';
+  document.getElementById('view-estrutura').style.display = m==='estrutura'?'block':'none';
+  render();
+}
+function selFilial(id){ _filialSel=id; render(); }
+
+function render(){
+  renderFilialBar();
+  if(_mode==='quadro') renderQuadro();
+  else renderEstrutura();
+}
+
+function renderFilialBar(){
+  var bar=document.getElementById('filial-bar');
+  var ord=_filiais.slice().sort(byOrdem);
+  if(!ord.length){ bar.innerHTML='<span style="font-size:12px;color:var(--text3);font-weight:600">Nenhuma filial — cadastre em Estrutura.</span>'; return; }
+  bar.innerHTML=ord.map(function(f){
+    return '<div class="filial-tab'+(f.id===_filialSel?' active':'')+'" onclick="selFilial(\''+f.id+'\')"><i class="ti ti-building"></i> '+esc(f.nome)+'</div>';
+  }).join('');
+}
+
+// ── QUADRO ──
+function renderQuadro(){
+  var cont=document.getElementById('view-quadro');
+  if(!_filialSel){ cont.innerHTML=emptyBox('ti-building','Nenhuma filial','Cadastre uma filial na aba Estrutura para começar.'); return; }
+  var turnos=turnosDaFilial(_filialSel);
+  var areas=areasDaFilial(_filialSel);
+
+  // stats
+  var totDep=0, totQL=0;
+  areas.forEach(function(a){ deptosDaArea(a.id).forEach(function(d){ totDep++; totQL+=qlDe(d.id); }); });
+  var stats=''
+    +statCard('s-black','QL Total','',totQL,'orçado na filial')
+    +statCard('s-lime','Áreas','',areas.length,'')
+    +statCard('s-gold','Departamentos','',totDep,'')
+    +statCard('s-gray','Turnos','',turnos.length,'configurados');
+
+  var html='<div class="stats-grid">'+stats+'</div>';
+
+  if(!turnos.length){
+    html+='<div class="notice notice-amber"><i class="ti ti-alert-triangle"></i><span>Esta filial ainda não tem turnos. Defina os turnos na aba <b>Estrutura</b> antes de lançar o quadro.</span></div>';
+  }
+  if(!areas.length){
+    html+=emptyBox('ti-sitemap','Sem áreas','Cadastre áreas e departamentos na aba Estrutura.');
+    cont.innerHTML=html; return;
+  }
+
+  // tabela
+  var thTurnos=turnos.map(function(t){return '<th>'+esc(t.nome)+'</th>';}).join('');
+  html+='<div class="card"><div class="hc-table-wrap"><table class="hc-table"><thead><tr>'
+    +'<th class="left">Departamento</th>'+thTurnos+'<th>QL</th><th class="left">Observação</th>'
+    +'</tr></thead><tbody>';
+
+  var colspan=turnos.length+3;
+  areas.forEach(function(a){
+    var deps=deptosDaArea(a.id);
+    html+='<tr class="hc-area-row"><td colspan="'+colspan+'"><i class="ti ti-folder" style="font-size:12px"></i> '+esc(a.nome)+'</td></tr>';
+    if(!deps.length){
+      html+='<tr><td colspan="'+colspan+'" style="color:var(--text3);font-size:12px;text-align:left;padding-left:24px">Sem departamentos nesta área.</td></tr>';
+      return;
+    }
+    deps.forEach(function(d){
+      var cells=turnos.map(function(t){
+        return '<td><input class="hc-num" type="number" min="0" inputmode="numeric" data-depto="'+d.id+'" data-turno="'+t.id+'" value="'+qtdDe(d.id,t.id)+'" oninput="recalcQL(\''+d.id+'\')" onchange="saveQuadro(\''+d.id+'\')"></td>';
+      }).join('');
+      html+='<tr>'
+        +'<td class="hc-depto-nome">'+esc(d.nome)+'</td>'
+        +cells
+        +'<td><span class="ql-badge" id="ql-'+d.id+'">'+qlDe(d.id)+'</span></td>'
+        +'<td><input class="hc-obs" type="text" placeholder="—" data-depto="'+d.id+'" value="'+esc(obsDe(d.id))+'" onchange="saveQuadro(\''+d.id+'\')"></td>'
+        +'</tr>';
+    });
+  });
+  html+='</tbody></table></div></div>';
+  html+='<div style="font-size:11px;color:var(--text3);font-weight:500">O QL é a soma dos turnos. As alterações são salvas automaticamente ao sair do campo.</div>';
+  cont.innerHTML=html;
+}
+
+function recalcQL(deptoId){
+  var total=0;
+  document.querySelectorAll('input.hc-num[data-depto="'+deptoId+'"]').forEach(function(inp){
+    total += parseInt(inp.value,10)||0;
+  });
+  var el=document.getElementById('ql-'+deptoId);
+  if(el) el.textContent=total;
+}
+
+function saveQuadro(deptoId){
+  var d=_deptos.find(function(x){return x.id===deptoId;});
+  if(!d)return;
+  var turnos={};
+  document.querySelectorAll('input.hc-num[data-depto="'+deptoId+'"]').forEach(function(inp){
+    var t=inp.getAttribute('data-turno');
+    var v=parseInt(inp.value,10);
+    if(!isNaN(v)&&v>0) turnos[t]=v;
+  });
+  var obsEl=document.querySelector('input.hc-obs[data-depto="'+deptoId+'"]');
+  var obs=obsEl?obsEl.value.trim():'';
+  db.collection('hc_quadro').doc(deptoId).set({
+    id:deptoId, filialId:d.filialId, areaId:d.areaId, deptoId:deptoId,
+    turnos:turnos, obs:obs, updatedAt:FV.serverTimestamp(), updatedBy:_user
+  },{merge:true}).then(function(){ toast('Quadro salvo.','ok'); }).catch(function(e){ toast('Erro ao salvar: '+e.message,'err'); });
+}
+
+// ── ESTRUTURA ──
+function renderEstrutura(){
+  var cont=document.getElementById('view-estrutura');
+  var ord=_filiais.slice().sort(byOrdem);
+
+  // coluna esquerda: filiais
+  var listaFil=ord.map(function(f){
+    var nA=areasDaFilial(f.id).length;
+    return '<div class="estr-row'+(f.id===_filialSel?' sel':'')+'" onclick="selFilial(\''+f.id+'\')">'
+      +'<i class="ti ti-building" style="color:var(--text3)"></i>'
+      +'<span class="estr-nome">'+esc(f.nome)+'</span>'
+      +'<span class="estr-count">'+nA+' área'+(nA===1?'':'s')+'</span>'
+      +'<button class="btn-icon" onclick="event.stopPropagation();abrirRename(\'filial\',\''+f.id+'\')" title="Renomear"><i class="ti ti-pencil"></i></button>'
+      +'<button class="btn-icon danger" onclick="event.stopPropagation();removeFilial(\''+f.id+'\')" title="Remover"><i class="ti ti-trash"></i></button>'
+      +'</div>';
+  }).join('') || '<div style="font-size:12px;color:var(--text3);padding:6px 0">Nenhuma filial.</div>';
+
+  var left='<div class="sec">'
+    +'<div class="sec-title"><i class="ti ti-building" style="color:var(--text2)"></i> Filiais</div>'
+    +'<div class="inline-form"><input class="fi" id="f-nome" placeholder="Nova filial" onkeydown="if(event.key===\'Enter\')addFilial()"><button class="btn btn-primary btn-sm" onclick="addFilial()"><i class="ti ti-plus"></i></button></div>'
+    +listaFil
+    +'</div>';
+
+  // coluna direita: detalhe da filial selecionada
+  var right='';
+  if(!_filialSel){
+    right=emptyBox('ti-arrow-left','Selecione uma filial','Escolha uma filial à esquerda para gerenciar turnos, áreas e departamentos.');
+  } else {
+    var fil=_filiais.find(function(x){return x.id===_filialSel;});
+    var fnome=fil?fil.nome:'';
+
+    // turnos
+    var turnos=turnosDaFilial(_filialSel);
+    var chipsT=turnos.map(function(t){
+      return '<div class="turno-chip"><i class="ti ti-clock-hour-4" style="font-size:14px;color:var(--text3)"></i><span class="estr-nome">'+esc(t.nome)+'</span>'
+        +'<button class="btn-icon" onclick="abrirRename(\'turno\',\''+t.id+'\')" title="Renomear"><i class="ti ti-pencil"></i></button>'
+        +'<button class="btn-icon danger" onclick="removeTurno(\''+t.id+'\')" title="Remover"><i class="ti ti-trash"></i></button></div>';
+    }).join('') || '<div style="font-size:12px;color:var(--text3)">Nenhum turno cadastrado.</div>';
+
+    var secTurnos='<div class="sec">'
+      +'<div class="sec-title"><i class="ti ti-clock" style="color:var(--text2)"></i> Turnos — '+esc(fnome)+'</div>'
+      +'<div class="inline-form"><input class="fi" id="t-nome" placeholder="Ex: 1º Turno" onkeydown="if(event.key===\'Enter\')addTurno()"><button class="btn btn-primary btn-sm" onclick="addTurno()"><i class="ti ti-plus"></i></button></div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+chipsT+'</div>'
+      +'</div>';
+
+    // áreas + deptos
+    var areas=areasDaFilial(_filialSel);
+    var blocos=areas.map(function(a){
+      var deps=deptosDaArea(a.id);
+      var rowsD=deps.map(function(d){
+        return '<div class="depto-row"><i class="ti ti-point" style="font-size:14px;color:var(--text3)"></i>'
+          +'<span class="depto-nome">'+esc(d.nome)+'</span>'
+          +'<button class="btn-icon" onclick="abrirRename(\'depto\',\''+d.id+'\')" title="Renomear"><i class="ti ti-pencil"></i></button>'
+          +'<button class="btn-icon danger" onclick="removeDepto(\''+d.id+'\')" title="Remover"><i class="ti ti-trash"></i></button></div>';
+      }).join('') || '<div class="depto-row" style="color:var(--text3);font-size:12px">Sem departamentos.</div>';
+      return '<div class="area-block">'
+        +'<div class="area-hd"><i class="ti ti-folder" style="color:var(--text2)"></i><span class="estr-nome">'+esc(a.nome)+'</span>'
+        +'<button class="btn-icon" onclick="abrirRename(\'area\',\''+a.id+'\')" title="Renomear"><i class="ti ti-pencil"></i></button>'
+        +'<button class="btn-icon danger" onclick="removeArea(\''+a.id+'\')" title="Remover"><i class="ti ti-trash"></i></button></div>'
+        +rowsD
+        +'<div class="inline-add"><input class="fi" id="d-nome-'+a.id+'" placeholder="Novo departamento" onkeydown="if(event.key===\'Enter\')addDepto(\''+a.id+'\')"><button class="btn btn-sm" onclick="addDepto(\''+a.id+'\')"><i class="ti ti-plus"></i> Depto</button></div>'
+        +'</div>';
+    }).join('') || '<div style="font-size:12px;color:var(--text3);margin-bottom:8px">Nenhuma área cadastrada.</div>';
+
+    var secAreas='<div class="sec">'
+      +'<div class="sec-title"><i class="ti ti-sitemap" style="color:var(--text2)"></i> Áreas e Departamentos — '+esc(fnome)+'</div>'
+      +'<div class="inline-form"><input class="fi" id="a-nome" placeholder="Nova área" onkeydown="if(event.key===\'Enter\')addArea()"><button class="btn btn-primary btn-sm" onclick="addArea()"><i class="ti ti-plus"></i></button></div>'
+      +blocos
+      +'</div>';
+
+    right=secTurnos+secAreas;
+  }
+
+  cont.innerHTML='<div class="estr-grid"><div>'+left+'</div><div>'+right+'</div></div>';
+}
+
+// ── CRUD ──
+function val(id){ var el=document.getElementById(id); return el?el.value.trim():''; }
+function clr(id){ var el=document.getElementById(id); if(el)el.value=''; }
+
+function addFilial(){
+  var nome=val('f-nome'); if(!nome){toast('Informe o nome da filial.','warn');return;}
+  var id='fil_'+Date.now();
+  db.collection('hc_filiais').doc(id).set({id:id,nome:nome,ordem:Date.now()}).then(function(){ clr('f-nome'); _filialSel=id; toast('Filial adicionada.','ok'); }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+function addTurno(){
+  if(!_filialSel)return; var nome=val('t-nome'); if(!nome){toast('Informe o turno.','warn');return;}
+  var id='trn_'+Date.now();
+  db.collection('hc_turnos').doc(id).set({id:id,filialId:_filialSel,nome:nome,ordem:Date.now()}).then(function(){ clr('t-nome'); toast('Turno adicionado.','ok'); }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+function addArea(){
+  if(!_filialSel)return; var nome=val('a-nome'); if(!nome){toast('Informe a área.','warn');return;}
+  var id='are_'+Date.now();
+  db.collection('hc_areas').doc(id).set({id:id,filialId:_filialSel,nome:nome,ordem:Date.now()}).then(function(){ clr('a-nome'); toast('Área adicionada.','ok'); }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+function addDepto(areaId){
+  var a=_areas.find(function(x){return x.id===areaId;}); if(!a)return;
+  var nome=val('d-nome-'+areaId); if(!nome){toast('Informe o departamento.','warn');return;}
+  var id='dep_'+Date.now();
+  db.collection('hc_departamentos').doc(id).set({id:id,filialId:a.filialId,areaId:areaId,nome:nome,ordem:Date.now()}).then(function(){ clr('d-nome-'+areaId); toast('Departamento adicionado.','ok'); }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// remoções (em cascata, apagando SÓ os docs afetados)
+function removeFilial(id){
+  if(!confirm('Remover esta filial e todo o seu conteúdo (turnos, áreas, departamentos e quadro)?'))return;
+  var b=db.batch();
+  b.delete(db.collection('hc_filiais').doc(id));
+  _turnos.filter(function(t){return t.filialId===id;}).forEach(function(t){b.delete(db.collection('hc_turnos').doc(t.id));});
+  _areas.filter(function(a){return a.filialId===id;}).forEach(function(a){b.delete(db.collection('hc_areas').doc(a.id));});
+  _deptos.filter(function(d){return d.filialId===id;}).forEach(function(d){ b.delete(db.collection('hc_departamentos').doc(d.id)); b.delete(db.collection('hc_quadro').doc(d.id)); });
+  b.commit().then(function(){ if(_filialSel===id)_filialSel=null; toast('Filial removida.','ok'); }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+function removeArea(id){
+  if(!confirm('Remover esta área, seus departamentos e o quadro deles?'))return;
+  var b=db.batch();
+  b.delete(db.collection('hc_areas').doc(id));
+  _deptos.filter(function(d){return d.areaId===id;}).forEach(function(d){ b.delete(db.collection('hc_departamentos').doc(d.id)); b.delete(db.collection('hc_quadro').doc(d.id)); });
+  b.commit().then(function(){ toast('Área removida.','ok'); }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+function removeDepto(id){
+  if(!confirm('Remover este departamento e seu quadro?'))return;
+  var b=db.batch();
+  b.delete(db.collection('hc_departamentos').doc(id));
+  b.delete(db.collection('hc_quadro').doc(id));
+  b.commit().then(function(){ toast('Departamento removido.','ok'); }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+function removeTurno(id){
+  if(!confirm('Remover este turno? Os valores lançados nele serão apagados do quadro.'))return;
+  var b=db.batch();
+  b.delete(db.collection('hc_turnos').doc(id));
+  // limpa a chave do turno nos quadros que a tinham
+  _quadro.filter(function(q){return q.turnos&&q.turnos[id]!==undefined;}).forEach(function(q){
+    var upd={}; upd['turnos.'+id]=FV.delete();
+    b.update(db.collection('hc_quadro').doc(q.id),upd);
+  });
+  b.commit().then(function(){ toast('Turno removido.','ok'); }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ── RENOMEAR (modal genérico) ──
+var RN_COLL={filial:'hc_filiais',turno:'hc_turnos',area:'hc_areas',depto:'hc_departamentos'};
+var RN_LABEL={filial:'Renomear filial',turno:'Renomear turno',area:'Renomear área',depto:'Renomear departamento'};
+function abrirRename(type,id){
+  var lista = type==='filial'?_filiais : type==='turno'?_turnos : type==='area'?_areas : _deptos;
+  var it=lista.find(function(x){return x.id===id;}); if(!it)return;
+  document.getElementById('rn-type').value=type;
+  document.getElementById('rn-id').value=id;
+  document.getElementById('rn-title').textContent=RN_LABEL[type];
+  document.getElementById('rn-nome').value=it.nome||'';
+  document.getElementById('modal-rn').classList.add('open');
+  setTimeout(function(){document.getElementById('rn-nome').focus();},50);
+}
+function salvarRename(){
+  var type=document.getElementById('rn-type').value;
+  var id=document.getElementById('rn-id').value;
+  var nome=document.getElementById('rn-nome').value.trim();
+  if(!nome){toast('Informe o nome.','warn');return;}
+  db.collection(RN_COLL[type]).doc(id).update({nome:nome}).then(function(){ closeModal('modal-rn'); toast('Renomeado.','ok'); }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ── UI HELPERS ──
+function statCard(cls,label,pre,val,sub){
+  return '<div class="stat-card '+cls+'"><div class="stat-label">'+label+'</div><div class="stat-value">'+val+'</div><div class="stat-sub">'+(sub||'&nbsp;')+'</div></div>';
+}
+function emptyBox(icon,t,s){
+  return '<div class="empty"><i class="ti '+icon+'"></i><div class="empty-t">'+t+'</div><div class="empty-s">'+s+'</div></div>';
+}
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function toast(msg,type){
+  var el=document.getElementById('toast');
+  el.textContent=msg; el.className='toast '+(type||'');
+  el.classList.add('show');
+  clearTimeout(el._t); el._t=setTimeout(function(){el.classList.remove('show');},2600);
+}
+document.querySelectorAll('.overlay').forEach(function(el){
+  el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+});
+
+iniciar();
+</script>
+</body>
+</html>

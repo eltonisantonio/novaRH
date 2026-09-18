@@ -235,17 +235,19 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="cfg-section">
         <div style="font-size:13px;font-weight:800;margin-bottom:4px">Tipos de Evento</div>
         <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Personalize os tipos de evento disponíveis no dossiê.</div>
-        <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;margin-bottom:14px;align-items:end;">
+        <div style="display:grid;grid-template-columns:1fr auto auto auto auto;gap:8px;margin-bottom:14px;align-items:end;">
           <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Nome do Tipo</label>
             <input class="fi" type="text" id="nt-nome" placeholder="Ex: REUNIÃO DE ALINHAMENTO"></div>
           <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Cor</label>
             <input type="color" id="nt-cor" value="#4a7fc1" style="width:48px;height:38px;border:1px solid var(--border2);border-radius:var(--r);cursor:pointer;padding:3px"></div>
           <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Ícone (ti-*)</label>
             <input class="fi" type="text" id="nt-icon" placeholder="ti-star" style="width:130px"></div>
+          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Controle de Devolução</label>
+            <label style="display:flex;align-items:center;gap:6px;height:38px;font-size:12px;color:var(--text2);cursor:pointer" title="Exige aguardar o documento assinado ser devolvido ao RH"><input type="checkbox" id="nt-controle" style="width:16px;height:16px;cursor:pointer"> Exigir</label></div>
           <button class="btn btn-primary" style="height:38px" onclick="addTipo()"><i class="ti ti-plus"></i> Adicionar</button>
         </div>
         <table class="cfg-table">
-          <thead><tr><th>Tipo</th><th>Cor</th><th style="width:50px"></th></tr></thead>
+          <thead><tr><th>Tipo</th><th>Cor</th><th style="text-align:center;width:150px">Controle de Devolução</th><th style="width:50px"></th></tr></thead>
           <tbody id="tb-tipos"></tbody>
         </table>
       </div>
@@ -714,9 +716,9 @@ var TIPOS_DEFAULT = [
   {id:'trein', nome:'Treinamento',                          cor:'#9b72cf', icon:'ti-certificate'},
   {id:'nr',    nome:'Treinamento NR (Norma Regulamentadora)', cor:'#d35400', icon:'ti-hard-hat'},
   {id:'feed',  nome:'Feedback',                             cor:'#4a7fc1', icon:'ti-message'},
-  {id:'adv',   nome:'Advertência',                          cor:'#e05252', icon:'ti-file-alert', medidaDisciplinar:true},
-  {id:'suspensao', nome:'Suspensão',                         cor:'#b03030', icon:'ti-ban', medidaDisciplinar:true},
-  {id:'orientacao_corretiva', nome:'Orientação Corretiva',   cor:'#d4762a', icon:'ti-message-report', medidaDisciplinar:true},
+  {id:'adv',   nome:'Advertência',                          cor:'#e05252', icon:'ti-file-alert', controleDevolucao:true},
+  {id:'suspensao', nome:'Suspensão',                         cor:'#b03030', icon:'ti-ban', controleDevolucao:true},
+  {id:'orientacao_corretiva', nome:'Orientação Corretiva',   cor:'#d4762a', icon:'ti-message-report', controleDevolucao:true},
   {id:'adiant_afastamento', nome:'Adiantamento por Afastamento', cor:'#2196a0', icon:'ti-cash'},
   {id:'elogio',nome:'Elogio / Reconhecimento',              cor:'#8ab800', icon:'ti-award'},
   {id:'aval',  nome:'Avaliação de Desempenho',              cor:'#4caf80', icon:'ti-chart-bar'},
@@ -792,15 +794,16 @@ function getTipo(id) {
     || TIPOS_ESPECIAIS[id]
     || {nome:id, cor:'#a09890', icon:'ti-dots'};
 }
-// Reconhece se um tipo de evento é uma MEDIDA DISCIPLINAR (exige controle de devolução do
-// documento assinado ao RH). Não depende só do id fixo: também aceita a flag medidaDisciplinar
-// e, como rede de segurança, tipos personalizados cujo nome seja Advertência/Suspensão/Orientação Corretiva.
-function isMedidaDisciplinar(tipoId) {
+// Indica se um tipo de evento exige CONTROLE DE DEVOLUÇÃO (aguardar o documento assinado de volta).
+// Prioridade: o checkbox explícito na tela de Tipos (controleDevolucao true/false) sempre vence.
+// Sem definição explícita, aplicam-se os padrões disciplinares e, como rede de segurança, nomes conhecidos.
+function temControleDevolucao(tipoId) {
   if (!tipoId) return false;
-  if (tipoId==='adv' || tipoId==='suspensao' || tipoId==='orientacao_corretiva') return true;
   var t = _tipos.find(function(x){return x.id===tipoId;});
+  if (t && t.controleDevolucao===true)  return true;
+  if (t && t.controleDevolucao===false) return false;
+  if (tipoId==='adv' || tipoId==='suspensao' || tipoId==='orientacao_corretiva') return true;
   if (!t) return false;
-  if (t.medidaDisciplinar===true) return true;
   var n = (t.nome||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   return n.indexOf('advertenc')>-1 || n.indexOf('suspens')>-1 || n.indexOf('orientacao corretiva')>-1;
 }
@@ -1195,7 +1198,7 @@ function renderDossie(f) {
     }
 
     // Medida disciplinar — controle de devolução ao RH
-    if (isMedidaDisciplinar(ev.tipoId)) {
+    if (temControleDevolucao(ev.tipoId)) {
       if (ev.discRecebido) {
         extraHtml += '<div class="ev-extra" style="background:#e8f8ef;border:1px solid #a8d8b8;color:#1a5c35">'
           +'<i class="ti ti-checkbox" style="margin-right:4px"></i><strong>Documento recebido pelo RH</strong>'
@@ -1302,7 +1305,7 @@ function salvarEvento() {
   }
 
   // Medida disciplinar — inicia controle de devolução ao RH
-  if (isMedidaDisciplinar(tipoId)) {
+  if (temControleDevolucao(tipoId)) {
     payload.discRecebido = false;
   }
 
@@ -1483,10 +1486,12 @@ function addTipo() {
   var nome = (document.getElementById('nt-nome').value||'').trim();
   var cor  = document.getElementById('nt-cor').value;
   var icon = (document.getElementById('nt-icon').value||'ti-dots').trim();
+  var controle = !!document.getElementById('nt-controle').checked;
   if (!nome) { toast('Informe o nome.','err'); return; }
   var id = 'custom_'+Date.now();
-  db.collection('dossie_tipos').doc(id).set({id:id, nome:nome, cor:cor, icon:icon}).then(function(){
+  db.collection('dossie_tipos').doc(id).set({id:id, nome:nome, cor:cor, icon:icon, controleDevolucao:controle}).then(function(){
     document.getElementById('nt-nome').value='';
+    document.getElementById('nt-controle').checked=false;
     toast('Tipo adicionado!','ok');
   });
 }
@@ -1495,6 +1500,12 @@ function removerTipo(id) {
   if (!confirm('Remover este tipo?')) return;
   db.collection('dossie_tipos').doc(id).delete().then(function(){ toast('Tipo removido.'); });
 }
+// Liga/desliga o controle de devolução em qualquer tipo (inclusive padrão)
+function toggleControleDevolucao(id, on) {
+  db.collection('dossie_tipos').doc(id).set({controleDevolucao: !!on}, {merge:true})
+    .then(function(){ toast(on?'Controle de devolução ativado.':'Controle de devolução desativado.','ok'); })
+    .catch(function(e){ toast('Erro: '+e.message,'err'); });
+}
 function renderCfg() {
   var tb = document.getElementById('tb-tipos');
   tb.innerHTML = _tipos.map(function(t){
@@ -1502,9 +1513,10 @@ function renderCfg() {
     return '<tr>'
       +'<td><i class="ti '+t.icon+'" style="color:'+t.cor+';margin-right:6px;font-size:15px"></i><span style="font-weight:600">'+t.nome+'</span></td>'
       +'<td><div style="width:20px;height:20px;border-radius:4px;background:'+t.cor+'"></div></td>'
+      +'<td style="text-align:center"><input type="checkbox" '+(temControleDevolucao(t.id)?'checked':'')+' onclick="toggleControleDevolucao(\''+t.id+'\', this.checked)" style="width:16px;height:16px;cursor:pointer" title="Exigir controle de devolução do documento assinado"></td>'
       +'<td>'+(isPadrao?'<span style="font-size:11px;color:var(--text3)">Padrão</span>':'<button class="btn-icon" onclick="removerTipo(\''+t.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button>')+'</td>'
       +'</tr>';
-  }).join('') || '<tr><td colspan="3" style="color:var(--text3);font-size:12px;padding:16px">Nenhum tipo.</td></tr>';
+  }).join('') || '<tr><td colspan="4" style="color:var(--text3);font-size:12px;padding:16px">Nenhum tipo.</td></tr>';
 }
 
 function funcNome(id){ var f=_funcs.find(function(x){return x.id===id;}); return f?f.nome:'(funcionário removido)'; }
@@ -1627,7 +1639,7 @@ function renderRelAdiantamento(){
 function renderRelDisciplinar(){
   var sit = document.getElementById('rel-disc-sit').value;
   var evs = _eventos.filter(function(ev){
-    if (!isMedidaDisciplinar(ev.tipoId)) return false;
+    if (!temControleDevolucao(ev.tipoId)) return false;
     if (sit==='pendente' && ev.discRecebido) return false;
     if (sit==='recebido' && !ev.discRecebido) return false;
     return true;

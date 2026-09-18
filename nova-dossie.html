@@ -2317,12 +2317,40 @@ function salvarPromocao(){
   if (_funcAtivo.fonte==='manual') {
     batch.set(db.collection('dossie_funcs').doc(_funcAtivo.id), upd, {merge:true});
   }
+  // #3 — Cria automaticamente o registro na Movimentação (módulo Gestão / coleção gp_movs).
+  // Traz nome, cargo e setor (ant→novo), competência e responsável; salário/líder/escala ficam
+  // em branco para o DP completar. Mapeamento do tipo do Dossiê para o "motivo" da Gestão:
+  var MOTIVO_MOV = {
+    'Promoção':'PROMOÇÃO',
+    'Mudança de setor':'MOV. LATERAL',
+    'Ajuste salarial':'AJUSTE EXCEPCIONAL',
+    'Movimentação interna':'MOV. LATERAL'
+  };
+  var cargoAtual = (_funcAtivo.cargo||'');
+  var setorAtual = (_funcAtivo.departamento||'');
+  var hoje = now.split('T')[0];
+  var movRef = db.collection('gp_movs').doc();
+  batch.set(movRef, {
+    competencia:(data||'').slice(0,7),
+    nome:_funcAtivo.nome||'',
+    dtAdmissao:'',
+    cargoAnt:cargoAtual, deptoAnt:setorAtual, salarioAnt:'', liderAnt:'', escalaAnt:'',
+    cargoNovo:(cargoNovo||cargoAtual||'O MESMO'), deptoNovo:(setorNovo||setorAtual||''),
+    salarioNovo:'', liderNovo:'', escalaNovo:'',
+    motivo:(MOTIVO_MOV[tipo]||'MOV. LATERAL'),
+    mudancaRisco:'NÃO', dtExame:'', dtAso:'', mudancaSindicato:'NÃO', insalPeric:'NÃO',
+    responsavel:(resp||'RH'),
+    obs:(obs?obs+' · ':'')+'Registrado via Dossiê',
+    origem:'dossie',
+    criadoEm:hoje, atualizadoEm:hoje
+  });
+
   var evRef = db.collection('dossie_eventos').doc();
   batch.set(evRef, {id:evRef.id, funcId:_funcAtivo.id, tipoId:'promocao', titulo:titulo, data:data, obs:obs, resp:resp, criadoEm:now, especial:true});
   batch.commit().then(function(){
     if (cargoNovo) _funcAtivo.cargo = cargoNovo;
     if (setorNovo) _funcAtivo.departamento = setorNovo;
-    toast('Movimentação registrada!','ok');
+    toast('Movimentação registrada e enviada à Gestão!','ok');
     closeModal('modal-promocao');
     renderDossie(_funcAtivo);
     if (_funcAtivo.fonte!=='manual') toast('Cargo/setor atualizados apenas no histórico (funcionário da Admissão).','warn');

@@ -164,6 +164,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="modtab" id="nav-exp" onclick="setView('exp')"><i class="ti ti-user-check"></i> Efetivações</div>
       <div class="modtab" id="nav-moto" onclick="setView('moto')"><i class="ti ti-truck"></i> Motoristas</div>
       <div class="modtab" id="nav-aux" onclick="setView('aux')"><i class="ti ti-school"></i> Auxílio-Educação</div>
+      <div class="modtab" id="nav-adiant" onclick="setView('adiant')"><i class="ti ti-cash"></i> Adiantamento Salarial</div>
       <div class="modtab modtab-dp" id="nav-rel" onclick="setView('rel')"><i class="ti ti-report"></i> Relatório DP <span class="nav-badge" id="badge-dp" style="display:none">0</span></div>
     </div>
 
@@ -285,6 +286,18 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div id="lista-aux"></div>
     </div>
 
+    <!-- ═══════ ADIANTAMENTO SALARIAL ═══════ -->
+    <div class="content" id="view-adiant" style="display:none">
+      <div class="filters">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input class="search-input" type="text" id="ad-busca" placeholder="Buscar por nome..." oninput="renderAdiant()">
+        </div>
+        <input class="fi" type="month" id="ad-comp" style="width:165px" onchange="renderAdiant()">
+      </div>
+      <div id="lista-adiant"></div>
+    </div>
+
     <!-- ═══════ RELATÓRIO DP ═══════ -->
     <div class="content" id="view-rel" style="display:none">
       <div class="filters">
@@ -386,6 +399,25 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div style="display:flex;gap:8px">
         <button class="btn" onclick="closeModal('modal-mov')">Cancelar</button>
         <button class="btn btn-primary" onclick="salvarMov()"><i class="ti ti-check"></i> Salvar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ MODAL ADIANTAMENTO SALARIAL ═══════ -->
+<div class="overlay" id="modal-adiant">
+  <div class="modal modal-sm">
+    <div class="modal-h"><span class="modal-title" id="ad-modal-title">Novo adiantamento</span><button class="btn-icon" onclick="closeModal('modal-adiant')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:16px">Registre o colaborador que optou por receber o adiantamento salarial.</div>
+      <div class="fg"><label class="fl">Nome do colaborador *</label><input class="fi" type="text" id="ad-nome" placeholder="Nome completo"></div>
+      <div class="fg" style="margin-bottom:0"><label class="fl">Data *</label><input class="fi" type="date" id="ad-data"></div>
+    </div>
+    <div class="modal-f">
+      <div><button class="btn btn-sm" id="ad-btn-excluir" style="display:none;color:#c0392b" onclick="excluirAdiant()"><i class="ti ti-trash"></i> Excluir</button></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeModal('modal-adiant')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarAdiant()"><i class="ti ti-check"></i> Salvar</button>
       </div>
     </div>
   </div>
@@ -674,6 +706,7 @@ var _movs = [];          // gp_movs
 var _mult = [];          // gp_mult
 var _moto = [];          // gp_motoristas
 var _aux = [];           // gp_auxedu
+var _adiants = [];       // gp_adiantamentos
 var _funcs = [];         // adm_processos (mesma origem do módulo Experiência)
 var _dossieFuncs = [];   // dossie_funcs (funcionários manuais do Dossiê)
 var _expData = {};       // exp_data (compartilhado com módulo Experiência)
@@ -686,6 +719,7 @@ var _movEditId = null;
 var _multEditId = null;
 var _motoEditId = null;
 var _auxEditId = null;
+var _adiantEditId = null;
 var _efetFuncId = null;
 var _usuario = null;
 
@@ -738,6 +772,11 @@ function iniciarListeners(){
     renderAll();
   },function(e){toast('Erro ao carregar auxílio-educação: '+e.message,'err');});
 
+  db.collection('gp_adiantamentos').onSnapshot(function(snap){
+    _adiants=snap.docs.map(function(d){var o=d.data();o.id=d.id;return o;});
+    renderAll();
+  },function(e){toast('Erro ao carregar adiantamentos: '+e.message,'err');});
+
   db.collection('adm_processos').onSnapshot(function(snap){
     _funcs=snap.docs.map(function(d){
       var p=d.data(),dd=p.dados||{};
@@ -765,17 +804,17 @@ function iniciarListeners(){
 }
 
 function renderAll(){
-  renderInd();renderMovs();renderMult();renderExp();renderMoto();renderAux();renderRel();atualizarBadgeDP();
+  renderInd();renderMovs();renderMult();renderExp();renderMoto();renderAux();renderAdiant();renderRel();atualizarBadgeDP();
 }
 
 // ════ NAVEGAÇÃO ════
 function setView(v){
   _viewAtiva=v;
-  ['ind','movs','mult','exp','moto','aux','rel'].forEach(function(k){
+  ['ind','movs','mult','exp','moto','aux','adiant','rel'].forEach(function(k){
     document.getElementById('view-'+k).style.display=(k===v?'block':'none');
     document.getElementById('nav-'+k).classList.toggle('active',k===v);
   });
-  var titulos={ind:'Indicadores',movs:'Movimentações Internas',mult:'Prêmio Multiplicadores',exp:'Efetivações — Período de Experiência',moto:'Motoristas — Cesta / Ticket',aux:'Auxílio-Educação',rel:'Relatório para o Departamento Pessoal'};
+  var titulos={ind:'Indicadores',movs:'Movimentações Internas',mult:'Prêmio Multiplicadores',exp:'Efetivações — Período de Experiência',moto:'Motoristas — Cesta / Ticket',aux:'Auxílio-Educação',adiant:'Adiantamento Salarial',rel:'Relatório para o Departamento Pessoal'};
   document.getElementById('topbar-title').textContent=titulos[v];
   var acoes='';
   if(v==='movs')acoes='<button class="btn btn-sm" onclick="abrirGrade()"><i class="ti ti-table"></i> Lançamento rápido</button>'
@@ -783,6 +822,7 @@ function setView(v){
   if(v==='mult')acoes='<button class="btn btn-primary btn-sm" onclick="novoMult()"><i class="ti ti-plus"></i> Novo multiplicador</button>';
   if(v==='moto')acoes='<button class="btn btn-primary btn-sm" onclick="novoMoto()"><i class="ti ti-plus"></i> Novo motorista</button>';
   if(v==='aux')acoes='<button class="btn btn-primary btn-sm" onclick="novoAux()"><i class="ti ti-plus"></i> Novo auxílio</button>';
+  if(v==='adiant')acoes='<button class="btn btn-primary btn-sm" onclick="novoAdiant()"><i class="ti ti-plus"></i> Novo adiantamento</button>';
   document.getElementById('topbar-actions').innerHTML=acoes;
   if(v==='rel')renderRel();
 }
@@ -1061,6 +1101,64 @@ function excluirMov(){
   db.collection('gp_movs').doc(_movEditId).delete()
     .then(function(){toast('Movimentação excluída.','ok');closeModal('modal-mov');})
     .catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ════ ADIANTAMENTO SALARIAL ════
+function novoAdiant(){
+  _adiantEditId=null;
+  document.getElementById('ad-modal-title').textContent='Novo adiantamento';
+  document.getElementById('ad-btn-excluir').style.display='none';
+  setVal('ad-nome','');setVal('ad-data',today());
+  openModal('modal-adiant');
+}
+function editarAdiant(id){
+  var a=_adiants.find(function(x){return x.id===id;});
+  if(!a)return;
+  _adiantEditId=id;
+  document.getElementById('ad-modal-title').textContent='Editar adiantamento';
+  document.getElementById('ad-btn-excluir').style.display='inline-flex';
+  setVal('ad-nome',a.nome);setVal('ad-data',a.data);
+  openModal('modal-adiant');
+}
+function salvarAdiant(){
+  var nome=val('ad-nome'),data=val('ad-data');
+  if(!nome||!data){toast('Preencha nome e data.','err');return;}
+  var doc={nome:nome,data:data,atualizadoEm:today()};
+  var p=_adiantEditId
+    ?db.collection('gp_adiantamentos').doc(_adiantEditId).set(doc,{merge:true})
+    :db.collection('gp_adiantamentos').add(Object.assign({criadoEm:today()},doc));
+  p.then(function(){toast('Adiantamento salvo!','ok');closeModal('modal-adiant');})
+   .catch(function(e){toast('Erro: '+e.message,'err');});
+}
+function excluirAdiant(){
+  if(!_adiantEditId)return;
+  if(!confirm('Excluir este registro? Esta ação não pode ser desfeita.'))return;
+  db.collection('gp_adiantamentos').doc(_adiantEditId).delete()
+    .then(function(){toast('Registro excluído.','ok');closeModal('modal-adiant');})
+    .catch(function(e){toast('Erro: '+e.message,'err');});
+}
+function renderAdiant(){
+  var busca=(document.getElementById('ad-busca').value||'').toLowerCase().trim();
+  var comp=document.getElementById('ad-comp').value;
+  var lista=_adiants.filter(function(a){
+    if(busca&&!(a.nome||'').toLowerCase().includes(busca))return false;
+    if(comp&&String(a.data||'').slice(0,7)!==comp)return false;
+    return true;
+  });
+  lista.sort(function(a,b){return String(b.data||'').localeCompare(String(a.data||''))||(a.nome||'').localeCompare(b.nome||'');});
+  var el=document.getElementById('lista-adiant');
+  if(!lista.length){el.innerHTML='<div class="empty"><i class="ti ti-cash"></i><p>Nenhum adiantamento registrado.</p></div>';return;}
+  el.onclick=function(e){var c=e.target.closest('[data-adiant-id]');if(c)editarAdiant(c.dataset.adiantId);};
+  el.innerHTML='<div style="font-size:12px;color:var(--text2);margin-bottom:10px">'+lista.length+' colaborador(es) com adiantamento</div>'
+    +lista.map(function(a){
+      return '<div class="mov-card" data-adiant-id="'+a.id+'" style="cursor:pointer">'
+        +'<div class="mov-top"><div>'
+        +'<div class="mov-nome">'+esc(a.nome)+'</div>'
+        +'<div class="mov-meta">Adiantamento salarial</div>'
+        +'</div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'
+        +'<span class="badge badge-blue"><i class="ti ti-calendar" style="font-size:11px"></i> '+fmtDate(a.data)+'</span>'
+        +'</div></div></div>';
+    }).join('');
 }
 
 // ════ MULTIPLICADORES ════

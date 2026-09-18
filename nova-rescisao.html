@@ -1010,7 +1010,12 @@ function sincronizarDossie(){
 
 function excluirProcesso(){
   if(!confirm('Excluir este processo? Esta ação não pode ser desfeita.'))return;
+  var nome=(_procAtual&&_procAtual.nome)||'';
+  var resp=(_procAtual&&_procAtual.criadoPor)||'RH';
+  var eraFinalizado=!!(_procAtual&&_procAtual.finalizado);
   db.collection('rescisao_processos').doc(_procAtual.id).delete().then(function(){
+    // Se o processo NÃO foi finalizado, reverte a pessoa para "ativo" no Dossiê e na Experiência
+    if(!eraFinalizado) aplicarDesligamento(nome, false, resp);
     toast('Excluído.','warn');mostrarLista();
   });
 }
@@ -1057,6 +1062,35 @@ function onTipoDesligChange(){
   document.getElementById('bloco-exp').style.display = t==='termino_experiencia' ? 'block' : 'none';
 }
 
+// Liga (ligar=true) ou reverte (ligar=false) o desligamento da pessoa no Dossiê e na Experiência.
+// A Experiência não guarda status próprio: ela lê 'desligado' de adm_processos, então marcar lá já reflete nos dois módulos.
+function aplicarDesligamento(nome, ligar, resp){
+  var now=new Date().toISOString();
+  var nomeBusca=(nome||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  if(!nomeBusca) return;
+  var updOn ={desligado:true, desligadoEm:now, desligadoPor:resp||'RH', atualizadoEm:now};
+  var updOff={desligado:false,desligadoEm:'',  atualizadoEm:now};
+  var upd=ligar?updOn:updOff;
+  // adm_processos (funcionários vindos da Admissão) — reflete no Dossiê E na Experiência
+  db.collection('adm_processos').get().then(function(snap){
+    var admDocId=null;
+    snap.docs.forEach(function(d){
+      var n=((d.data().dados||{}).nome||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if(n===nomeBusca) admDocId=d.id;
+    });
+    if(admDocId) db.collection('adm_processos').doc(admDocId).update(upd);
+    // dossie_funcs (cadastro manual) — só existe no Dossiê
+    db.collection('dossie_funcs').get().then(function(s2){
+      var dossieId=null;
+      s2.docs.forEach(function(d){
+        var n=(d.data().nome||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+        if(n===nomeBusca) dossieId=d.id;
+      });
+      if(dossieId) db.collection('dossie_funcs').doc(dossieId).update(upd);
+    });
+  }).catch(function(e){console.warn('aplicarDesligamento:',e);});
+}
+
 function criarProcesso(){
   var funcVal=document.getElementById('np2-func').value;
   var nome='';
@@ -1095,6 +1129,8 @@ function criarProcesso(){
     criadoPor:(document.getElementById('np2-resp').value||'RH').trim(),
     obs:(document.getElementById('np2-obs').value||'').trim(),
   }).then(function(){
+    // Já na abertura do processo, marca a pessoa como desligada no Dossiê e na Experiência
+    aplicarDesligamento(nome, true, (document.getElementById('np2-resp').value||'RH').trim());
     toast('Processo criado!','ok');closeModal('modal-proc');
   }).catch(function(e){toast('Erro: '+e.message,'err');});
 }

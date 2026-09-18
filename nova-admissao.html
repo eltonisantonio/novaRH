@@ -1387,15 +1387,22 @@ function excluirProcesso() {
 // ════════════════════════════════════════════
 function abrirExportacoes() { showProcTab('export'); }
 
+// Cabeçalho e montagem de linha do novo layout Sicredi (FO1029)
+var SICREDI_HEADER = 'CPF;NOME;DDD + TELEFONE;SOLICITAR CARTÃO?;CPF REPRESENTANTE;NOME REPRESENTANTE;CÓDIGO BANCO DESTINO;AGÊNCIA BANCO DESTINO;CONTA BANCO DESTINO;TIPO CONTA DESTINO;NÚMERO DA CONTA\r\n';
+function linhaSicredi(d) {
+  d = d || {};
+  var cpfD = String(d.cpf||'').replace(/\D/g,'');
+  var cpf = cpfD.length===11 ? cpfD.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/,'$1.$2.$3-$4') : (d.cpf||'');
+  var telD = String(d.telefone||'').replace(/\D/g,'');
+  var tel = telD.length>=3 ? '('+telD.slice(0,2)+') '+telD.slice(2) : (d.telefone||'');
+  // Colunas 4 a 11 (cartão, representante, banco/agência/conta/tipo/número destino) ficam em branco
+  return cpf+';'+(d.nome||'')+';'+tel+';;;;;;;;\r\n';
+}
+
 function gerarSicredi() {
   if (!_procAtual||!_procAtual.dados) return;
   var d = _procAtual.dados;
-  var csv = 'COD_CONVENIO;COOPERATIVA;QUANTIDADE;;;;;;;;;;;;;;;;;;;;\r\n';
-  csv += 'AAA;123;1;;;;;;;;;;;;;;;;;;;;\r\n';
-  csv += 'NOME TITULAR;DAT_NASCIMENTO;SEXO;NUM_CEP;NOME_BAIRRO;TP_LOGRADOURO;LOGRADOURO;NUMERO;COMPLEMENTO;MUNICIPIO;UF ENDERECO;NUM_CPF;IDENTIDADE;DAT_EMISSAO;ORG. EXPEDIDOR;UF IDENTIDADE;UA;NOM_REPRESENTANTE;CPF_REPRESENTANTE;COD_BANCO_DEST;NUM_AGENCIA_DEST;NUM_CONTA_DEST;Tipo de Conta\r\n';
-  var cpf = String(d.cpf||'').replace(/\D/g,'');
-  var nasc = fmtDate(d.nascimento);
-  csv += (d.nome||'')+';'+nasc+';;;;;;;;;;'+cpf+';;;;;;;'+(d.nome||'')+';'+cpf+';'+(d.bancoCC||'')+';'+(d.agenciaCC||'')+';'+(d.contaCC||'')+';'+(d.tipoConta||'')+'\r\n';
+  var csv = SICREDI_HEADER + linhaSicredi(d);
   download(csv, 'banco_sicredi_'+(d.nome||'func').replace(/ /g,'_')+'.csv', 'text/csv');
   toast('Planilha Sicredi gerada!','ok');
 }
@@ -1663,13 +1670,9 @@ function getSelecionados() {
 function gerarLoteSicredi() {
   var procs = getSelecionados();
   if (!procs.length) { toast('Nenhum funcionário selecionado.','err'); return; }
-  var csv = 'COD_CONVENIO;COOPERATIVA;QUANTIDADE;;;;;;;;;;;;;;;;;;;;\r\n';
-  csv += 'AAA;123;'+procs.length+';;;;;;;;;;;;;;;;;;;;\r\n';
-  csv += 'NOME TITULAR;DAT_NASCIMENTO;SEXO;NUM_CEP;NOME_BAIRRO;TP_LOGRADOURO;LOGRADOURO;NUMERO;COMPLEMENTO;MUNICIPIO;UF ENDERECO;NUM_CPF;IDENTIDADE;DAT_EMISSAO;ORG. EXPEDIDOR;UF IDENTIDADE;UA;NOM_REPRESENTANTE;CPF_REPRESENTANTE;COD_BANCO_DEST;NUM_AGENCIA_DEST;NUM_CONTA_DEST;Tipo de Conta\r\n';
+  var csv = SICREDI_HEADER;
   procs.forEach(function(p) {
-    var d = p.dados||{};
-    var cpf = String(d.cpf||'').replace(/\D/g,'');
-    csv += (d.nome||'')+';'+fmtDate(d.nascimento)+';;;;;;;;;;'+cpf+';;;;;;;'+(d.nome||'')+';'+cpf+';'+(d.bancoCC||'')+';'+(d.agenciaCC||'')+';'+(d.contaCC||'')+';'+(d.tipoConta||'')+'\r\n';
+    csv += linhaSicredi(p.dados||{});
   });
   var dt = new Date().toISOString().split('T')[0];
   download(csv, 'banco_sicredi_lote_'+dt+'.csv','text/csv');

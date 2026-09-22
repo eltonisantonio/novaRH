@@ -180,6 +180,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       </div>
       <div class="topbar-actions" id="topbar-actions">
         <button class="btn btn-sm" onclick="showTab('cfg')"><i class="ti ti-settings"></i> Configurações</button>
+        <button class="btn btn-sm" onclick="openImportGinastica()"><i class="ti ti-download"></i> Importar Ginástica</button>
         <button class="btn btn-sm" id="btn-evento-grupo" onclick="openEventoGrupo()"><i class="ti ti-users"></i> Evento em Grupo</button>
         <button class="btn btn-primary btn-sm" onclick="openCadastrarFunc()"><i class="ti ti-user-plus"></i> Novo Funcionário</button>
       </div>
@@ -695,6 +696,32 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
   </div>
 </div>
 
+<!-- MODAL IMPORTAR GINÁSTICA LABORAL -->
+<div class="overlay" id="modal-import">
+  <div class="modal lg">
+    <div class="modal-h"><span class="modal-title"><i class="ti ti-stretching" style="color:#3aa76d;margin-right:6px"></i>Importar Ginástica Laboral</span><button class="btn-icon" onclick="closeModal('modal-import')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div style="background:var(--s2);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.7">
+        <i class="ti ti-file-info" style="margin-right:4px"></i>
+        Arquivo <strong>CSV</strong> (separador <strong>;</strong>, codificação <strong>UTF-8</strong>) com as colunas, nesta ordem:<br>
+        <code style="display:inline-block;margin-top:6px;background:var(--white);border:1px solid var(--border);border-radius:4px;padding:3px 7px">cpf ; nome ; data ; situacao ; titulo ; observacao ; responsavel</code><br>
+        <span style="display:block;margin-top:8px">• A <strong>data</strong> em AAAA-MM-DD ou DD/MM/AAAA.<br>
+        • Só as linhas com situação <strong>PRESENTE</strong> são importadas (ausências são ignoradas).<br>
+        • Cada pessoa é localizada por <strong>CPF</strong> e, na falta dele, pelo <strong>nome completo</strong>.<br>
+        • Registros repetidos (mesma pessoa + mesmo dia) são ignorados automaticamente.</span>
+      </div>
+      <div class="fg"><label class="fl">Arquivo CSV <span style="color:#c0392b">*</span></label>
+        <input class="fi" type="file" id="imp-file" accept=".csv,text/csv,text/plain" onchange="document.getElementById('imp-preview').innerHTML='';document.getElementById('imp-btn-confirmar').style.display='none';"></div>
+      <button class="btn btn-sm" onclick="processarImportGinastica()"><i class="ti ti-eye"></i> Analisar arquivo</button>
+      <div id="imp-preview" style="margin-top:16px"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-import')">Cancelar</button>
+      <button class="btn btn-primary" id="imp-btn-confirmar" style="display:none" onclick="confirmarImportGinastica()"><i class="ti ti-database-import"></i> Confirmar importação</button>
+    </div>
+  </div>
+</div>
+
 <script>
 if (!firebase.apps.length) {
   firebase.initializeApp({
@@ -725,6 +752,7 @@ var TIPOS_DEFAULT = [
   {id:'exp',   nome:'Avaliação Período de Experiência',     cor:'#b6904a', icon:'ti-clock'},
   {id:'deslig',nome:'Pesquisa de Desligamento',             cor:'#6b6558', icon:'ti-door-exit'},
   {id:'integ', nome:'Integração',                           cor:'#9b72cf', icon:'ti-users'},
+  {id:'ginastica', nome:'Ginástica Laboral',                cor:'#3aa76d', icon:'ti-stretching'},
   {id:'outro', nome:'Outro',                                cor:'#a09890', icon:'ti-dots'},
 ];
 
@@ -738,7 +766,7 @@ var _EMPRESAS_CANON = [
   { canon:'RAGUIFE INDUSTRIA E COMERCIO DE RACOES LTDA',
     aliases:[], prefixes:['RAGUIFE'] },
 ];
-function _normEmp(s){ return (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
+function _normEmp(s){ return (s||'').toString().normalize('NFD').replace(/[̀-ͯ]/g,'').toUpperCase().replace(/\s+/g,' ').trim(); }
 var _EMP_LOOKUP = (function(){ var m={}; _EMPRESAS_CANON.forEach(function(g){ (g.aliases||[]).forEach(function(a){ m[_normEmp(a)]=g.canon; }); }); return m; })();
 function canonEmpresa(nome){
   if(!nome) return nome;
@@ -804,7 +832,7 @@ function temControleDevolucao(tipoId) {
   if (t && t.controleDevolucao===false) return false;
   if (tipoId==='adv' || tipoId==='suspensao' || tipoId==='orientacao_corretiva') return true;
   if (!t) return false;
-  var n = (t.nome||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  var n = (t.nome||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'');
   return n.indexOf('advertenc')>-1 || n.indexOf('suspens')>-1 || n.indexOf('orientacao corretiva')>-1;
 }
 function fmtVal(v) {
@@ -853,7 +881,7 @@ function atualizarVencimentoNR() {
 // Normaliza nome: remove acentos, maiúsculas, colapsa espaços
 function _normNome(s){
   return String(s||'')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .normalize('NFD').replace(/[̀-ͯ]/g,'')
     .toUpperCase().replace(/\s+/g,' ').trim();
 }
 // Chave de agrupamento: CPF (só dígitos) tem prioridade; senão, nome normalizado
@@ -997,6 +1025,7 @@ function showTab(t) {
     tb.innerHTML = 'Dossiê de Funcionários';
     ta.innerHTML = '<button class="btn btn-sm" onclick="showTab(\'cfg\')"><i class="ti ti-settings"></i> Configurações</button>'
       +'<button class="btn btn-sm" onclick="showTab(\'pilulas\')"><i class="ti ti-pill"></i> Pílulas</button>'
+      +'<button class="btn btn-sm" onclick="openImportGinastica()"><i class="ti ti-download"></i> Importar Ginástica</button>'
       +'<button class="btn btn-sm" onclick="openEventoGrupo()"><i class="ti ti-users"></i> Evento em Grupo</button>'
       +'<button class="btn btn-primary btn-sm" onclick="openCadastrarFunc()"><i class="ti ti-user-plus"></i> Novo Funcionário</button>';
   }
@@ -1519,7 +1548,7 @@ function renderCfg() {
   }).join('') || '<tr><td colspan="4" style="color:var(--text3);font-size:12px;padding:16px">Nenhum tipo.</td></tr>';
 }
 
-function funcNome(id){ var f=_funcs.find(function(x){return x.id===id;}); return f?f.nome:'(funcionário removido)'; }
+function funcNome(id){ var f=_funcs.find(function(x){return x.id===id || (x._ids&&x._ids.indexOf(id)!==-1);}); return f?f.nome:'(funcionário removido)'; }
 function funcDepto(id){ var f=_funcs.find(function(x){return x.id===id || (x._ids&&x._ids.indexOf(id)!==-1);}); return f&&f.departamento?f.departamento:'—'; }
 
 function showCfgTab(tab){
@@ -1952,6 +1981,152 @@ document.addEventListener('click', function(e){
   panel.style.display = 'none';
 });
 
+// ════ IMPORTAÇÃO GINÁSTICA LABORAL ════
+var _impRows = null; // linhas prontas para confirmação
+
+function openImportGinastica(){
+  var fi = document.getElementById('imp-file'); if (fi) fi.value = '';
+  document.getElementById('imp-preview').innerHTML = '';
+  var btn = document.getElementById('imp-btn-confirmar');
+  btn.style.display = 'none'; btn.disabled = false;
+  _impRows = null;
+  openModal('modal-import');
+}
+// CPF -> só dígitos
+function _cpfDigits(s){ return String(s||'').replace(/\D/g,''); }
+// Data -> AAAA-MM-DD (aceita AAAA-MM-DD e DD/MM/AAAA)
+function _normDataImp(s){
+  s = String(s||'').trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  var m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (m) return m[3]+'-'+m[2].padStart(2,'0')+'-'+m[1].padStart(2,'0');
+  return '';
+}
+// Parser CSV (separador ; , respeita aspas duplas)
+function _parseCSVImp(texto){
+  var linhas = texto.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(function(l){ return l.trim()!==''; });
+  return linhas.map(function(l){
+    var campos = [], atual = '', dentro = false;
+    for (var i=0;i<l.length;i++){
+      var c = l[i];
+      if (c === '"'){ if (dentro && l[i+1]==='"'){ atual+='"'; i++; } else dentro = !dentro; }
+      else if ((c === ';' || c === '\t') && !dentro){ campos.push(atual); atual=''; }
+      else atual += c;
+    }
+    campos.push(atual);
+    return campos.map(function(x){ return x.trim(); });
+  });
+}
+
+function processarImportGinastica(){
+  var fi = document.getElementById('imp-file');
+  var file = fi && fi.files ? fi.files[0] : null;
+  if (!file){ toast('Selecione o arquivo CSV.','err'); return; }
+  var reader = new FileReader();
+  reader.onload = function(e){
+    var linhas = _parseCSVImp(e.target.result);
+    if (!linhas.length){ toast('Arquivo vazio.','err'); return; }
+    // Detecta cabeçalho
+    var idx = { cpf:0, nome:1, data:2, situacao:3, titulo:4, obs:5, resp:6 };
+    var prim = linhas[0].map(function(x){ return _normNome(x); });
+    var temHeader = prim.indexOf('CPF')>-1 || prim.indexOf('NOME')>-1 || prim.indexOf('DATA')>-1;
+    if (temHeader){
+      idx = {};
+      prim.forEach(function(h,i){
+        if (h==='CPF') idx.cpf=i;
+        else if (h==='NOME') idx.nome=i;
+        else if (h==='DATA') idx.data=i;
+        else if (h==='SITUACAO'||h==='PRESENCA'||h==='PRESENCA/AUSENCIA'||h==='STATUS') idx.situacao=i;
+        else if (h==='TITULO'||h==='ATIVIDADE'||h==='EVENTO') idx.titulo=i;
+        else if (h==='OBSERVACAO'||h==='OBS'||h==='OBSERVACOES') idx.obs=i;
+        else if (h==='RESPONSAVEL'||h==='RESP'||h==='FACILITADOR') idx.resp=i;
+      });
+      linhas = linhas.slice(1);
+    }
+    // Lookups da base de funcionários
+    var porCpf = {}, porNome = {};
+    _funcs.forEach(function(f){
+      var cd = _cpfDigits(f.cpf);
+      if (cd) porCpf[cd] = f;
+      var nn = _normNome(f.nome);
+      if (nn && !porNome[nn]) porNome[nn] = f;
+    });
+    // Eventos de ginástica já existentes (funcId + data) para evitar duplicidade
+    var jaExiste = {};
+    _eventos.forEach(function(ev){
+      if (ev.tipoId==='ginastica') jaExiste[ev.funcId+'|'+ev.data] = true;
+    });
+
+    var ok=[], semMatch=[], semData=0, ausentes=0, dup=0;
+    linhas.forEach(function(cols){
+      var cpf  = idx.cpf!==undefined ? _cpfDigits(cols[idx.cpf]) : '';
+      var nome = idx.nome!==undefined ? (cols[idx.nome]||'') : '';
+      var data = idx.data!==undefined ? _normDataImp(cols[idx.data]) : '';
+      var sitRaw = idx.situacao!==undefined ? (cols[idx.situacao]||'') : 'PRESENTE';
+      var sit  = _normNome(sitRaw);
+      var titulo = (idx.titulo!==undefined && cols[idx.titulo]) ? cols[idx.titulo] : 'Ginástica Laboral';
+      var obs  = idx.obs!==undefined ? (cols[idx.obs]||'') : '';
+      var resp = idx.resp!==undefined ? (cols[idx.resp]||'') : '';
+      // Ausências não entram no dossiê
+      if (sit.indexOf('AUSENTE')>-1 || sit==='FALTA' || sit==='F' || sit==='N' || sit==='NAO'){ ausentes++; return; }
+      if (!data){ semData++; return; }
+      var f = (cpf && porCpf[cpf]) || porNome[_normNome(nome)];
+      if (!f){ semMatch.push(nome || cpf || '(linha sem identificação)'); return; }
+      var chave = f.id+'|'+data;
+      if (jaExiste[chave]){ dup++; return; }
+      jaExiste[chave] = true; // também evita duplicata dentro do próprio arquivo
+      ok.push({ funcId:f.id, nome:f.nome, data:data, titulo:titulo, obs:obs, resp:resp });
+    });
+
+    _impRows = ok;
+    // Preview
+    var html = '<div class="stats-row" style="margin-bottom:14px;flex-wrap:wrap">'
+      +'<div class="stat"><div class="stat-v" style="color:#1a5c35">'+ok.length+'</div><div class="stat-l">Presenças a importar</div></div>'
+      +'<div class="stat"><div class="stat-v" style="color:#8b1c1c">'+semMatch.length+'</div><div class="stat-l">Sem correspondência</div></div>'
+      +'<div class="stat"><div class="stat-v" style="color:#7d4e00">'+dup+'</div><div class="stat-l">Já registradas</div></div>'
+      +'<div class="stat"><div class="stat-v" style="color:var(--text3)">'+ausentes+'</div><div class="stat-l">Ausências ignoradas</div></div>'
+      +'</div>';
+    if (semData) html += '<div style="font-size:12px;color:#8b1c1c;margin-bottom:8px"><i class="ti ti-alert-triangle" style="margin-right:3px"></i>'+semData+' linha(s) sem data válida foram ignoradas.</div>';
+    if (semMatch.length){
+      var vistos = {}, unicos = [];
+      semMatch.forEach(function(n){ var k=_normNome(n); if(!vistos[k]){ vistos[k]=1; unicos.push(n); } });
+      var listaHtml = unicos.slice(0,40).map(function(n){ return '<li>'+n+'</li>'; }).join('');
+      html += '<div class="extra-block"><div class="extra-block-title" style="color:#8b1c1c"><i class="ti ti-user-question"></i> Não encontrados no dossiê ('+unicos.length+')</div>'
+        +'<div style="font-size:12px;color:var(--text2);margin-bottom:6px">Cadastre estas pessoas (ou acerte o CPF/nome) para que entrem na próxima importação:</div>'
+        +'<ul style="font-size:12px;color:var(--text2);padding-left:18px;max-height:170px;overflow:auto;margin:0">'+listaHtml+(unicos.length>40?'<li>… e mais '+(unicos.length-40)+'</li>':'')+'</ul></div>';
+    }
+    document.getElementById('imp-preview').innerHTML = html;
+    document.getElementById('imp-btn-confirmar').style.display = ok.length ? 'inline-flex' : 'none';
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function confirmarImportGinastica(){
+  if (!_impRows || !_impRows.length){ toast('Nada para importar.','err'); return; }
+  var rows = _impRows.slice();
+  var now = new Date().toISOString();
+  var btn = document.getElementById('imp-btn-confirmar');
+  btn.disabled = true;
+  function commitLote(start){
+    if (start >= rows.length){
+      toast(rows.length+' presença(s) importada(s)!','ok');
+      btn.disabled = false;
+      closeModal('modal-import');
+      _impRows = null;
+      return;
+    }
+    var batch = db.batch();
+    var fim = Math.min(start+400, rows.length); // limite do batch do Firestore é 500
+    for (var k=start;k<fim;k++){
+      var r = rows[k];
+      var ref = db.collection('dossie_eventos').doc();
+      batch.set(ref, { id:ref.id, funcId:r.funcId, tipoId:'ginastica', titulo:r.titulo||'Ginástica Laboral', data:r.data, obs:r.obs||'', resp:r.resp||'', criadoEm:now, ginasticaImport:true });
+    }
+    batch.commit().then(function(){ commitLote(fim); }).catch(function(e){ btn.disabled=false; toast('Erro: '+e.message,'err'); });
+  }
+  commitLote(0);
+}
+
 // ════ PÍLULAS ════
 var CAT_PILULA = {
   'Convivência': {cor:'#7c5cc4', icon:'ti-heart-handshake'},
@@ -2317,40 +2492,12 @@ function salvarPromocao(){
   if (_funcAtivo.fonte==='manual') {
     batch.set(db.collection('dossie_funcs').doc(_funcAtivo.id), upd, {merge:true});
   }
-  // #3 — Cria automaticamente o registro na Movimentação (módulo Gestão / coleção gp_movs).
-  // Traz nome, cargo e setor (ant→novo), competência e responsável; salário/líder/escala ficam
-  // em branco para o DP completar. Mapeamento do tipo do Dossiê para o "motivo" da Gestão:
-  var MOTIVO_MOV = {
-    'Promoção':'PROMOÇÃO',
-    'Mudança de setor':'MOV. LATERAL',
-    'Ajuste salarial':'AJUSTE EXCEPCIONAL',
-    'Movimentação interna':'MOV. LATERAL'
-  };
-  var cargoAtual = (_funcAtivo.cargo||'');
-  var setorAtual = (_funcAtivo.departamento||'');
-  var hoje = now.split('T')[0];
-  var movRef = db.collection('gp_movs').doc();
-  batch.set(movRef, {
-    competencia:(data||'').slice(0,7),
-    nome:_funcAtivo.nome||'',
-    dtAdmissao:'',
-    cargoAnt:cargoAtual, deptoAnt:setorAtual, salarioAnt:'', liderAnt:'', escalaAnt:'',
-    cargoNovo:(cargoNovo||cargoAtual||'O MESMO'), deptoNovo:(setorNovo||setorAtual||''),
-    salarioNovo:'', liderNovo:'', escalaNovo:'',
-    motivo:(MOTIVO_MOV[tipo]||'MOV. LATERAL'),
-    mudancaRisco:'NÃO', dtExame:'', dtAso:'', mudancaSindicato:'NÃO', insalPeric:'NÃO',
-    responsavel:(resp||'RH'),
-    obs:(obs?obs+' · ':'')+'Registrado via Dossiê',
-    origem:'dossie',
-    criadoEm:hoje, atualizadoEm:hoje
-  });
-
   var evRef = db.collection('dossie_eventos').doc();
   batch.set(evRef, {id:evRef.id, funcId:_funcAtivo.id, tipoId:'promocao', titulo:titulo, data:data, obs:obs, resp:resp, criadoEm:now, especial:true});
   batch.commit().then(function(){
     if (cargoNovo) _funcAtivo.cargo = cargoNovo;
     if (setorNovo) _funcAtivo.departamento = setorNovo;
-    toast('Movimentação registrada e enviada à Gestão!','ok');
+    toast('Movimentação registrada!','ok');
     closeModal('modal-promocao');
     renderDossie(_funcAtivo);
     if (_funcAtivo.fonte!=='manual') toast('Cargo/setor atualizados apenas no histórico (funcionário da Admissão).','warn');

@@ -119,6 +119,34 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .nb-tag.last{background:var(--black);color:var(--lime);}
 .nb-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid;white-space:nowrap;}
 .nb-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+/* FEEDBACK */
+.fb-sec{border:1px solid var(--border);border-radius:var(--rl);margin-bottom:16px;overflow:hidden;}
+.fb-sec-h{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--black);color:var(--cream);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.8px;}
+.fb-sec-h .num{background:var(--lime);color:var(--black);width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:12px;}
+.fb-sec-b{padding:14px;}
+.fb-blocos{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.fb-bloco{border:1px solid var(--border);border-radius:var(--r);}
+.fb-bloco-h{padding:8px 10px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;background:var(--s2);border-bottom:1px solid var(--border);display:flex;justify-content:space-between;gap:6px;}
+.fb-crit{display:flex;align-items:center;gap:6px;padding:7px 10px;border-bottom:1px solid var(--border);}
+.fb-crit:last-child{border-bottom:none;}
+.fb-crit-t{flex:1;font-size:11.5px;font-weight:500;line-height:1.3;}
+.fb-crit.falta .fb-crit-t{color:#8b1c1c;}
+.rt{display:flex;gap:3px;}
+.rt-btn{width:22px;height:22px;border-radius:4px;border:1px solid var(--border2);background:var(--white);font-size:11px;font-weight:800;cursor:pointer;font-family:'Inter',sans-serif;color:var(--text2);padding:0;}
+.rt-btn:hover{border-color:var(--black);}
+.rt-btn.on{color:#fff;border-color:transparent;}
+.fb-legend{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.fb-legend span{font-size:10.5px;font-weight:600;color:var(--text2);background:var(--s2);border:1px solid var(--border);border-radius:4px;padding:3px 7px;}
+.fb-grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.fb-grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.fb-plano{width:100%;border-collapse:collapse;}
+.fb-plano th{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);text-align:left;padding:4px 6px;}
+.fb-plano td{padding:3px;}
+.fb-plano .fi{padding:7px 8px;font-size:12px;}
+.opt{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:500;margin-bottom:6px;cursor:pointer;}
+.opt input{accent-color:var(--black);width:15px;height:15px;}
+.fb-media{background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:14px;text-align:center;}
+.fb-media b{font-size:34px;font-weight:900;letter-spacing:-1px;}
 /* MODAL */
 .overlay{display:none;position:fixed;inset:0;background:rgba(14,15,18,.55);z-index:100;align-items:center;justify-content:center;}
 .overlay.open{display:flex;}
@@ -244,7 +272,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
             </select></div>
           <div><label class="cfg-label">Fase</label>
             <select class="fs" id="r-fase" onchange="renderRel()">
-              <option value="">Todas</option><option value="exp">Período de experiência</option><option value="pos">Rotinas pós-experiência</option><option value="9box">Avaliação 9Box</option>
+              <option value="">Todas</option><option value="exp">Período de experiência</option><option value="fb">Feedback de Desempenho</option><option value="9box">Avaliação 9Box</option>
             </select></div>
           <div><label class="cfg-label">Empresa</label>
             <select class="fs sel-empresa" id="r-emp" onchange="renderRel()"><option value="">Todas</option></select></div>
@@ -268,7 +296,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
     <div class="content" id="view-cfg" style="display:none">
       <div style="margin-bottom:20px">
         <div style="font-size:14px;font-weight:800">Configurações do Acompanhamento</div>
-        <div style="font-size:12px;color:var(--text2)">Atividades do período de experiência e rotinas após a efetivação.</div>
+        <div style="font-size:12px;color:var(--text2)">Atividades do período de experiência, feedbacks (maio/setembro) e avaliação 9Box (junho/dezembro).</div>
       </div>
 
       <div class="cfg-section">
@@ -297,17 +325,16 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       </div>
 
       <div class="cfg-section">
-        <div style="font-size:13px;font-weight:800;margin-bottom:4px">Rotinas Pós-Experiência <span class="badge badge-blue" style="margin-left:6px">Efetivados</span></div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Geradas automaticamente para todos os efetivados, contando a partir da data de efetivação (ex.: feedback do gestor a cada 6 meses). O RH registra a data em que o gestor devolveu o feedback preenchido.</div>
-        <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;margin-bottom:14px;align-items:end">
-          <div><label class="cfg-label">Título da rotina</label><input class="fi" type="text" id="nr-titulo" placeholder="Ex: Feedback do gestor"></div>
-          <div><label class="cfg-label">A cada (meses)</label><input class="fi" type="number" id="nr-meses" placeholder="6" style="width:110px" min="1" max="60"></div>
-          <div><label class="cfg-label">Repetir</label>
-            <select class="fs" id="nr-rec" style="width:150px"><option value="1">Recorrente</option><option value="0">Apenas uma vez</option></select></div>
-          <button class="btn btn-primary" style="height:38px" onclick="addRotina()"><i class="ti ti-plus"></i> Adicionar</button>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px">
+          <div><div style="font-size:13px;font-weight:800;margin-bottom:4px">Modelo do Feedback de Desempenho <span class="badge badge-blue" style="margin-left:6px">Maio · Setembro</span></div>
+          <div style="font-size:12px;color:var(--text2)">Critérios avaliados de 1 a 5 em cada bloco — um por linha. Os feedbacks já lançados guardam o texto do critério, então alterações aqui não mudam o histórico.</div></div>
+          <button class="btn btn-sm" onclick="restaurarModeloFb()" style="flex-shrink:0"><i class="ti ti-restore"></i> Restaurar padrão</button>
         </div>
-        <table class="cfg-table"><thead><tr><th>Rotina</th><th>Intervalo</th><th>Repetição</th><th style="width:50px"></th></tr></thead>
-        <tbody id="tb-rotinas"></tbody></table>
+        <div id="mf-grid" class="fb-grid3"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;gap:10px">
+          <span style="font-size:11px;color:var(--text3)">O feedback de maio vence em 31/05 e o de setembro em 30/09. Participam os colaboradores efetivados antes do início do mês do ciclo.</span>
+          <button class="btn btn-primary" onclick="salvarModeloFb()"><i class="ti ti-device-floppy"></i> Salvar modelo</button>
+        </div>
       </div>
 
       <div class="cfg-section">
@@ -338,14 +365,13 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 
       <div class="cfg-section">
         <div style="font-size:13px;font-weight:800;margin-bottom:4px">Início do Acompanhamento <span class="badge badge-blue" style="margin-left:6px">Trava</span></div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Colaboradores cuja experiência terminou <strong>antes</strong> desta data não aparecem em Efetivados, na Matriz 9Box, na planilha nem no relatório. Rotinas e ciclos 9Box que vencem antes dela também não são gerados.</div>
-        <div style="display:grid;grid-template-columns:auto auto auto;gap:12px;align-items:end;justify-content:start">
+        <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Colaboradores cuja experiência terminou <strong>antes</strong> desta data não aparecem em Efetivados, nos painéis nem no relatório. Ciclos de feedback e 9Box que vencem antes dela não geram pendência.</div>
+        <div style="display:grid;grid-template-columns:auto auto;gap:12px;align-items:end;justify-content:start">
           <div><label class="cfg-label">Início do acompanhamento</label><input class="fi" type="date" id="pr-inicio" style="width:200px"></div>
-          <div><label class="cfg-label">Carência p/ 1ª avaliação 9Box (dias)</label><input class="fi" type="number" id="pr-carencia" style="width:200px" min="0"></div>
           <button class="btn btn-primary" style="height:38px" onclick="salvarParams()"><i class="ti ti-device-floppy"></i> Salvar</button>
         </div>
         <div id="pr-info" style="font-size:12px;font-weight:600;color:var(--text2);margin-top:12px"></div>
-        <div style="font-size:11px;color:var(--text3);margin-top:6px">A avaliação 9Box é semestral (vence em 30/06 e 31/12). A carência define quantos dias após a efetivação o colaborador precisa ter para entrar no ciclo.</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px">Exceção: quem já tem avaliação 9Box ou feedback lançado continua aparecendo, mesmo que tenha sido efetivado antes desta data. Calendário: feedback em maio e setembro, avaliação 9Box em junho e dezembro.</div>
       </div>
     </div>
   </div>
@@ -387,6 +413,21 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
     <div class="modal-f">
       <button class="btn" onclick="closeModal('modal-nb')">Cancelar</button>
       <button class="btn btn-primary" onclick="salvarAvaliacao()"><i class="ti ti-check"></i> Salvar avaliação</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FEEDBACK DE DESEMPENHO -->
+<div class="overlay" id="modal-fb">
+  <div class="modal" style="width:1080px">
+    <div class="modal-h"><div><span class="modal-title">Feedback de Desempenho</span><div id="fb-sub" style="font-size:12px;color:var(--text2);margin-top:2px"></div></div><button class="btn-icon" onclick="closeModal('modal-fb')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b" id="fb-body"></div>
+    <div class="modal-f" style="justify-content:space-between">
+      <div id="fb-foot-info" style="font-size:12px;font-weight:600;color:var(--text2);align-self:center"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeModal('modal-fb')">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarFeedback()"><i class="ti ti-check"></i> Salvar feedback</button>
+      </div>
     </div>
   </div>
 </div>
@@ -437,6 +478,29 @@ var NB_PADRAO = {
 var NB_CORES = {p3d1:'#d4a020',p3d2:'#8fbf4a',p3d3:'#3f9e6a',p2d1:'#e0823d',p2d2:'#d4a020',
   p2d3:'#8fbf4a',p1d1:'#e05252',p1d2:'#e0823d',p1d3:'#d4a020'};
 var NB = {}, NIVEL = {}, EIXO_X = '', EIXO_Y = '';
+
+// Feedback de Desempenho (maio/setembro) — modelo padrão, critérios editáveis em Configurações (exp_cfg/config.fbModelo)
+var FB_PADRAO = {secoes:[
+  {id:'A',nome:'Desempenho e Entrega',icon:'ti-settings',criterios:['Conhece e executa suas atividades','Entrega suas atividades dentro dos prazos','Demonstra qualidade no trabalho realizado','Demonstra organização no dia a dia','Demonstra iniciativa para resolver situações']},
+  {id:'B',nome:'Comportamento e Relacionamento',icon:'ti-users',criterios:['Mantém bom relacionamento com a equipe','Comunica-se de forma clara e respeitosa','Recebe e aplica orientações e feedbacks','Demonstra responsabilidade e comprometimento','Demonstra postura alinhada aos valores da empresa']},
+  {id:'C',nome:'Desenvolvimento',icon:'ti-plant-2',criterios:['Demonstra interesse em aprender','Apresenta evolução desde o último feedback','Demonstra autonomia compatível com o cargo','Busca melhorar quando recebe uma orientação','Está preparado para assumir novas responsabilidades']}
+]};
+var ESCALA = {1:'Precisa melhorar muito',2:'Precisa melhorar',3:'Atende ao esperado',4:'Acima do esperado',5:'Destaque'};
+var CLASSIF = {1:'Necessita de atenção',2:'Em desenvolvimento',3:'Atende às expectativas',4:'Acima das expectativas',5:'Destaque'};
+var CLASSIF_COR = {1:'#e05252',2:'#e0823d',3:'#d4a020',4:'#8fbf4a',5:'#3f9e6a'};
+var SITUACOES = {normal:'Acompanhamento normal',pdi:'Necessita PDI',proximo:'Necessita acompanhamento mais próximo do gestor',reconhecimento:'Reconhecimento / possibilidade de novas responsabilidades',outro:'Outro'};
+var SIMNAO = {sim:'Sim',parcial:'Parcialmente',nao:'Não'};
+var FB = {secoes:[]};
+function aplicarModeloFb(){
+  var m=(_cfg&&_cfg.fbModelo)||{},ms=m.secoes||[];
+  FB.secoes=FB_PADRAO.secoes.map(function(sp){
+    var cs=ms.filter(function(x){return x.id===sp.id;})[0]||{};
+    var crit=(cs.criterios&&cs.criterios.length?cs.criterios:sp.criterios);
+    return {id:sp.id,nome:cs.nome||sp.nome,icon:sp.icon,criterios:crit.map(function(t,i){return {id:sp.id+(i+1),t:typeof t==='string'?t:t.t};})};
+  });
+}
+function fmtMedia(v){return (v==null||isNaN(v))?'—':Number(v).toFixed(1).replace('.',',');}
+function classifDeMedia(m){if(m==null||isNaN(m))return null;return Math.min(5,Math.max(1,Math.round(m)));}
 function aplicarTermosNb(){
   var t=(_cfg&&_cfg.nbTermos)||{},q=t.quad||{},nv=t.niveis||{};
   EIXO_X=t.eixoX||NB_PADRAO.eixoX; EIXO_Y=t.eixoY||NB_PADRAO.eixoY;
@@ -449,7 +513,7 @@ function aplicarTermosNb(){
 
 var _funcs    = [];
 var _expData  = {}; // {funcId: {checks:{}, avaliacoes:[]}}
-var _cfg      = {videos:[], contatos:[], rotinasPos:[], params:{}};
+var _cfg      = {videos:[], contatos:[], params:{}};
 var _tabAtiva = 'ativos';
 var _view     = 'lista';
 var _funcAtivoId = null;
@@ -458,6 +522,9 @@ var _tlMap = {};
 var _nbCiclo = null;   // ciclo selecionado no painel da aba Efetivados
 var _nbFiltro = null;  // 'p3d3' | 'none' | null
 var _nbSel = null;     // {p,d} no modal
+var _painel = '9box';  // painel da aba Efetivados: '9box' | 'fb'
+var _fbCiclo = null;   // ciclo de feedback selecionado no painel
+var _fbFiltro = null;  // 'none' | 'c1'..'c5' | 's:pdi' ...
 
 // ════ UTILS ════
 function toast(msg,tp){var el=document.getElementById('toast');el.textContent=msg;el.className='toast '+(tp||'');el.classList.add('show');setTimeout(function(){el.classList.remove('show');},2800);}
@@ -490,9 +557,11 @@ function tempoCasa(adm){
   if(!a)return m+(m===1?' mês':' meses');
   return a+(a===1?' ano':' anos')+(r?' e '+r+(r===1?' mês':' meses'):'');
 }
-function P(){var p=_cfg.params||{};return {inicio:p.inicio||'2026-07-01',carencia:(p.carencia!=null&&p.carencia!==''?parseInt(p.carencia):60)};}
+function P(){var p=_cfg.params||{};return {inicio:p.inicio||'2026-07-01'};}
 // Trava: efetivado cuja experiência terminou antes do início do acompanhamento
-function foraDoAcomp(f){return isEfetivado(f)&&dataEfetivacao(f)<P().inicio;}
+// (exceção: quem já tem avaliação 9Box ou feedback lançado continua aparecendo)
+function temHistorico(f){var e=_expData[f.id]||{};return !!((e.avaliacoes&&e.avaliacoes.length)||(e.feedbacks&&e.feedbacks.length));}
+function foraDoAcomp(f){return isEfetivado(f)&&dataEfetivacao(f)<P().inicio&&!temHistorico(f);}
 
 function ultSexta(m,a){var d=new Date(a,m+1,0,12);while(d.getDay()!==5)d.setDate(d.getDate()-1);return iso(d);}
 // Cerimônia: última sexta-feira do mês em que a experiência termina (ou do mês seguinte, se já passou)
@@ -512,18 +581,47 @@ function mesAlteracaoSalario(expFim){
   return nomes[prox.getMonth()]+'/'+prox.getFullYear();
 }
 
-// ════ CICLOS 9BOX (semestrais) ════
-function cicloDe(dt){var p=dt.split('-');return p[0]+'-'+(parseInt(p[1],10)<=6?1:2);}
-function cicloFim(c){var p=c.split('-');return p[0]+(p[1]==='1'?'-06-30':'-12-31');}
-function cicloProx(c){var p=c.split('-');return p[1]==='1'?p[0]+'-2':(parseInt(p[0])+1)+'-1';}
-function cicloLabel(c){var p=c.split('-');return p[1]+'º semestre/'+p[0];}
-function cicloCurto(c){var p=c.split('-');return p[1]+'S/'+p[0].slice(2);}
-function listaCiclos(de,ate){var out=[],c=de,g=0;while(c<=ate&&g<100){out.push(c);c=cicloProx(c);g++;}return out;}
+// ════ CICLOS (calendário fixo) ════
+// Avaliação 9Box: junho (código AAAA-1) e dezembro (AAAA-2)
+// Feedback de Desempenho: maio (AAAA-05) e setembro (AAAA-09)
+var MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function fimMes(a,m){return a+'-'+pad(m)+'-'+pad(new Date(a,m,0).getDate());}
+function cicloMes(c){var p=c.split('-');return p[1]==='1'?6:p[1]==='2'?12:parseInt(p[1],10);}
+function cicloAno(c){return parseInt(c.split('-')[0],10);}
+function cicloTipo(c){var p=c.split('-')[1];return (p==='1'||p==='2')?'9box':'fb';}
+function cicloFim(c){return fimMes(cicloAno(c),cicloMes(c));}
+function cicloInicio(c){return cicloAno(c)+'-'+pad(cicloMes(c))+'-01';}
+function cicloLabel(c){return MESES[cicloMes(c)-1]+'/'+cicloAno(c);}
+function cicloCurto(c){return MESES[cicloMes(c)-1].slice(0,3)+'/'+String(cicloAno(c)).slice(2);}
+function cicloDe(dt){var p=dt.split('-');return p[0]+'-'+(parseInt(p[1],10)<=6?1:2);} // 9Box do semestre da data
+// Lista de ciclos de um tipo cujo vencimento está entre "de" e "ate" (datas ISO)
+function ciclosEntre(tipo,de,ate){
+  var out=[],a0=parseInt(de.slice(0,4)),a1=parseInt(ate.slice(0,4));
+  var sufs=tipo==='9box'?['1','2']:['05','09'];
+  for(var a=a0;a<=a1;a++)sufs.forEach(function(s){var c=a+'-'+s,f=cicloFim(c);if(f>=de&&f<=ate)out.push(c);});
+  return out;
+}
+function ultimoCicloAte(tipo,dt){var l=ciclosEntre(tipo,'2000-01-01',dt);return l[l.length-1]||null;}
+function proximoCicloDesde(tipo,dt){var l=ciclosEntre(tipo,dt,addMonths(dt,13));return l[0]||null;}
+// Colaborador participa do ciclo se já estava efetivado antes do mês do ciclo começar
+function elegivelCiclo(f,c){return dataEfetivacao(f)<cicloInicio(c);}
 
 function nbKey(a){return 'p'+a.potencial+'d'+a.desempenho;}
 function getAvaliacoes(f){var e=_expData[f.id]||{};return (e.avaliacoes||[]).slice().sort(function(a,b){return a.ciclo.localeCompare(b.ciclo);});}
 function avDoCiclo(f,c){return getAvaliacoes(f).filter(function(a){return a.ciclo===c;})[0]||null;}
 function ultimaAv(f){var l=getAvaliacoes(f);return l.length?l[l.length-1]:null;}
+function getFeedbacks(f){var e=_expData[f.id]||{};return (e.feedbacks||[]).slice().sort(function(a,b){return cicloFim(a.ciclo).localeCompare(cicloFim(b.ciclo));});}
+function fbDoCiclo(f,c){return getFeedbacks(f).filter(function(x){return x.ciclo===c;})[0]||null;}
+function ultimoFb(f){var l=getFeedbacks(f);return l.length?l[l.length-1]:null;}
+function mediaSecao(fb,secId){
+  var v=(fb.notas||[]).filter(function(n){return n.sec===secId&&n.n;}).map(function(n){return n.n;});
+  return v.length?v.reduce(function(a,b){return a+b;},0)/v.length:null;
+}
+function fbChip(fb,comCiclo){
+  if(!fb)return'';var k=fb.classif||classifDeMedia(fb.media),c=CLASSIF_COR[k]||'#a09890';
+  return '<span class="nb-chip" style="background:'+c+'1a;border-color:'+c+'66;color:var(--text)" title="'+(k?esc(CLASSIF[k]):'')+'"><i class="ti ti-messages" style="font-size:11px;color:'+c+'"></i>'
+    +fmtMedia(fb.media)+(k?' · '+esc(CLASSIF[k]):'')+(comCiclo?' · '+cicloCurto(fb.ciclo):'')+'</span>';
+}
 function nbChip(a,comCiclo){
   if(!a)return'';var b=NB[nbKey(a)];
   return '<span class="nb-chip" style="background:'+b.c+'1a;border-color:'+b.c+'66;color:var(--text)"><span class="nb-dot" style="background:'+b.c+'"></span>'+esc(b.n)+(comCiclo?' · '+cicloCurto(a.ciclo):'')+'</span>';
@@ -546,6 +644,11 @@ function nbGrid(cellFn,opts){
 }
 
 // ════ OCORRÊNCIAS (atividades com vencimento) ════
+function ocCiclo(tipo,c){
+  return tipo==='fb'
+    ?{key:'fb_'+c,fase:'fb',icon:'ti-messages',ciclo:c,titulo:'Feedback de Desempenho — '+cicloLabel(c),lbl:cicloCurto(c),venc:cicloFim(c)}
+    :{key:'nb_'+c,fase:'9box',icon:'ti-layout-grid',ciclo:c,titulo:'Avaliação 9Box — '+cicloLabel(c),lbl:cicloCurto(c),venc:cicloFim(c)};
+}
 // Retorna todas as atividades do funcionário com vencimento até "ate" (as da experiência sempre entram)
 function getOcorrencias(f,ate){
   var exp=_expData[f.id]||{},ck=exp.checks||{},out=[];
@@ -561,34 +664,27 @@ function getOcorrencias(f,ate){
   out.push({key:'feedback90',fase:'exp',icon:'ti-message-2',titulo:'Feedback formal — 90 dias',lbl:'Dia<br>90',venc:addDays(adm,89),alerta:addDays(adm,84)});
   out.push({key:'efetivacao',fase:'exp',icon:'ti-hat',titulo:'Cerimônia — Troca de Capacete',lbl:'Dia<br>90',venc:dataCerimonia(fim),semAlerta:true});
 
-  // Rotinas pós-experiência
-  (_cfg.rotinasPos||[]).forEach(function(r){
-    var m=parseInt(r.meses)||0;if(!m)return;
-    for(var n=1;n<=240;n++){
-      var venc=addMonths(fim,m*n);
-      if(venc>ate)break;
-      if(venc>=par.inicio){
-        out.push({key:'pos_'+r.id+'_'+n,fase:'pos',icon:'ti-clipboard-check',rotinaId:r.id,
-          titulo:r.titulo+(r.recorrente?' — '+n+'º':''),lbl:(m*n)+'<br>meses',venc:venc});
-      }
-      if(!r.recorrente)break;
-    }
+  // Ciclos do calendário fixo (feedback mai/set e 9Box jun/dez)
+  var avs=exp.avaliacoes||[],fbs=exp.feedbacks||[];
+  [['fb',fbs],['9box',avs]].forEach(function(par2){
+    var tipo=par2[0],lanc=par2[1],vistos={};
+    ciclosEntre(tipo,par.inicio,ate).forEach(function(c){
+      if(!elegivelCiclo(f,c))return;
+      vistos[c]=1;
+      out.push(ocCiclo(tipo,c));
+    });
+    // lançamentos fora da regra (ex.: histórico importado antes da trava) também aparecem
+    lanc.forEach(function(x){if(!vistos[x.ciclo]&&cicloFim(x.ciclo)<=ate){vistos[x.ciclo]=1;out.push(ocCiclo(tipo,x.ciclo));}});
   });
 
-  // Avaliação 9Box semestral
-  var c0=cicloDe(fim);
-  listaCiclos(c0,cicloDe(ate)).forEach(function(c){
-    var venc=cicloFim(c);
-    if(venc>ate||venc<par.inicio)return;
-    if(addDays(fim,par.carencia)>venc)return;
-    out.push({key:'nb_'+c,fase:'9box',icon:'ti-layout-grid',ciclo:c,titulo:'Avaliação 9Box — '+cicloLabel(c),lbl:cicloCurto(c),venc:venc});
-  });
-
-  var avs=exp.avaliacoes||[];
   out.forEach(function(o){
     if(o.fase==='9box'){
       var a=avs.filter(function(x){return x.ciclo===o.ciclo;})[0];
       o.done=!!a;o.doneDate=a?a.data:'';o.resp=a?a.resp:'';o.obs=a?NB[nbKey(a)].n:'';o.av=a||null;
+    }else if(o.fase==='fb'){
+      var fb=fbs.filter(function(x){return x.ciclo===o.ciclo;})[0];
+      o.done=!!fb;o.doneDate=fb?(fb.dataEntrega||fb.data):'';o.resp=fb?(fb.gestor||fb.resp||''):'';
+      o.obs=fb?('Média '+fmtMedia(fb.media)+(fb.classif?' · '+CLASSIF[fb.classif]:'')):'';o.fb=fb||null;
     }else{
       var k=ck[o.key];
       o.done=!!(k&&k.done);o.doneDate=k?k.date:'';o.resp=k?k.resp:'';o.obs=k?k.obs:'';
@@ -638,9 +734,9 @@ function iniciarListeners(){
     _cfg=doc.exists?doc.data():{};
     if(!_cfg.videos)_cfg.videos=[];
     if(!_cfg.contatos)_cfg.contatos=[];
-    if(!_cfg.rotinasPos)_cfg.rotinasPos=[];
     if(!_cfg.params)_cfg.params={};
     aplicarTermosNb();
+    aplicarModeloFb();
     renderCfg();
     refresh();
   });
@@ -701,7 +797,7 @@ function mostrarRel(){
 
 // ════ TABS ════
 function setTabAtivos(tab,el){
-  _tabAtiva=tab;_nbFiltro=null;
+  _tabAtiva=tab;_nbFiltro=null;_fbFiltro=null;
   document.querySelectorAll('#tabs-lista .tab-btn').forEach(function(b){b.classList.remove('active');});
   el.classList.add('active');
   renderFuncs();
@@ -745,13 +841,7 @@ function renderFuncs(){
   });
 
   renderNbPanel(lista);
-
-  if(_tabAtiva==='efetivados'&&_nbFiltro){
-    lista=lista.filter(function(f){
-      var a=avDoCiclo(f,_nbCiclo);
-      return _nbFiltro==='none'?!a:(a&&nbKey(a)===_nbFiltro);
-    });
-  }
+  if(_tabAtiva==='efetivados')lista=filtroPainel(lista);
   lista.sort(function(a,b){return (a.admissao||'').localeCompare(b.admissao||'');});
 
   var el=document.getElementById('lista-funcs');
@@ -800,36 +890,66 @@ function cardEfetivado(f){
     +'<span class="badge badge-blue"><i class="ti ti-calendar" style="font-size:10px"></i> '+tempoCasa(f.admissao)+' de empresa</span>'
     +(alertas.length?'<span class="alert-badge"><i class="ti ti-alert-triangle" style="font-size:9px"></i> '+alertas.length+' pendência'+(alertas.length!==1?'s':'')+'</span>':'')
     +(ult?nbChip(ult,true):'<span class="badge badge-gray">Sem avaliação 9Box</span>')
+    +(ultimoFb(f)?fbChip(ultimoFb(f),true):'<span class="badge badge-gray">Sem feedback</span>')
     +(f.empresa?'<span class="badge-empresa">'+esc(f.empresa)+'</span>':'')
     +'</div></div></div>'
     +'<div class="func-footer">'+proxHtml+'</div></div>';
 }
 
-// ════ PAINEL 9BOX (aba Efetivados) ════
+// ════ PAINEL (aba Efetivados): Matriz 9Box | Feedbacks ════
+// Ciclos exibidos nos seletores: de 12 meses antes do início do acompanhamento até o próximo ciclo
+function ciclosPainel(tipo){
+  var de=addMonths(P().inicio,-12),hoje=today();
+  var l=ciclosEntre(tipo,de,cicloFim(proximoCicloDesde(tipo,hoje)));
+  _funcs.forEach(function(f){var e=_expData[f.id]||{};((tipo==='fb'?e.feedbacks:e.avaliacoes)||[]).forEach(function(x){if(l.indexOf(x.ciclo)<0)l.push(x.ciclo);});});
+  return l.sort(function(a,b){return cicloFim(a).localeCompare(cicloFim(b));});
+}
+function cicloPadrao(tipo){
+  var hoje=today(),l=ciclosPainel(tipo).filter(function(c){return cicloInicio(c)<=hoje;});
+  return l[l.length-1]||ciclosPainel(tipo)[0];
+}
+function selCiclo(tipo,atual,onchange){
+  return '<select class="form-select" onchange="'+onchange+'">'
+    +ciclosPainel(tipo).slice().reverse().map(function(c){return '<option value="'+c+'"'+(c===atual?' selected':'')+'>'+cicloLabel(c)+'</option>';}).join('')+'</select>';
+}
+function setPainel(v){_painel=v;renderFuncs();}
+function filtroPainel(lista){
+  if(_painel==='9box'&&_nbFiltro)return lista.filter(function(f){var a=avDoCiclo(f,_nbCiclo);return _nbFiltro==='none'?!a:(a&&nbKey(a)===_nbFiltro);});
+  if(_painel==='fb'&&_fbFiltro)return lista.filter(function(f){
+    var fb=fbDoCiclo(f,_fbCiclo);
+    if(_fbFiltro==='none')return !fb&&elegivelCiclo(f,_fbCiclo);
+    if(_fbFiltro.charAt(0)==='c')return fb&&String(fb.classif)===_fbFiltro.slice(1);
+    if(_fbFiltro.indexOf('s:')===0)return fb&&(fb.situacoes||[]).indexOf(_fbFiltro.slice(2))>=0;
+    return true;
+  });
+  return lista;
+}
 function renderNbPanel(lista){
   var el=document.getElementById('nb-panel');
   if(_tabAtiva!=='efetivados'){el.style.display='none';return;}
   el.style.display='block';
-  var ciclos=listaCiclos(cicloDe(P().inicio),cicloDe(today()));
-  if(!ciclos.length)ciclos=[cicloDe(today())];
-  if(!_nbCiclo||ciclos.indexOf(_nbCiclo)<0)_nbCiclo=ciclos[ciclos.length-1];
-
+  var abas='<div style="display:flex;gap:6px;margin-bottom:12px">'
+    +'<button class="tab-btn'+(_painel==='9box'?' active':'')+'" onclick="setPainel(\'9box\')"><i class="ti ti-layout-grid" style="font-size:12px"></i> Avaliação 9Box · jun/dez</button>'
+    +'<button class="tab-btn'+(_painel==='fb'?' active':'')+'" onclick="setPainel(\'fb\')"><i class="ti ti-messages" style="font-size:12px"></i> Feedback de Desempenho · mai/set</button></div>';
+  el.innerHTML=abas+(_painel==='fb'?painelFb(lista):painelNb(lista));
+}
+function painelNb(lista){
+  if(!_nbCiclo)_nbCiclo=cicloPadrao('9box');
   var cont={},semAv=0;
-  lista.forEach(function(f){
+  var eleg=lista.filter(function(f){return elegivelCiclo(f,_nbCiclo)||avDoCiclo(f,_nbCiclo);});
+  eleg.forEach(function(f){
     var a=avDoCiclo(f,_nbCiclo);
     if(a){var k=nbKey(a);cont[k]=(cont[k]||0)+1;}else semAv++;
   });
-  var total=lista.length;
-
-  var html='<div class="nb-card">'
+  var total=eleg.length;
+  return '<div class="nb-card">'
     +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">'
     +'<div><div style="font-size:13px;font-weight:800">Matriz 9Box</div>'
     +'<div style="font-size:12px;color:var(--text2)">Distribuição dos efetivados no ciclo. Clique em um quadrante para filtrar a lista.</div></div>'
     +'<div style="display:flex;gap:8px;align-items:center">'
     +(_nbFiltro?'<button class="chip-btn" onclick="setNbFiltro(null)"><i class="ti ti-x" style="font-size:10px"></i> Limpar filtro</button>':'')
-    +'<select class="form-select" onchange="_nbCiclo=this.value;_nbFiltro=null;renderFuncs()">'
-    +ciclos.slice().reverse().map(function(c){return '<option value="'+c+'"'+(c===_nbCiclo?' selected':'')+'>'+cicloLabel(c)+'</option>';}).join('')
-    +'</select></div></div>'
+    +selCiclo('9box',_nbCiclo,'_nbCiclo=this.value;_nbFiltro=null;renderFuncs()')
+    +'</div></div>'
     +nbGrid(function(p,d,box){
       var n=cont['p'+p+'d'+d]||0,pct=total?Math.round(n/total*100):0;
       return '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px"><span>'+esc(box.n)+'</span></div>'
@@ -838,13 +958,66 @@ function renderNbPanel(lista){
     +'<div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
     +'<button class="chip-btn" onclick="setNbFiltro(\'none\')" style="'+(_nbFiltro==='none'?'background:var(--black);color:var(--lime);border-color:var(--black)':'')+'">'
     +'<i class="ti ti-help-circle" style="font-size:11px"></i> Sem avaliação no ciclo: '+semAv+'</button>'
-    +'<span style="font-size:11px;color:var(--text3)">Vencimento do ciclo: '+fmtDate(cicloFim(_nbCiclo))+'</span>'
+    +'<span style="font-size:11px;color:var(--text3)">'+total+' no ciclo · vencimento '+fmtDate(cicloFim(_nbCiclo))+'</span>'
     +'<div style="flex:1"></div>'
     +'<button class="btn btn-sm" onclick="baixarPlanilhaNb()" title="Gera a planilha do ciclo selecionado com os filtros de empresa/setor aplicados"><i class="ti ti-file-spreadsheet"></i> Baixar planilha do ciclo</button>'
     +'<button class="btn btn-sm btn-primary" onclick="document.getElementById(\'imp-file\').click()"><i class="ti ti-upload"></i> Importar planilha</button>'
     +'</div></div>';
-  el.innerHTML=html;
 }
+function painelFb(lista){
+  if(!_fbCiclo)_fbCiclo=cicloPadrao('fb');
+  var c=_fbCiclo,eleg=lista.filter(function(f){return elegivelCiclo(f,c)||fbDoCiclo(f,c);});
+  var fbs=eleg.map(function(f){return fbDoCiclo(f,c);}).filter(Boolean);
+  var pend=eleg.length-fbs.length;
+  var medias=fbs.map(function(x){return x.media;}).filter(function(v){return v!=null&&!isNaN(v);});
+  var mediaGeral=medias.length?medias.reduce(function(a,b){return a+b;},0)/medias.length:null;
+  var cls={},sits={};
+  fbs.forEach(function(x){if(x.classif)cls[x.classif]=(cls[x.classif]||0)+1;(x.situacoes||[]).forEach(function(k){sits[k]=(sits[k]||0)+1;});});
+  // média por bloco
+  var blocos=FB.secoes.map(function(sec){
+    var v=[];fbs.forEach(function(x){var m=mediaSecao(x,sec.id);if(m!=null)v.push(m);});
+    return {nome:sec.nome,m:v.length?v.reduce(function(a,b){return a+b;},0)/v.length:null};
+  });
+  var chipSel=function(k){return _fbFiltro===k?'background:var(--black);color:var(--lime);border-color:var(--black)':'';};
+  var maxCls=Math.max.apply(null,[1].concat(Object.keys(cls).map(function(k){return cls[k];})));
+  var h='<div class="nb-card">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">'
+    +'<div><div style="font-size:13px;font-weight:800">Feedback de Desempenho</div>'
+    +'<div style="font-size:12px;color:var(--text2)">Notas de calibração dadas pelos gestores. Clique numa classificação ou situação para filtrar a lista.</div></div>'
+    +'<div style="display:flex;gap:8px;align-items:center">'
+    +(_fbFiltro?'<button class="chip-btn" onclick="setFbFiltro(null)"><i class="ti ti-x" style="font-size:10px"></i> Limpar filtro</button>':'')
+    +selCiclo('fb',c,'_fbCiclo=this.value;_fbFiltro=null;renderFuncs()')
+    +'</div></div>'
+    +'<div class="rel-stats">'
+    +'<div class="rel-stat"><span>No ciclo</span><b>'+eleg.length+'</b></div>'
+    +'<div class="rel-stat"><span>Entregues</span><b style="color:#1a5c35">'+fbs.length+'</b></div>'
+    +'<div class="rel-stat" style="cursor:pointer;'+(_fbFiltro==='none'?'outline:2px solid var(--black)':'')+'" onclick="setFbFiltro(\'none\')"><span>Pendentes '+(cicloFim(c)<today()?'(atrasados)':'')+'</span><b style="color:'+(cicloFim(c)<today()&&pend?'#8b1c1c':'#7d4e00')+'">'+pend+'</b></div>'
+    +'<div class="rel-stat"><span>Média geral</span><b>'+fmtMedia(mediaGeral)+'<small style="font-size:12px;color:var(--text3);font-weight:700"> /5</small></b></div>'
+    +'</div>'
+    +'<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr;gap:22px">'
+    +'<div><div class="cfg-label" style="margin-bottom:8px">Classificação</div>';
+  [5,4,3,2,1].forEach(function(k){
+    var n=cls[k]||0;
+    h+='<div onclick="setFbFiltro(\'c'+k+'\')" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer;padding:2px 4px;border-radius:4px;'+(_fbFiltro==='c'+k?'background:var(--s2);outline:1px solid var(--black)':'')+'">'
+      +'<span style="width:150px;font-size:11px;font-weight:700">'+k+' — '+CLASSIF[k]+'</span>'
+      +'<div style="flex:1;height:10px;background:var(--border);border-radius:5px;overflow:hidden"><div style="height:100%;width:'+(n/maxCls*100)+'%;background:'+CLASSIF_COR[k]+'"></div></div>'
+      +'<span style="width:22px;text-align:right;font-size:12px;font-weight:800">'+n+'</span></div>';
+  });
+  h+='</div><div><div class="cfg-label" style="margin-bottom:8px">Média por bloco</div>';
+  blocos.forEach(function(b){
+    h+='<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:3px"><span>'+esc(b.nome)+'</span><span>'+fmtMedia(b.m)+'</span></div>'
+      +'<div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+(b.m?b.m/5*100:0)+'%;background:var(--black)"></div></div></div>';
+  });
+  h+='</div><div><div class="cfg-label" style="margin-bottom:8px">Situação para o próximo ciclo</div>';
+  Object.keys(SITUACOES).forEach(function(k){
+    h+='<button class="chip-btn" style="display:flex;justify-content:space-between;width:100%;margin-bottom:5px;text-align:left;'+chipSel('s:'+k)+'" onclick="setFbFiltro(\'s:'+k+'\')"><span>'+SITUACOES[k]+'</span><strong>'+(sits[k]||0)+'</strong></button>';
+  });
+  h+='</div></div>'
+    +'<div style="margin-top:12px;font-size:11px;color:var(--text3)">Vencimento do ciclo: '+fmtDate(cicloFim(c))+' · participam os efetivados antes de '+fmtDate(cicloInicio(c))+'</div>'
+    +'</div>';
+  return h;
+}
+function setFbFiltro(v){_fbFiltro=(_fbFiltro===v?null:v);renderFuncs();}
 function setNbFiltro(v){_nbFiltro=(_nbFiltro===v?null:v);renderFuncs();}
 
 // ════ DETALHE ════
@@ -867,7 +1040,9 @@ function renderDetalhe(){
   if(efet){
     html+='<div style="text-align:right"><div style="font-size:22px;font-weight:900;color:var(--lime)">'+tempoCasa(f.admissao)+'</div>'
       +'<div style="font-size:11px;color:rgba(242,238,229,.6);margin-bottom:6px">de empresa</div>'
-      +(ult?'<div style="display:inline-block;background:var(--cream);border-radius:20px">'+nbChip(ult,true)+'</div>':'')+'</div></div></div>';
+      +'<div style="display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap">'
+      +(ultimoFb(f)?'<span style="background:var(--cream);border-radius:20px">'+fbChip(ultimoFb(f),true)+'</span>':'')
+      +(ult?'<span style="background:var(--cream);border-radius:20px">'+nbChip(ult,true)+'</span>':'')+'</div></div></div></div>';
   }else{
     html+='<div style="text-align:right"><div style="font-size:32px;font-weight:900;color:var(--lime)">'+pct+'%</div>'
       +'<div style="font-size:11px;color:rgba(242,238,229,.6)">Dia '+Math.min(90,dd)+' de 90</div></div></div>'
@@ -885,22 +1060,7 @@ function renderDetalhe(){
   var expItems=todas.filter(function(o){return o.fase==='exp';}).sort(function(a,b){return a.venc.localeCompare(b.venc);});
 
   if(efet){
-    // Rotinas pós: vencidas + a próxima de cada rotina
-    var pos=todas.filter(function(o){return o.fase==='pos';}).sort(function(a,b){return a.venc.localeCompare(b.venc);});
-    var vistos={};
-    pos=pos.filter(function(o){
-      if(o.venc<=hoje||o.done)return true;
-      if(vistos[o.rotinaId])return false;
-      vistos[o.rotinaId]=1;return true;
-    });
-    html+='<div class="sec-title"><span>Rotinas pós-experiência</span></div>';
-    if(!(_cfg.rotinasPos||[]).length){
-      html+='<div class="notice notice-blue"><i class="ti ti-info-circle"></i><span>Nenhuma rotina configurada. Cadastre em <strong>Configurações → Rotinas Pós-Experiência</strong>.</span></div>';
-    }else if(!pos.length){
-      html+='<div class="notice notice-blue"><i class="ti ti-info-circle"></i><span>Nenhuma rotina com vencimento a partir de '+fmtDate(P().inicio)+'.</span></div>';
-    }
-    pos.forEach(function(o){html+=renderTlItem(o);});
-
+    html+=renderFbSecao(f,todas);
     html+=render9BoxSecao(f,todas);
     html+='<div class="sec-title"><span>Histórico do período de experiência</span></div>';
   }else{
@@ -910,9 +1070,70 @@ function renderDetalhe(){
   box.innerHTML=html;
 }
 
+function renderFbSecao(f,todas){
+  var hoje=today(),fbs=getFeedbacks(f);
+  var ciclos=todas.filter(function(o){return o.fase==='fb'&&cicloInicio(o.ciclo)<=hoje;});
+  ciclos.sort(function(a,b){return cicloFim(b.ciclo).localeCompare(cicloFim(a.ciclo));});
+  var h='<div class="sec-title"><span>Feedback de Desempenho — maio/setembro</span>'
+    +'<button class="btn btn-primary btn-sm" onclick="abrirFeedback()"><i class="ti ti-plus"></i> Lançar feedback</button></div>'
+    +'<div class="nb-card">';
+  // evolução
+  if(fbs.length){
+    h+='<div style="display:grid;grid-template-columns:1fr 1.3fr;gap:24px;margin-bottom:16px;align-items:end">'
+      +'<div><div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">Evolução da média geral</div>'
+      +'<div style="display:flex;gap:10px;align-items:flex-end;height:120px;border-bottom:1px solid var(--border2);padding:0 4px">';
+    fbs.slice(-8).forEach(function(x){
+      var k=x.classif||classifDeMedia(x.media),c=CLASSIF_COR[k]||'#a09890',hpx=Math.max(4,Math.round((x.media||0)/5*96));
+      h+='<div style="flex:1;max-width:56px;display:flex;flex-direction:column;align-items:center;gap:4px">'
+        +'<span style="font-size:11px;font-weight:800">'+fmtMedia(x.media)+'</span>'
+        +'<div style="width:100%;height:'+hpx+'px;background:'+c+';border-radius:4px 4px 0 0" title="'+esc(CLASSIF[k]||'')+'"></div></div>';
+    });
+    h+='</div><div style="display:flex;gap:10px;padding:4px 4px 0">';
+    fbs.slice(-8).forEach(function(x){h+='<span style="flex:1;max-width:56px;text-align:center;font-size:10px;font-weight:700;color:var(--text3)">'+cicloCurto(x.ciclo)+'</span>';});
+    h+='</div></div>';
+    // blocos do último vs anterior
+    var ult=fbs[fbs.length-1],ant=fbs.length>1?fbs[fbs.length-2]:null;
+    h+='<div><div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px">Por bloco — '+cicloLabel(ult.ciclo)+(ant?' <span style="font-weight:500;color:var(--text3)">(vs '+cicloCurto(ant.ciclo)+')</span>':'')+'</div>';
+    FB.secoes.forEach(function(sec){
+      var m=mediaSecao(ult,sec.id),ma=ant?mediaSecao(ant,sec.id):null,dif=(m!=null&&ma!=null)?m-ma:null;
+      h+='<div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;font-size:11px;font-weight:700;margin-bottom:3px"><span>'+esc(sec.nome)+'</span><span>'+fmtMedia(m)
+        +(dif!=null&&Math.abs(dif)>=0.05?' <span style="color:'+(dif>0?'#1a5c35':'#8b1c1c')+'">'+(dif>0?'▲':'▼')+fmtMedia(Math.abs(dif))+'</span>':'')+'</span></div>'
+        +'<div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden"><div style="height:100%;width:'+(m?m/5*100:0)+'%;background:var(--black)"></div></div></div>';
+    });
+    h+='</div></div>';
+  }
+  if(!ciclos.length){
+    h+='<div style="font-size:12px;color:var(--text3);padding:6px 0">Nenhum ciclo de feedback aplicável ainda. Próximo: '+cicloLabel(proximoCicloDesde('fb',hoje))+'.</div>';
+  }else{
+    h+='<table class="cfg-table"><thead><tr><th>Ciclo</th><th>Média</th><th>Classificação</th><th>Situação p/ próximo ciclo</th><th>Entregue ao RH</th><th style="width:100px"></th></tr></thead><tbody>';
+    ciclos.forEach(function(o){
+      var x=o.fb,atras=!x&&o.venc<hoje;
+      if(x){
+        var k=x.classif;
+        h+='<tr><td style="font-weight:700;white-space:nowrap">'+cicloLabel(o.ciclo)+'</td>'
+          +'<td style="white-space:nowrap"><strong style="font-size:15px">'+fmtMedia(x.media)+'</strong><span style="color:var(--text3)">/5</span>'
+          +'<div style="font-size:10px;color:var(--text3)">'+FB.secoes.map(function(sec){return sec.id+' '+fmtMedia(mediaSecao(x,sec.id));}).join(' · ')+'</div></td>'
+          +'<td>'+(k?'<span class="nb-chip" style="background:'+CLASSIF_COR[k]+'1a;border-color:'+CLASSIF_COR[k]+'66"><span class="nb-dot" style="background:'+CLASSIF_COR[k]+'"></span>'+k+' — '+CLASSIF[k]+'</span>':'—')+'</td>'
+          +'<td style="font-size:12px">'+((x.situacoes||[]).map(function(sk){return sk==='outro'?esc('Outro: '+(x.situacaoOutro||'')):SITUACOES[sk];}).join('<br>')||'—')+'</td>'
+          +'<td style="font-size:12px;white-space:nowrap">'+fmtDate(x.dataEntrega||x.data)+(x.gestor?'<div style="font-size:11px;color:var(--text3)">Gestor: '+esc(x.gestor)+'</div>':'')+'</td>'
+          +'<td style="white-space:nowrap"><button class="btn-icon" title="Ver / editar" onclick="abrirFeedback(\''+o.ciclo+'\')"><i class="ti ti-eye" style="font-size:15px"></i></button>'
+          +'<button class="btn-icon" title="Imprimir" onclick="imprimirFeedback(\''+o.ciclo+'\')"><i class="ti ti-printer" style="font-size:15px"></i></button>'
+          +'<button class="btn-icon" title="Excluir" onclick="excluirFeedback(\''+o.ciclo+'\')"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td></tr>';
+      }else{
+        h+='<tr><td style="font-weight:700;white-space:nowrap">'+cicloLabel(o.ciclo)+'</td><td colspan="4">'
+          +(atras?'<span class="badge badge-red">Atrasado · venceu '+fmtDate(o.venc)+'</span>':'<span class="badge badge-amber">Pendente · vence '+fmtDate(o.venc)+'</span>')
+          +'</td><td><button class="btn btn-primary btn-sm" onclick="abrirFeedback(\''+o.ciclo+'\')">Lançar</button></td></tr>';
+      }
+    });
+    h+='</tbody></table>';
+  }
+  h+='</div>';
+  return h;
+}
+
 function render9BoxSecao(f,todas){
-  var avs=getAvaliacoes(f),hoje=today(),cicloAtual=cicloDe(hoje);
-  var ciclosNb=todas.filter(function(o){return o.fase==='9box'&&o.ciclo<=cicloAtual;});
+  var avs=getAvaliacoes(f),hoje=today();
+  var ciclosNb=todas.filter(function(o){return o.fase==='9box'&&cicloInicio(o.ciclo)<=hoje;});
   // inclui ciclos avaliados fora da regra (ex.: avaliação antecipada)
   avs.forEach(function(a){
     if(!ciclosNb.some(function(o){return o.ciclo===a.ciclo;}))
@@ -937,7 +1158,7 @@ function render9BoxSecao(f,todas){
   // Histórico por ciclo
   h+='<div><div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">Histórico por ciclo</div>';
   if(!ciclosNb.length){
-    h+='<div style="font-size:12px;color:var(--text3);padding:10px 0">Nenhum ciclo 9Box aplicável ainda (considera a carência de '+P().carencia+' dias após a efetivação).</div>';
+    h+='<div style="font-size:12px;color:var(--text3);padding:10px 0">Nenhum ciclo 9Box aplicável ainda. Próximo: '+cicloLabel(proximoCicloDesde('9box',hoje))+'.</div>';
   }else{
     h+='<table class="cfg-table"><thead><tr><th>Ciclo</th><th>Resultado</th><th>Data</th><th style="width:70px"></th></tr></thead><tbody>';
     ciclosNb.forEach(function(o){
@@ -1025,14 +1246,14 @@ function desfazerRegistro(key){
 function abrirAvaliacao(ciclo){
   var f=_funcs.find(function(x){return x.id===_funcAtivoId;});if(!f)return;
   var hoje=today();
-  var ciclos=listaCiclos(cicloDe(dataEfetivacao(f)),cicloDe(hoje));
-  getAvaliacoes(f).forEach(function(a){if(ciclos.indexOf(a.ciclo)<0)ciclos.push(a.ciclo);});
-  ciclos.sort().reverse();
+  var ciclos=ciclosPainel('9box').filter(function(c){return elegivelCiclo(f,c)||avDoCiclo(f,c)||cicloFim(c)<P().inicio;});
+  ciclos.sort(function(a,b){return cicloFim(b).localeCompare(cicloFim(a));});
   if(!ciclo){
-    // sugere o ciclo mais antigo sem avaliação dentre os aplicáveis; senão o atual
-    var pend=getOcorrencias(f,cicloFim(cicloDe(hoje))).filter(function(o){return o.fase==='9box'&&!o.done;});
-    ciclo=pend.length?pend[0].ciclo:cicloDe(hoje);
+    // sugere o ciclo mais antigo sem avaliação dentre os aplicáveis; senão o ciclo atual
+    var pend=getOcorrencias(f,cicloFim(cicloPadrao('9box'))).filter(function(o){return o.fase==='9box'&&!o.done;});
+    ciclo=pend.length?pend[0].ciclo:cicloPadrao('9box');
   }
+  if(ciclos.indexOf(ciclo)<0)ciclos.unshift(ciclo);
   var sel=document.getElementById('nb-ciclo');
   sel.innerHTML=ciclos.map(function(c){return '<option value="'+c+'">'+cicloLabel(c)+(avDoCiclo(f,c)?' (já avaliado)':'')+'</option>';}).join('');
   sel.value=ciclo;
@@ -1083,6 +1304,216 @@ function excluirAvaliacao(ciclo){
     .catch(function(e){toast('Erro: '+e.message,'err');});
 }
 
+// ════ FEEDBACK DE DESEMPENHO (maio/setembro) ════
+var _fbForm=null; // {ciclo, notas:{A1:3,...}, classifManual:bool}
+function ciclosFbFunc(f){
+  var hoje=today(),de=addMonths(P().inicio,-12);
+  var l=ciclosEntre('fb',de,cicloFim(proximoCicloDesde('fb',hoje))).filter(function(c){return elegivelCiclo(f,c)||fbDoCiclo(f,c)||cicloFim(c)<P().inicio;});
+  getFeedbacks(f).forEach(function(x){if(l.indexOf(x.ciclo)<0)l.push(x.ciclo);});
+  return l.sort(function(a,b){return cicloFim(b).localeCompare(cicloFim(a));});
+}
+function abrirFeedback(ciclo){
+  var f=_funcs.find(function(x){return x.id===_funcAtivoId;});if(!f)return;
+  var ciclos=ciclosFbFunc(f);
+  if(!ciclo){
+    var pend=getOcorrencias(f,cicloFim(cicloPadrao('fb'))).filter(function(o){return o.fase==='fb'&&!o.done;});
+    ciclo=pend.length?pend[0].ciclo:cicloPadrao('fb');
+  }
+  if(ciclos.indexOf(ciclo)<0)ciclos.unshift(ciclo);
+  document.getElementById('fb-sub').textContent=f.nome+' · '+(f.cargo||'')+(f.departamento?' · '+f.departamento:'');
+  _fbForm={ciclos:ciclos};
+  carregarFbForm(f,ciclo);
+  openModal('modal-fb');
+  document.querySelector('#modal-fb .modal-b').scrollTop=0;
+}
+function carregarFbForm(f,ciclo){
+  var x=fbDoCiclo(f,ciclo)||{};
+  _fbForm.ciclo=ciclo;_fbForm.existe=!!x.ciclo;_fbForm.notas={};_fbForm.classifManual=!!x.classif&&x.classif!==classifDeMedia(x.media);
+  // notas gravadas guardam o texto do critério; casamos pelo id e, se o texto mudou, pelo texto
+  (x.notas||[]).forEach(function(n){_fbForm.notas[n.id]=n.n;});
+  _fbForm.notasAntigas=x.notas||[];
+  var v=function(k){return esc(x[k]||'');};
+  var c=x.colab||{},pl=x.plano||[];
+  var H='';
+  // 1. Identificação
+  H+='<div class="fb-sec"><div class="fb-sec-h"><span class="num">1</span> Identificação</div><div class="fb-sec-b"><div class="fb-grid4">'
+    +'<div><label class="cfg-label">Ciclo</label><select class="fs" id="fb-ciclo" onchange="trocarCicloFb(this.value)">'
+    +_fbForm.ciclos.map(function(cc){return '<option value="'+cc+'"'+(cc===ciclo?' selected':'')+'>'+cicloLabel(cc)+(fbDoCiclo(f,cc)?' ✓':'')+'</option>';}).join('')+'</select></div>'
+    +'<div><label class="cfg-label">Gestor</label><input class="fi" id="fb-gestor" value="'+v('gestor')+'" placeholder="Nome do gestor"></div>'
+    +'<div><label class="cfg-label">Data do feedback</label><input class="fi" type="date" id="fb-data" value="'+(x.data||'')+'"></div>'
+    +'<div><label class="cfg-label">Entregue ao RH em</label><input class="fi" type="date" id="fb-entrega" value="'+(x.dataEntrega||today())+'"></div>'
+    +'</div>'+(_fbForm.existe?'<div class="notice notice-amber" style="margin:12px 0 0"><i class="ti ti-pencil"></i><span>Este ciclo já tem feedback lançado — ao salvar, as alterações substituem o registro.</span></div>':'')
+    +'</div></div>';
+  // 2. Avaliação
+  H+='<div class="fb-sec"><div class="fb-sec-h"><span class="num">2</span> Avaliação do ciclo</div><div class="fb-sec-b">'
+    +'<div class="fb-legend">'+[1,2,3,4,5].map(function(k){return '<span><b style="color:'+CLASSIF_COR[k]+'">'+k+'</b> '+ESCALA[k]+'</span>';}).join('')+'</div>'
+    +'<div class="fb-blocos">';
+  var num=0;
+  FB.secoes.forEach(function(sec){
+    H+='<div class="fb-bloco"><div class="fb-bloco-h"><span><i class="ti '+sec.icon+'"></i> '+sec.id+'. '+esc(sec.nome)+'</span><span id="fb-m-'+sec.id+'">—</span></div>';
+    sec.criterios.forEach(function(cr){
+      num++;
+      if(_fbForm.notas[cr.id]==null){ // fallback por texto (critério renomeado/reordenado)
+        var ant=_fbForm.notasAntigas.filter(function(n){return normTxt(n.t)===normTxt(cr.t);})[0];
+        if(ant)_fbForm.notas[cr.id]=ant.n;
+      }
+      H+='<div class="fb-crit" id="fbc-'+cr.id+'"><span class="fb-crit-t">'+num+'. '+esc(cr.t)+'</span><div class="rt">'
+        +[1,2,3,4,5].map(function(k){return '<button type="button" class="rt-btn" data-c="'+cr.id+'" data-v="'+k+'" onclick="fbNota(\''+cr.id+'\','+k+')" title="'+ESCALA[k]+'">'+k+'</button>';}).join('')
+        +'</div></div>';
+    });
+    H+='</div>';
+  });
+  H+='</div></div></div>';
+  // 3. Pontos qualitativos
+  H+='<div class="fb-sec"><div class="fb-sec-h"><span class="num">3</span> Pontos qualitativos</div><div class="fb-sec-b"><div class="fb-grid3">'
+    +'<div><label class="cfg-label">Pontos fortes</label><textarea class="ft" id="fb-fortes" rows="3" placeholder="O que o colaborador faz bem e deve continuar fazendo?">'+v('fortes')+'</textarea></div>'
+    +'<div><label class="cfg-label">Pontos a desenvolver</label><textarea class="ft" id="fb-desenv" rows="3" placeholder="Comportamentos, conhecimentos ou resultados a melhorar">'+v('desenvolver')+'</textarea></div>'
+    +'<div><label class="cfg-label">Principal evolução ou contribuição</label><textarea class="ft" id="fb-evol" rows="3" placeholder="Principal evolução ou contribuição neste ciclo">'+v('evolucao')+'</textarea></div>'
+    +'</div></div></div>';
+  // 4. Plano
+  H+='<div class="fb-sec"><div class="fb-sec-h"><span class="num">4</span> Plano de desenvolvimento — próximo ciclo <span style="margin-left:auto;font-size:10px;text-transform:none;letter-spacing:0;font-weight:600;color:rgba(242,238,229,.6)">até 3 prioridades</span></div><div class="fb-sec-b">'
+    +'<table class="fb-plano"><thead><tr><th style="width:24px"></th><th>O que precisa desenvolver?</th><th>Como será desenvolvido?</th><th style="width:150px">Responsável</th><th style="width:140px">Prazo</th><th>Como saberemos que houve evolução?</th></tr></thead><tbody>';
+  for(var i=0;i<3;i++){
+    var r=pl[i]||{};
+    H+='<tr><td style="font-size:12px;font-weight:800;color:var(--text3)">'+(i+1)+'.</td>'
+      +'<td><input class="fi" id="fbp-o-'+i+'" value="'+esc(r.o||'')+'"></td><td><input class="fi" id="fbp-c-'+i+'" value="'+esc(r.como||'')+'"></td>'
+      +'<td><input class="fi" id="fbp-r-'+i+'" value="'+esc(r.resp||'')+'"></td><td><input class="fi" type="date" id="fbp-p-'+i+'" value="'+esc(r.prazo||'')+'"></td>'
+      +'<td><input class="fi" id="fbp-i-'+i+'" value="'+esc(r.ind||'')+'"></td></tr>';
+  }
+  H+='</tbody></table></div></div>';
+  // 5. Visão do colaborador
+  var radio=function(nome,val){return Object.keys(SIMNAO).map(function(k){return '<label class="opt"><input type="radio" name="'+nome+'" value="'+k+'"'+(val===k?' checked':'')+'> '+SIMNAO[k]+'</label>';}).join('');};
+  H+='<div class="fb-sec"><div class="fb-sec-h"><span class="num">5</span> Visão do colaborador</div><div class="fb-sec-b"><div class="fb-grid4">'
+    +'<div><label class="cfg-label" style="text-transform:none;font-size:11.5px;margin-bottom:8px">Considera que recebeu orientações suficientes para realizar seu trabalho?</label>'+radio('fb-q1',c.orientacoes)+'</div>'
+    +'<div><label class="cfg-label" style="text-transform:none;font-size:11.5px;margin-bottom:8px">Sabe o que precisa melhorar para evoluir na empresa?</label>'+radio('fb-q2',c.sabeMelhorar)+'</div>'
+    +'<div><label class="cfg-label" style="text-transform:none;font-size:11.5px;margin-bottom:8px">Algum treinamento, recurso ou apoio necessário?</label><textarea class="ft" id="fb-q3" rows="3">'+esc(c.apoio||'')+'</textarea></div>'
+    +'<div><label class="cfg-label" style="text-transform:none;font-size:11.5px;margin-bottom:8px">Comentário sobre seu trabalho, equipe ou gestão</label><textarea class="ft" id="fb-q4" rows="3">'+esc(c.comentario||'')+'</textarea></div>'
+    +'</div></div></div>';
+  // 6. Resultado
+  var sits=x.situacoes||[];
+  H+='<div class="fb-sec" style="margin-bottom:0"><div class="fb-sec-h"><span class="num">6</span> Resultado do ciclo</div><div class="fb-sec-b">'
+    +'<div style="display:grid;grid-template-columns:170px 1fr 1.3fr;gap:20px;align-items:start">'
+    +'<div class="fb-media"><div class="cfg-label">Média geral</div><b id="fb-media">—</b><span style="color:var(--text3);font-weight:700">/5</span><div id="fb-preench" style="font-size:11px;color:var(--text3);margin-top:4px"></div></div>'
+    +'<div><label class="cfg-label" style="margin-bottom:8px">Classificação <span id="fb-cl-auto" style="text-transform:none;font-weight:500;color:var(--text3)"></span></label>'
+    +[1,2,3,4,5].map(function(k){return '<label class="opt"><input type="radio" name="fb-classif" value="'+k+'"'+(x.classif===k?' checked':'')+' onchange="_fbForm.classifManual=true;atualizarFbMedias()"> <span class="nb-dot" style="background:'+CLASSIF_COR[k]+'"></span> '+k+' — '+CLASSIF[k]+'</label>';}).join('')+'</div>'
+    +'<div><label class="cfg-label" style="margin-bottom:8px">Situação para o próximo ciclo</label>'
+    +Object.keys(SITUACOES).map(function(k){return '<label class="opt"><input type="checkbox" name="fb-sit" value="'+k+'"'+(sits.indexOf(k)>=0?' checked':'')+'> '+SITUACOES[k]+'</label>';}).join('')
+    +'<input class="fi" id="fb-sit-outro" placeholder="Se outro, descreva" value="'+v('situacaoOutro')+'" style="margin-top:2px">'
+    +'<div style="margin-top:12px"><label class="cfg-label">Lançado por (RH)</label><input class="fi" id="fb-resp" value="'+v('resp')+'" placeholder="Seu nome"></div>'
+    +'</div></div></div></div>';
+  document.getElementById('fb-body').innerHTML=H;
+  atualizarFbMedias();
+}
+function trocarCicloFb(c){
+  var f=_funcs.find(function(x){return x.id===_funcAtivoId;});
+  if(!confirm('Trocar para '+cicloLabel(c)+'? O que foi digitado e ainda não foi salvo será descartado.')){document.getElementById('fb-ciclo').value=_fbForm.ciclo;return;}
+  carregarFbForm(f,c);
+}
+function fbNota(id,v){
+  _fbForm.notas[id]=(_fbForm.notas[id]===v?null:v);
+  atualizarFbMedias();
+}
+function calcFb(){
+  var tot=0,n=0,falta=0,porSec={};
+  FB.secoes.forEach(function(sec){
+    var st=0,sn=0;
+    sec.criterios.forEach(function(cr){var v=_fbForm.notas[cr.id];if(v){st+=v;sn++;tot+=v;n++;}else falta++;});
+    porSec[sec.id]=sn?st/sn:null;
+  });
+  return {media:n?Math.round(tot/n*100)/100:null,falta:falta,total:n+falta,porSec:porSec};
+}
+function atualizarFbMedias(){
+  document.querySelectorAll('#fb-body .rt-btn').forEach(function(b){
+    var on=_fbForm.notas[b.dataset.c]===+b.dataset.v;
+    b.classList.toggle('on',on);b.style.background=on?CLASSIF_COR[b.dataset.v]:'';
+  });
+  var r=calcFb();
+  FB.secoes.forEach(function(sec){var el=document.getElementById('fb-m-'+sec.id);if(el)el.textContent=fmtMedia(r.porSec[sec.id]);});
+  FB.secoes.forEach(function(sec){sec.criterios.forEach(function(cr){var el=document.getElementById('fbc-'+cr.id);if(el)el.classList.toggle('falta',!!(!_fbForm.notas[cr.id]&&_fbForm.tentouSalvar));});});
+  document.getElementById('fb-media').textContent=fmtMedia(r.media);
+  document.getElementById('fb-preench').textContent=(r.total-r.falta)+' de '+r.total+' critérios';
+  var sug=classifDeMedia(r.media);
+  document.getElementById('fb-cl-auto').textContent=sug?'— sugerida pela média: '+sug:'';
+  if(!_fbForm.classifManual){
+    document.querySelectorAll('input[name="fb-classif"]').forEach(function(i){i.checked=sug&&+i.value===sug;});
+  }
+  document.getElementById('fb-foot-info').innerHTML=r.falta?'<span style="color:#7d4e00"><i class="ti ti-alert-triangle"></i> '+r.falta+' critério'+(r.falta!==1?'s':'')+' sem nota</span>':'<span style="color:#1a5c35"><i class="ti ti-circle-check"></i> Todos os critérios avaliados · média '+fmtMedia(r.media)+'</span>';
+}
+function salvarFeedback(){
+  var f=_funcs.find(function(x){return x.id===_funcAtivoId;});if(!f)return;
+  var val=function(id){return (document.getElementById(id).value||'').trim();};
+  var r=calcFb();
+  _fbForm.tentouSalvar=true;atualizarFbMedias();
+  if(!r.media){toast('Lance ao menos uma nota.','err');return;}
+  if(!val('fb-entrega')){toast('Informe a data de entrega ao RH.','err');return;}
+  if(r.falta&&!confirm(r.falta+' critério(s) sem nota. A média será calculada só com os critérios avaliados. Salvar assim mesmo?'))return;
+  var cl=document.querySelector('input[name="fb-classif"]:checked');
+  var rad=function(n){var e=document.querySelector('input[name="'+n+'"]:checked');return e?e.value:'';};
+  var notas=[];
+  FB.secoes.forEach(function(sec){sec.criterios.forEach(function(cr){if(_fbForm.notas[cr.id])notas.push({id:cr.id,sec:sec.id,t:cr.t,n:_fbForm.notas[cr.id]});});});
+  var plano=[];
+  for(var i=0;i<3;i++){var it={o:val('fbp-o-'+i),como:val('fbp-c-'+i),resp:val('fbp-r-'+i),prazo:val('fbp-p-'+i),ind:val('fbp-i-'+i)};if(it.o||it.como||it.resp||it.prazo||it.ind)plano.push(it);}
+  var reg={id:'fb'+Date.now(),ciclo:_fbForm.ciclo,gestor:val('fb-gestor'),data:val('fb-data'),dataEntrega:val('fb-entrega'),
+    notas:notas,media:r.media,classif:cl?+cl.value:classifDeMedia(r.media),
+    situacoes:Array.prototype.map.call(document.querySelectorAll('input[name="fb-sit"]:checked'),function(e){return e.value;}),
+    situacaoOutro:val('fb-sit-outro'),fortes:val('fb-fortes'),desenvolver:val('fb-desenv'),evolucao:val('fb-evol'),plano:plano,
+    colab:{orientacoes:rad('fb-q1'),sabeMelhorar:rad('fb-q2'),apoio:val('fb-q3'),comentario:val('fb-q4')},
+    resp:val('fb-resp'),registradoEm:new Date().toISOString()};
+  var lista=getFeedbacks(f).filter(function(x){return x.ciclo!==reg.ciclo;});
+  lista.push(reg);
+  db.collection('exp_data').doc(f.id).set({feedbacks:lista},{merge:true}).then(function(){
+    toast('Feedback salvo!','ok');closeModal('modal-fb');
+  }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+function excluirFeedback(ciclo){
+  var f=_funcs.find(function(x){return x.id===_funcAtivoId;});if(!f)return;
+  if(!confirm('Excluir o feedback de '+cicloLabel(ciclo)+'?'))return;
+  var lista=getFeedbacks(f).filter(function(x){return x.ciclo!==ciclo;});
+  db.collection('exp_data').doc(f.id).set({feedbacks:lista},{merge:true})
+    .then(function(){toast('Feedback excluído.','ok');})
+    .catch(function(e){toast('Erro: '+e.message,'err');});
+}
+function imprimirFeedback(ciclo){
+  var f=_funcs.find(function(x){return x.id===_funcAtivoId;});if(!f)return;
+  var x=fbDoCiclo(f,ciclo);if(!x)return;
+  var nota=function(id,t){var n=(x.notas||[]).filter(function(k){return k.id===id;})[0]||(x.notas||[]).filter(function(k){return normTxt(k.t)===normTxt(t);})[0];return n?n.n:'';};
+  var cel=function(v,k){return '<td class="c'+(v===k?' on':'')+'">'+(v===k?'●':'')+'</td>';};
+  var H='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Feedback — '+esc(f.nome)+' — '+cicloLabel(ciclo)+'</title><style>'
+    +'@page{size:A4;margin:10mm}*{box-sizing:border-box}body{font-family:Inter,Arial,sans-serif;font-size:10.5px;color:#0e0f12;margin:0}'
+    +'h1{font-size:17px;margin:0}h2{font-size:10.5px;text-transform:uppercase;letter-spacing:.8px;background:#0e0f12;color:#f2eee5;padding:5px 8px;margin:10px 0 6px}'
+    +'.top{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid #0e0f12;padding-bottom:6px}'
+    +'.g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.g2{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}'
+    +'table{width:100%;border-collapse:collapse}td,th{border:1px solid #d4cec0;padding:3px 5px;vertical-align:top}th{background:#f7f5f0;font-size:9px;text-transform:uppercase}'
+    +'td.c{width:16px;text-align:center}td.on{background:#0e0f12;color:#d7ff3d}.lbl{font-size:9px;font-weight:700;text-transform:uppercase;color:#6b6558}'
+    +'.box{border:1px solid #d4cec0;padding:5px;min-height:34px;white-space:pre-wrap}.sig{margin-top:26px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.sig div{border-top:1px solid #0e0f12;padding-top:3px;text-align:center}'
+    +'</style></head><body>'
+    +'<div class="top"><div><h1>Feedback de Desempenho</h1><div>'+cicloLabel(ciclo)+'</div></div><div style="text-align:right;font-size:18px;font-weight:900">'+fmtMedia(x.media)+'<span style="font-size:11px">/5</span><div style="font-size:10px;font-weight:600">'+(x.classif?x.classif+' — '+CLASSIF[x.classif]:'')+'</div></div></div>'
+    +'<h2>1. Identificação</h2><div class="g2"><div><span class="lbl">Colaborador</span><br>'+esc(f.nome)+'</div><div><span class="lbl">Cargo / Setor</span><br>'+esc(f.cargo||'')+(f.departamento?' / '+esc(f.departamento):'')+'</div>'
+    +'<div><span class="lbl">Gestor</span><br>'+esc(x.gestor||'—')+'</div><div><span class="lbl">Admissão · Feedback · Entrega RH</span><br>'+fmtDate(f.admissao)+' · '+fmtDate(x.data)+' · '+fmtDate(x.dataEntrega)+'</div></div>'
+    +'<h2>2. Avaliação do ciclo</h2><div class="g">';
+  var num=0;
+  FB.secoes.forEach(function(sec){
+    H+='<table><tr><th style="text-align:left">'+sec.id+'. '+esc(sec.nome)+' · '+fmtMedia(mediaSecao(x,sec.id))+'</th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th></tr>';
+    sec.criterios.forEach(function(cr){num++;var v=nota(cr.id,cr.t);H+='<tr><td>'+num+'. '+esc(cr.t)+'</td>'+[1,2,3,4,5].map(function(k){return cel(v,k);}).join('')+'</tr>';});
+    H+='</table>';
+  });
+  H+='</div><div style="font-size:9px;color:#6b6558;margin-top:3px">Escala: '+[1,2,3,4,5].map(function(k){return k+' '+ESCALA[k];}).join(' · ')+'</div>'
+    +'<h2>3. Pontos qualitativos</h2><div class="g"><div><span class="lbl">Pontos fortes</span><div class="box">'+esc(x.fortes||'')+'</div></div><div><span class="lbl">Pontos a desenvolver</span><div class="box">'+esc(x.desenvolver||'')+'</div></div><div><span class="lbl">Principal evolução ou contribuição</span><div class="box">'+esc(x.evolucao||'')+'</div></div></div>'
+    +'<h2>4. Plano de desenvolvimento — próximo ciclo</h2><table><tr><th></th><th>O que desenvolver</th><th>Como</th><th>Responsável</th><th>Prazo</th><th>Indicador de evolução</th></tr>';
+  for(var i=0;i<3;i++){var r=(x.plano||[])[i]||{};H+='<tr><td>'+(i+1)+'.</td><td>'+esc(r.o||'')+'</td><td>'+esc(r.como||'')+'</td><td>'+esc(r.resp||'')+'</td><td>'+(r.prazo?fmtDate(r.prazo):'')+'</td><td>'+esc(r.ind||'')+'</td></tr>';}
+  var c=x.colab||{};
+  H+='</table><h2>5. Visão do colaborador</h2><div class="g2"><div><span class="lbl">Recebeu orientações suficientes?</span><br>'+(SIMNAO[c.orientacoes]||'—')+'</div><div><span class="lbl">Sabe o que precisa melhorar?</span><br>'+(SIMNAO[c.sabeMelhorar]||'—')+'</div>'
+    +'<div><span class="lbl">Treinamento / apoio necessário</span><div class="box">'+esc(c.apoio||'')+'</div></div><div><span class="lbl">Comentário</span><div class="box">'+esc(c.comentario||'')+'</div></div></div>'
+    +'<h2>6. Resultado do ciclo</h2><div class="g"><div><span class="lbl">Média geral</span><br><b style="font-size:14px">'+fmtMedia(x.media)+'/5</b></div><div><span class="lbl">Classificação</span><br>'+(x.classif?x.classif+' — '+CLASSIF[x.classif]:'—')+'</div>'
+    +'<div><span class="lbl">Situação para o próximo ciclo</span><br>'+((x.situacoes||[]).map(function(k){return k==='outro'?'Outro: '+esc(x.situacaoOutro||''):SITUACOES[k];}).join('<br>')||'—')+'</div></div>'
+    +'<div class="sig"><div>Colaborador</div><div>Gestor</div><div>RH</div></div>'
+    +'<div style="font-size:8.5px;color:#6b6558;margin-top:6px">A assinatura representa a ciência sobre o conteúdo do feedback, não necessariamente a concordância com todas as avaliações.</div>'
+    +'<script>window.onload=function(){window.print();}<\/script></body></html>';
+  var w=window.open('','_blank');
+  if(!w){toast('Permita pop-ups para imprimir.','warn');return;}
+  w.document.write(H);w.document.close();
+}
+
 // ════ RELATÓRIO ════
 function relPeriodo(tipo,silencioso){
   var n=new Date(),ini,fim;
@@ -1121,7 +1552,7 @@ function renderRel(){
   var nConc=rows.filter(function(r){return r.o.done;}).length;
   var nAtras=rows.filter(function(r){return !r.o.done&&r.o.venc<hoje;}).length;
   var nPend=rows.length-nConc;
-  var faseNome={exp:'Experiência',pos:'Pós-experiência','9box':'Avaliação 9Box'};
+  var faseNome={exp:'Experiência',fb:'Feedback de Desempenho','9box':'Avaliação 9Box'};
   var filtrosTxt=[
     sit==='pend'?'Somente pendentes':sit==='conc'?'Somente concluídas':'Pendentes e concluídas',
     fase?faseNome[fase]:'Todas as fases',
@@ -1150,7 +1581,7 @@ function renderRel(){
       var st=o.done?'<span class="badge badge-lime">Concluída</span>'
         :o.venc<hoje?'<span class="badge badge-red">Atrasada · '+diffDays(o.venc,hoje)+'d</span>'
         :'<span class="badge badge-amber">Pendente</span>';
-      var faseB=o.fase==='exp'?'<span class="badge badge-gray">Experiência</span>':o.fase==='pos'?'<span class="badge badge-blue">Pós-exp.</span>':'<span class="badge badge-blue">9Box</span>';
+      var faseB=o.fase==='exp'?'<span class="badge badge-gray">Experiência</span>':o.fase==='fb'?'<span class="badge badge-blue">Feedback</span>':'<span class="badge badge-blue">9Box</span>';
       var real=o.done?fmtDate(o.doneDate)+(o.fase==='9box'&&o.av?'<div class="sm">'+esc(NB[nbKey(o.av)].n)+'</div>':(o.obs?'<div class="sm">'+esc(o.obs)+'</div>':'')):'—';
       h+='<tr><td style="font-weight:700;white-space:nowrap">'+fmtDate(o.venc)+'</td>'
         +'<td><strong>'+esc(f.nome)+'</strong><div class="sm">'+esc(f.cargo||'')+'</div></td>'
@@ -1192,25 +1623,38 @@ function removerContato(id){
   if(!confirm('Remover este contato?'))return;
   _cfg.contatos=_cfg.contatos.filter(function(c){return c.id!==id;});salvarCfg();
 }
-function addRotina(){
-  var titulo=(document.getElementById('nr-titulo').value||'').trim();
-  var meses=parseInt(document.getElementById('nr-meses').value);
-  var rec=document.getElementById('nr-rec').value==='1';
-  if(!titulo||!meses||meses<1){toast('Informe título e intervalo em meses.','err');return;}
-  _cfg.rotinasPos.push({id:'r'+Date.now(),titulo:titulo,meses:meses,recorrente:rec});
-  salvarCfg();
-  document.getElementById('nr-titulo').value='';
-  document.getElementById('nr-meses').value='';
+// ════ MODELO DO FEEDBACK ════
+function renderModeloFb(){
+  var g=document.getElementById('mf-grid');if(!g)return;
+  if(g.closest('.cfg-section').contains(document.activeElement))return;
+  g.innerHTML=FB.secoes.map(function(sec){
+    return '<div><label class="cfg-label">Bloco '+sec.id+'</label><input class="fi" id="mf-n-'+sec.id+'" value="'+esc(sec.nome)+'" style="font-weight:700;margin-bottom:6px">'
+      +'<textarea class="ft" id="mf-c-'+sec.id+'" rows="7" style="font-size:12px;line-height:1.5">'+esc(sec.criterios.map(function(c){return c.t;}).join('\n'))+'</textarea></div>';
+  }).join('');
 }
-function removerRotina(id){
-  if(!confirm('Remover esta rotina? Os registros já feitos continuam salvos, mas deixam de aparecer.'))return;
-  _cfg.rotinasPos=_cfg.rotinasPos.filter(function(r){return r.id!==id;});salvarCfg();
+function salvarModeloFb(){
+  var m={secoes:[]},erro=false;
+  FB_PADRAO.secoes.forEach(function(sp){
+    var nome=(document.getElementById('mf-n-'+sp.id).value||'').trim()||sp.nome;
+    var crit=(document.getElementById('mf-c-'+sp.id).value||'').split('\n').map(function(t){return t.trim();}).filter(Boolean);
+    if(!crit.length)erro=true;
+    m.secoes.push({id:sp.id,nome:nome,criterios:crit});
+  });
+  if(erro){toast('Cada bloco precisa de ao menos um critério.','err');return;}
+  _cfg.fbModelo=m;
+  if(document.activeElement)document.activeElement.blur();
+  salvarCfg();
+}
+function restaurarModeloFb(){
+  if(!confirm('Restaurar os critérios padrão do feedback? Os feedbacks lançados não são alterados.'))return;
+  delete _cfg.fbModelo;
+  if(document.activeElement)document.activeElement.blur();
+  salvarCfg();
 }
 function salvarParams(){
   var ini=document.getElementById('pr-inicio').value;
-  var car=parseInt(document.getElementById('pr-carencia').value);
   if(!ini){toast('Informe a data inicial.','err');return;}
-  _cfg.params={inicio:ini,carencia:isNaN(car)?60:Math.max(0,car)};
+  _cfg.params={inicio:ini};
   salvarCfg();
 }
 
@@ -1277,10 +1721,14 @@ function normTxt(s){return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ
 // Colaboradores elegíveis ao ciclo, respeitando filtros de empresa/setor da tela
 function elegiveisCiclo(ciclo){
   var emp=document.getElementById('f-empresa').value,setor=document.getElementById('f-setor').value;
-  return getFuncsEfetivados().filter(function(f){
+  // ciclos anteriores ao início do acompanhamento (carga de histórico) incluem todos os ativos, ignorando a trava
+  var historico=cicloFim(ciclo)<P().inicio;
+  return _funcs.filter(function(f){
+    if(f.desligado||!isEfetivado(f))return false;
+    if(!historico&&foraDoAcomp(f))return false;
     if(emp&&f.empresa!==emp)return false;
     if(setor&&(f.departamento||'')!==setor)return false;
-    return getOcorrencias(f,cicloFim(ciclo)).some(function(o){return o.fase==='9box'&&o.ciclo===ciclo;})||!!avDoCiclo(f,ciclo);
+    return elegivelCiclo(f,ciclo)||!!avDoCiclo(f,ciclo);
   }).sort(function(a,b){return (a.nome||'').localeCompare(b.nome||'');});
 }
 
@@ -1336,7 +1784,14 @@ function parseNivel(v){
 function parseCicloTxt(v){
   var s=String(v==null?'':v).trim();
   var m=s.match(/^(\d{4})\s*-\s*([12])$/);if(m)return m[1]+'-'+m[2];
-  m=s.match(/([12])\s*[ºo°]?\s*(?:s|sem|semestre)?\D*(\d{4})/i);if(m)return m[2]+'-'+m[1];
+  // "Junho/2026", "jun/26", "Dezembro 2025", "dez-25"
+  var t=normTxt(s);
+  m=t.match(/^(jun|dez)[a-z]*\s*[\/\-\s]\s*(\d{2,4})$/);
+  if(m){var a=m[2].length===2?'20'+m[2]:m[2];return a+'-'+(m[1]==='jun'?'1':'2');}
+  // "06/2026", "12/2025"
+  m=t.match(/^(0?6|12)\s*[\/\-]\s*(\d{4})$/);if(m)return m[2]+'-'+(parseInt(m[1])===6?'1':'2');
+  // legado: "1º semestre/2026"
+  m=s.match(/([12])\s*[ºo°]?\s*(?:s|sem|semestre)\D*(\d{4})/i);if(m)return m[2]+'-'+m[1];
   return null;
 }
 function parseDataCel(v){
@@ -1389,7 +1844,6 @@ function processarPlanilha(rows){
     if(!f&&!L.erros.length)L.erros.push('Colaborador não encontrado');
     L.f=f;if(f)L.nome=f.nome;
     if(L.ignorar){_impLinhas.push(L);return;}
-    if(f&&foraDoAcomp(f))L.erros.push('Fora do acompanhamento (trava)');
     L.ciclo=parseCicloTxt(cel(r,'ciclo'))||_nbCiclo;
     if(col.ciclo>=0&&String(cel(r,'ciclo')).trim()&&!parseCicloTxt(cel(r,'ciclo')))L.erros.push('Ciclo inválido');
     L.d=parseNivel(xv);L.p=parseNivel(yv);
@@ -1489,16 +1943,10 @@ function renderCfg(){
     return '<tr><td style="font-weight:700">'+c.dia+'</td><td>'+esc(c.desc)+'</td>'+lixo('removerContato',c.id)+'</tr>';
   }).join('')||'<tr><td colspan="3" style="color:var(--text3);font-size:12px;padding:16px">Nenhum contato configurado.</td></tr>';
 
-  document.getElementById('tb-rotinas').innerHTML=_cfg.rotinasPos.slice().sort(function(a,b){return a.meses-b.meses;}).map(function(r){
-    return '<tr><td style="font-weight:700">'+esc(r.titulo)+'</td><td>'+(r.recorrente?'A cada ':'')+r.meses+(r.meses===1?' mês':' meses')+' após a efetivação</td>'
-      +'<td>'+(r.recorrente?'<span class="badge badge-blue"><i class="ti ti-repeat" style="font-size:10px"></i> Recorrente</span>':'<span class="badge badge-gray">Uma vez</span>')+'</td>'
-      +lixo('removerRotina',r.id)+'</tr>';
-  }).join('')||'<tr><td colspan="4" style="color:var(--text3);font-size:12px;padding:16px">Nenhuma rotina configurada.</td></tr>';
-
   var p=P();
-  var pi=document.getElementById('pr-inicio'),pc=document.getElementById('pr-carencia');
+  var pi=document.getElementById('pr-inicio');
   if(document.activeElement!==pi)pi.value=p.inicio;
-  if(document.activeElement!==pc)pc.value=p.carencia;
+  renderModeloFb();
   renderPrInfo();
   renderTermosNb();
 }
@@ -1508,6 +1956,7 @@ document.querySelectorAll('.overlay').forEach(function(el){
   el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 });
 aplicarTermosNb();
+aplicarModeloFb();
 popularEmpresas();
 mostrarView('lista');
 iniciarListeners();

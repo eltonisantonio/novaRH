@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Nova. RH — Período de Experiência</title>
+<title>Nova. RH — Acompanhamento</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://cdn.jsdelivr.net">
@@ -59,6 +59,8 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .filters{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
 .tab-btn{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--white);color:var(--text2);font-family:'Inter',sans-serif;transition:all .15s;}
 .tab-btn.active{background:var(--black);color:var(--lime);border-color:var(--black);}
+.chip-btn{padding:5px 11px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--white);color:var(--text2);font-family:'Inter',sans-serif;}
+.chip-btn:hover{background:var(--s2);}
 .form-select{padding:8px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;color:var(--text);}
 .search-wrap{position:relative;flex:1;min-width:180px;}
 .search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:15px;pointer-events:none;}
@@ -72,11 +74,12 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .func-footer{display:flex;align-items:center;gap:10px;margin-top:10px;}
 .progress-wrap{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden;}
 .progress-fill{height:100%;background:var(--lime);border-radius:3px;transition:width .3s;}
-.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
 .badge-lime{background:#f0ffe0;color:#3a5c00;border:1px solid #c0e840;}
 .badge-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
 .badge-red{background:#fdeaea;color:#8b1c1c;border:1px solid #f5c6c6;}
 .badge-gray{background:#f0ede6;color:var(--text2);border:1px solid var(--border2);}
+.badge-blue{background:#eef4fb;color:#1f4f82;border:1px solid #c5d8ee;}
 .badge-empresa{background:var(--black);color:var(--lime);font-size:10px;padding:2px 7px;border-radius:4px;font-weight:700;}
 .alert-badge{background:#fdeaea;color:#8b1c1c;border:1px solid #f5c6c6;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:700;display:inline-flex;align-items:center;gap:4px;}
 /* DETALHE */
@@ -85,6 +88,8 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .det-meta{font-size:12px;color:rgba(242,238,229,.6);margin-bottom:2px;}
 .det-progress{height:8px;background:rgba(255,255,255,.15);border-radius:4px;overflow:hidden;margin-top:14px;}
 .det-progress-fill{height:100%;background:var(--lime);border-radius:4px;}
+.sec-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin:22px 0 12px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sec-title:first-of-type{margin-top:0;}
 /* TIMELINE */
 .tl-item{display:flex;gap:14px;background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:14px 16px;margin-bottom:10px;align-items:flex-start;}
 .tl-icon{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px;}
@@ -98,10 +103,27 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .notice{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:var(--r);font-size:12px;font-weight:500;margin-bottom:14px;}
 .notice-amber{background:#fef8ec;color:#7d4e00;border:1px solid #f0d080;}
 .notice-red{background:#fdeaea;color:#8b1c1c;border:1px solid #f5c6c6;}
+.notice-blue{background:#eef4fb;color:#1f4f82;border:1px solid #c5d8ee;}
+/* 9BOX */
+.nb-card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:18px 20px;margin-bottom:16px;}
+.nb-wrap{display:flex;gap:8px;align-items:stretch;}
+.nb-ylab{writing-mode:vertical-rl;transform:rotate(180deg);font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);text-align:center;}
+.nb-xlab{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);text-align:center;margin-top:6px;}
+.nb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;flex:1;}
+.nb-cell{border-radius:6px;padding:8px 10px;min-height:66px;border:2px solid transparent;font-size:11px;font-weight:700;display:flex;flex-direction:column;justify-content:space-between;gap:4px;}
+.nb-cell.click{cursor:pointer;transition:all .12s;}
+.nb-cell.click:hover{filter:brightness(.96);}
+.nb-cell.sel{border-color:var(--black);box-shadow:0 0 0 2px var(--lime) inset;}
+.nb-num{font-size:22px;font-weight:900;letter-spacing:-.5px;line-height:1;}
+.nb-tag{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px;background:rgba(255,255,255,.7);color:var(--text2);margin:1px 2px 0 0;}
+.nb-tag.last{background:var(--black);color:var(--lime);}
+.nb-chip{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid;white-space:nowrap;}
+.nb-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
 /* MODAL */
 .overlay{display:none;position:fixed;inset:0;background:rgba(14,15,18,.55);z-index:100;align-items:center;justify-content:center;}
 .overlay.open{display:flex;}
 .modal{background:var(--white);border-radius:var(--rl);width:480px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;}
+.modal.lg{width:620px;}
 .modal-h{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .modal-title{font-size:15px;font-weight:800;}
 .modal-b{padding:24px;overflow-y:auto;}
@@ -111,12 +133,26 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .fi,.fs,.ft{padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;width:100%;}
 .fi:focus,.fs:focus,.ft:focus{border-color:var(--black);}
 .ft{resize:vertical;min-height:80px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 /* CFG */
 .cfg-section{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);padding:20px;margin-bottom:16px;}
+.cfg-label{font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px;}
 .cfg-table{width:100%;border-collapse:collapse;}
 .cfg-table th{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text3);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);}
 .cfg-table td{font-size:13px;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
 .cfg-table tr:last-child td{border-bottom:none;}
+/* RELATÓRIO */
+.rel-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;align-items:end;}
+.rel-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:2px solid var(--black);padding-bottom:12px;margin-bottom:16px;}
+.rel-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px;}
+.rel-stat{background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;}
+.rel-stat b{display:block;font-size:22px;font-weight:900;}
+.rel-stat span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--text3);}
+.rel-table{width:100%;border-collapse:collapse;background:var(--white);border:1px solid var(--border);border-radius:var(--rl);overflow:hidden;}
+.rel-table th{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);padding:9px 10px;text-align:left;border-bottom:1px solid var(--border);background:var(--s2);}
+.rel-table td{font-size:12px;padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+.rel-table tr:last-child td{border-bottom:none;}
+.rel-table .sm{font-size:11px;color:var(--text2);}
 /* EMPTY */
 .empty{text-align:center;padding:40px 20px;color:var(--text2);}
 .empty i{font-size:36px;color:var(--text3);display:block;margin-bottom:10px;}
@@ -126,6 +162,19 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .toast.err{background:#8b1c1c;}
 .toast.ok{background:#1a5c35;}
 .toast.warn{background:#7d4e00;}
+/* IMPRESSÃO (PDF) */
+@media print{
+  @page{size:A4 landscape;margin:10mm;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body{background:#fff;}
+  .sidebar,.topbar,.no-print,.toast,.overlay{display:none!important;}
+  .app{display:block;}
+  .main{overflow:visible;}
+  .content{padding:0;overflow:visible;}
+  .rel-table{border-radius:0;}
+  .rel-table tr{page-break-inside:avoid;}
+  .rel-table thead{display:table-header-group;}
+}
 </style>
 </head>
 <body>
@@ -139,32 +188,30 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="nav-s">Módulos</div>
       <div class="nav-item dis"><i class="ti ti-user-search"></i> R&amp;S</div>
       <div class="nav-item dis"><i class="ti ti-file-check"></i> Admissão</div>
-      <div class="nav-item active"><i class="ti ti-clock"></i> Experiência</div>
+      <div class="nav-item active"><i class="ti ti-heart-handshake"></i> Acompanhamento</div>
       <div class="nav-item dis"><i class="ti ti-notebook"></i> Dossiê</div>
       <div class="nav-item dis"><i class="ti ti-file-minus"></i> Rescisão</div>
       <div class="nav-item dis"><i class="ti ti-send"></i> Solicitações</div>
     </nav>
-    <div class="sidebar-footer">Módulo 4 · Experiência</div>
+    <div class="sidebar-footer">Módulo 4 · Acompanhamento</div>
   </aside>
 
   <div class="main">
     <div class="topbar">
-      <span class="topbar-title" id="topbar-title">Período de Experiência</span>
-      <div class="topbar-actions" id="topbar-actions">
-        <button class="btn btn-sm" onclick="mostrarConfig()"><i class="ti ti-settings"></i> Configurações</button>
-      </div>
+      <span class="topbar-title" id="topbar-title">Acompanhamento</span>
+      <div class="topbar-actions" id="topbar-actions"></div>
     </div>
 
     <!-- LISTA -->
     <div class="content" id="view-lista">
       <div class="stats-grid">
         <div class="stat-card s-lime"><div class="stat-label">Em experiência</div><div class="stat-value" id="st-exp">0</div><div class="stat-sub">funcionários ativos</div></div>
-        <div class="stat-card s-red"><div class="stat-label">Com pendências</div><div class="stat-value" id="st-pend">0</div><div class="stat-sub">itens atrasados</div></div>
-        <div class="stat-card s-amber"><div class="stat-label">Efetivados</div><div class="stat-value" id="st-efet">0</div><div class="stat-sub">este mês</div></div>
+        <div class="stat-card s-red"><div class="stat-label">Com pendências</div><div class="stat-value" id="st-pend">0</div><div class="stat-sub">colaboradores com itens atrasados</div></div>
+        <div class="stat-card s-amber"><div class="stat-label">Efetivados</div><div class="stat-value" id="st-efet">0</div><div class="stat-sub" id="st-efet-sub">este mês</div></div>
         <div class="stat-card s-black"><div class="stat-label">Troca capacete</div><div class="stat-value" id="st-cap">0</div><div class="stat-sub">próxima cerimônia</div></div>
       </div>
-      <div class="filters">
-        <button class="tab-btn active" id="tab-ativos" onclick="setTabAtivos('ativos',this)">Em experiência</button>
+      <div class="filters" id="tabs-lista">
+        <button class="tab-btn active" onclick="setTabAtivos('ativos',this)">Em experiência</button>
         <button class="tab-btn" id="tab-efetivados" onclick="setTabAtivos('efetivados',this)">Efetivados</button>
         <button class="tab-btn" id="tab-desligados" onclick="setTabAtivos('desligados',this)">Desligados</button>
         <div class="search-wrap">
@@ -174,38 +221,63 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
         <select class="form-select" id="f-setor" onchange="renderFuncs()" style="width:180px">
           <option value="">Todos os setores</option>
         </select>
-        <select class="form-select" id="f-empresa" onchange="renderFuncs()" style="width:185px">
+        <select class="form-select sel-empresa" id="f-empresa" onchange="renderFuncs()" style="width:185px">
           <option value="">Todas as empresas</option>
-          <option>RAGUIFE INDUSTRIA E COMERCIO DE RACOES LTDA</option>
-          <option>NEVES QUEIROZ ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA</option>
-          <option>DISTRIBUIDORA AMBAR AMARAL LTDA</option>
-          <option>AMBAR AMARAL ADMINISTRADORA DE BENS PROPRIOS LTDA</option>
-          <option>M B PRONI DO AMARAL CONSTRUCOES E ACABAMENTOS</option>
         </select>
       </div>
+      <div id="nb-panel" style="display:none"></div>
       <div id="lista-funcs"></div>
     </div>
 
     <!-- DETALHE -->
     <div class="content" id="view-detalhe" style="display:none"></div>
 
+    <!-- RELATÓRIO -->
+    <div class="content" id="view-rel" style="display:none">
+      <div class="cfg-section no-print">
+        <div class="rel-grid">
+          <div><label class="cfg-label">Vencimento de</label><input class="fi" type="date" id="r-ini" onchange="renderRel()"></div>
+          <div><label class="cfg-label">Até</label><input class="fi" type="date" id="r-fim" onchange="renderRel()"></div>
+          <div><label class="cfg-label">Situação</label>
+            <select class="fs" id="r-sit" onchange="renderRel()">
+              <option value="">Todas</option><option value="pend">Pendentes</option><option value="conc">Concluídas</option>
+            </select></div>
+          <div><label class="cfg-label">Fase</label>
+            <select class="fs" id="r-fase" onchange="renderRel()">
+              <option value="">Todas</option><option value="exp">Período de experiência</option><option value="pos">Rotinas pós-experiência</option><option value="9box">Avaliação 9Box</option>
+            </select></div>
+          <div><label class="cfg-label">Empresa</label>
+            <select class="fs sel-empresa" id="r-emp" onchange="renderRel()"><option value="">Todas</option></select></div>
+          <div><label class="cfg-label">Setor</label>
+            <select class="fs" id="r-setor" onchange="renderRel()"><option value="">Todos</option></select></div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:11px;font-weight:700;color:var(--text3);margin-right:4px">Atalhos:</span>
+          <button class="chip-btn" onclick="relPeriodo('mesAnt')">Mês anterior</button>
+          <button class="chip-btn" onclick="relPeriodo('mes')">Este mês</button>
+          <button class="chip-btn" onclick="relPeriodo('prox')">Próximo mês</button>
+          <button class="chip-btn" onclick="relPeriodo('30')">Próximos 30 dias</button>
+          <div style="flex:1"></div>
+          <button class="btn btn-primary btn-sm" onclick="window.print()"><i class="ti ti-file-type-pdf"></i> Gerar PDF</button>
+        </div>
+      </div>
+      <div id="rel-out"></div>
+    </div>
+
     <!-- CONFIG -->
     <div class="content" id="view-cfg" style="display:none">
       <div style="margin-bottom:20px">
-        <div style="font-size:14px;font-weight:800">Configurações do Período de Experiência</div>
-        <div style="font-size:12px;color:var(--text2)">Configure os vídeos e contatos do RH que devem ser feitos durante os 90 dias.</div>
+        <div style="font-size:14px;font-weight:800">Configurações do Acompanhamento</div>
+        <div style="font-size:12px;color:var(--text2)">Atividades do período de experiência e rotinas após a efetivação.</div>
       </div>
 
       <div class="cfg-section">
-        <div style="font-size:13px;font-weight:800;margin-bottom:4px">Vídeos a Enviar</div>
+        <div style="font-size:13px;font-weight:800;margin-bottom:4px">Vídeos a Enviar <span class="badge badge-gray" style="margin-left:6px">Experiência</span></div>
         <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Vídeos que o RH envia ao funcionário em dias específicos da experiência.</div>
         <div style="display:grid;grid-template-columns:auto 1fr auto auto;gap:8px;margin-bottom:14px;align-items:end">
-          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Dia</label>
-            <input class="fi" type="number" id="nv-dia" placeholder="Ex: 3" style="width:70px" min="1" max="90"></div>
-          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Título do Vídeo</label>
-            <input class="fi" type="text" id="nv-titulo" placeholder="Ex: Boas-vindas"></div>
-          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Link</label>
-            <input class="fi" type="text" id="nv-link" placeholder="https://..." style="width:180px"></div>
+          <div><label class="cfg-label">Dia</label><input class="fi" type="number" id="nv-dia" placeholder="Ex: 3" style="width:70px" min="1" max="90"></div>
+          <div><label class="cfg-label">Título do Vídeo</label><input class="fi" type="text" id="nv-titulo" placeholder="Ex: Boas-vindas"></div>
+          <div><label class="cfg-label">Link</label><input class="fi" type="text" id="nv-link" placeholder="https://..." style="width:180px"></div>
           <button class="btn btn-primary" style="height:38px" onclick="addVideo()"><i class="ti ti-plus"></i> Adicionar</button>
         </div>
         <table class="cfg-table"><thead><tr><th>Dia</th><th>Título</th><th>Link</th><th style="width:50px"></th></tr></thead>
@@ -213,17 +285,40 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       </div>
 
       <div class="cfg-section">
-        <div style="font-size:13px;font-weight:800;margin-bottom:4px">Contatos do RH</div>
+        <div style="font-size:13px;font-weight:800;margin-bottom:4px">Contatos do RH <span class="badge badge-gray" style="margin-left:6px">Experiência</span></div>
         <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Contatos que o RH deve fazer com o funcionário em dias específicos.</div>
         <div style="display:grid;grid-template-columns:auto 1fr auto;gap:8px;margin-bottom:14px;align-items:end">
-          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Dia</label>
-            <input class="fi" type="number" id="nc-dia" placeholder="Ex: 15" style="width:70px" min="1" max="90"></div>
-          <div><label style="font-size:10px;font-weight:700;color:var(--text2);text-transform:uppercase;display:block;margin-bottom:4px">Descrição</label>
-            <input class="fi" type="text" id="nc-desc" placeholder="Ex: Primeiro contato de acompanhamento"></div>
+          <div><label class="cfg-label">Dia</label><input class="fi" type="number" id="nc-dia" placeholder="Ex: 15" style="width:70px" min="1" max="90"></div>
+          <div><label class="cfg-label">Descrição</label><input class="fi" type="text" id="nc-desc" placeholder="Ex: Primeiro contato de acompanhamento"></div>
           <button class="btn btn-primary" style="height:38px" onclick="addContato()"><i class="ti ti-plus"></i> Adicionar</button>
         </div>
         <table class="cfg-table"><thead><tr><th>Dia</th><th>Descrição</th><th style="width:50px"></th></tr></thead>
         <tbody id="tb-contatos"></tbody></table>
+      </div>
+
+      <div class="cfg-section">
+        <div style="font-size:13px;font-weight:800;margin-bottom:4px">Rotinas Pós-Experiência <span class="badge badge-blue" style="margin-left:6px">Efetivados</span></div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Geradas automaticamente para todos os efetivados, contando a partir da data de efetivação (ex.: feedback do gestor a cada 6 meses). O RH registra a data em que o gestor devolveu o feedback preenchido.</div>
+        <div style="display:grid;grid-template-columns:1fr auto auto auto;gap:8px;margin-bottom:14px;align-items:end">
+          <div><label class="cfg-label">Título da rotina</label><input class="fi" type="text" id="nr-titulo" placeholder="Ex: Feedback do gestor"></div>
+          <div><label class="cfg-label">A cada (meses)</label><input class="fi" type="number" id="nr-meses" placeholder="6" style="width:110px" min="1" max="60"></div>
+          <div><label class="cfg-label">Repetir</label>
+            <select class="fs" id="nr-rec" style="width:150px"><option value="1">Recorrente</option><option value="0">Apenas uma vez</option></select></div>
+          <button class="btn btn-primary" style="height:38px" onclick="addRotina()"><i class="ti ti-plus"></i> Adicionar</button>
+        </div>
+        <table class="cfg-table"><thead><tr><th>Rotina</th><th>Intervalo</th><th>Repetição</th><th style="width:50px"></th></tr></thead>
+        <tbody id="tb-rotinas"></tbody></table>
+      </div>
+
+      <div class="cfg-section">
+        <div style="font-size:13px;font-weight:800;margin-bottom:4px">Parâmetros <span class="badge badge-blue" style="margin-left:6px">Efetivados</span></div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:14px">A avaliação 9Box é semestral: vence em 30/06 (1º semestre) e 31/12 (2º semestre).</div>
+        <div style="display:grid;grid-template-columns:auto auto auto;gap:12px;align-items:end;justify-content:start">
+          <div><label class="cfg-label">Considerar atividades a partir de</label><input class="fi" type="date" id="pr-inicio" style="width:200px"></div>
+          <div><label class="cfg-label">Carência p/ 1ª avaliação 9Box (dias)</label><input class="fi" type="number" id="pr-carencia" style="width:200px" min="0"></div>
+          <button class="btn btn-primary" style="height:38px" onclick="salvarParams()"><i class="ti ti-device-floppy"></i> Salvar</button>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:10px">Atividades pós-experiência e ciclos 9Box com vencimento anterior à data acima não são gerados (evita pendências retroativas de funcionários antigos). A carência define quantos dias após a efetivação o colaborador precisa ter para entrar no ciclo semestral.</div>
       </div>
     </div>
   </div>
@@ -234,13 +329,37 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
   <div class="modal">
     <div class="modal-h"><span class="modal-title" id="reg-title">Registrar</span><button class="btn-icon" onclick="closeModal('modal-reg')"><i class="ti ti-x"></i></button></div>
     <div class="modal-b">
-      <div class="fg"><label class="fl">Data de realização</label><input class="fi" type="date" id="reg-data"></div>
+      <div id="reg-hint"></div>
+      <div class="fg"><label class="fl" id="reg-data-label">Data de realização</label><input class="fi" type="date" id="reg-data"></div>
       <div class="fg"><label class="fl">Observações</label><textarea class="ft" id="reg-obs" rows="3" placeholder="Opcional..."></textarea></div>
       <div class="fg"><label class="fl">Responsável</label><input class="fi" type="text" id="reg-resp" placeholder="Seu nome"></div>
     </div>
     <div class="modal-f">
       <button class="btn" onclick="closeModal('modal-reg')">Cancelar</button>
       <button class="btn btn-primary" onclick="confirmarRegistro()"><i class="ti ti-check"></i> Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL 9BOX -->
+<div class="overlay" id="modal-nb">
+  <div class="modal lg">
+    <div class="modal-h"><span class="modal-title">Avaliação de desempenho — 9Box</span><button class="btn-icon" onclick="closeModal('modal-nb')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div class="row2">
+        <div class="fg"><label class="fl">Ciclo</label><select class="fs" id="nb-ciclo"></select></div>
+        <div class="fg"><label class="fl">Data da avaliação</label><input class="fi" type="date" id="nb-data"></div>
+      </div>
+      <div class="fg"><label class="fl">Posição na matriz <span style="text-transform:none;font-weight:500;color:var(--text3)">— clique no quadrante</span></label>
+        <div id="nb-grid-modal"></div>
+        <div id="nb-sel-info" style="font-size:12px;font-weight:600;color:var(--text2);margin-top:8px"></div>
+      </div>
+      <div class="fg"><label class="fl">Observações / plano de desenvolvimento</label><textarea class="ft" id="nb-obs" rows="3" placeholder="Opcional..."></textarea></div>
+      <div class="fg"><label class="fl">Responsável</label><input class="fi" type="text" id="nb-resp" placeholder="Seu nome"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-nb')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarAvaliacao()"><i class="ti ti-check"></i> Salvar avaliação</button>
     </div>
   </div>
 </div>
@@ -260,31 +379,81 @@ if (!firebase.apps.length) {
 }
 var db = firebase.firestore();
 
+var EMPRESAS = [
+  'RAGUIFE INDUSTRIA E COMERCIO DE RACOES LTDA',
+  'NEVES QUEIROZ ASSESSORIA E CONSULTORIA EMPRESARIAL LTDA',
+  'DISTRIBUIDORA AMBAR AMARAL LTDA',
+  'AMBAR AMARAL ADMINISTRADORA DE BENS PROPRIOS LTDA',
+  'M B PRONI DO AMARAL CONSTRUCOES E ACABAMENTOS'
+];
+
+// Matriz 9Box: chave p{potencial}d{desempenho}, 1=baixo 2=médio 3=alto
+var NB = {
+  p3d1:{n:'Enigma',          c:'#d4a020'},
+  p3d2:{n:'Alto potencial',  c:'#8fbf4a'},
+  p3d3:{n:'Estrela',         c:'#3f9e6a'},
+  p2d1:{n:'Questionável',    c:'#e0823d'},
+  p2d2:{n:'Mantenedor',      c:'#d4a020'},
+  p2d3:{n:'Forte desempenho',c:'#8fbf4a'},
+  p1d1:{n:'Insuficiente',    c:'#e05252'},
+  p1d2:{n:'Eficaz',          c:'#e0823d'},
+  p1d3:{n:'Comprometido',    c:'#d4a020'}
+};
+var NIVEL = {1:'Baixo',2:'Médio',3:'Alto'};
+
 var _funcs    = [];
-var _expData  = {}; // {funcId: {checks:{}}}
-var _cfg      = {videos:[], contatos:[]};
+var _expData  = {}; // {funcId: {checks:{}, avaliacoes:[]}}
+var _cfg      = {videos:[], contatos:[], rotinasPos:[], params:{}};
 var _tabAtiva = 'ativos';
+var _view     = 'lista';
 var _funcAtivoId = null;
 var _acaoPendente = null;
+var _tlMap = {};
+var _nbCiclo = null;   // ciclo selecionado no painel da aba Efetivados
+var _nbFiltro = null;  // 'p3d3' | 'none' | null
+var _nbSel = null;     // {p,d} no modal
 
 // ════ UTILS ════
 function toast(msg,tp){var el=document.getElementById('toast');el.textContent=msg;el.className='toast '+(tp||'');el.classList.add('show');setTimeout(function(){el.classList.remove('show');},2800);}
 function closeModal(id){document.getElementById(id).classList.remove('open');}
 function openModal(id){document.getElementById(id).classList.add('open');}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fmtDate(s){if(!s)return'—';var p=String(s).split('T')[0].split('-');return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:s;}
-function today(){return new Date().toISOString().split('T')[0];}
-function addDays(base,n){var d=new Date(base+'T12:00:00');d.setDate(d.getDate()+n);return d.toISOString().split('T')[0];}
-function diffDays(a,b){return Math.round((new Date(b)-new Date(a))/86400000);}
+function pad(n){return String(n).padStart(2,'0');}
+function iso(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());}
+function today(){return iso(new Date());}
+function addDays(base,n){var d=new Date(base+'T12:00:00');d.setDate(d.getDate()+n);return iso(d);}
+function addMonths(base,m){
+  var d=new Date(base+'T12:00:00'),day=d.getDate();
+  d.setDate(1);d.setMonth(d.getMonth()+m);
+  var last=new Date(d.getFullYear(),d.getMonth()+1,0).getDate();
+  d.setDate(Math.min(day,last));return iso(d);
+}
+function diffDays(a,b){return Math.round((new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000);}
 function diasDecorridos(adm){return Math.max(0,diffDays(adm,today()));}
 function diasRestantes(adm){return diffDays(today(),addDays(adm,90));}
+function dataEfetivacao(f){return addDays(f.admissao,90);}
+function isEfetivado(f){return diasRestantes(f.admissao)<=0;}
+function mesesEntre(a,b){
+  var da=new Date(a+'T12:00:00'),dbb=new Date(b+'T12:00:00');
+  var m=(dbb.getFullYear()-da.getFullYear())*12+(dbb.getMonth()-da.getMonth());
+  if(dbb.getDate()<da.getDate())m--;return Math.max(0,m);
+}
+function tempoCasa(adm){
+  var m=mesesEntre(adm,today()),a=Math.floor(m/12),r=m%12;
+  if(!a)return m+(m===1?' mês':' meses');
+  return a+(a===1?' ano':' anos')+(r?' e '+r+(r===1?' mês':' meses'):'');
+}
+function P(){var p=_cfg.params||{};return {inicio:p.inicio||'2026-07-01',carencia:(p.carencia!=null&&p.carencia!==''?parseInt(p.carencia):60)};}
 
-function proximaUltimaSexta(){
-  function ultSexta(m,a){var d=new Date(a,m+1,0);while(d.getDay()!==5)d.setDate(d.getDate()-1);return d.toISOString().split('T')[0];}
-  var n=new Date();
-  var us1=ultSexta(n.getMonth(),n.getFullYear());
-  if(us1>=today())return us1;
-  var next=new Date(n.getFullYear(),n.getMonth()+1,1);
-  return ultSexta(next.getMonth(),next.getFullYear());
+function ultSexta(m,a){var d=new Date(a,m+1,0,12);while(d.getDay()!==5)d.setDate(d.getDate()-1);return iso(d);}
+// Cerimônia: última sexta-feira do mês em que a experiência termina (ou do mês seguinte, se já passou)
+function dataCerimonia(expFim){
+  var d=new Date(expFim+'T12:00:00');
+  var us=ultSexta(d.getMonth(),d.getFullYear());
+  if(us>=expFim)return us;
+  var n=new Date(d.getFullYear(),d.getMonth()+1,1,12);
+  return ultSexta(n.getMonth(),n.getFullYear());
 }
 
 function mesAlteracaoSalario(expFim){
@@ -295,121 +464,243 @@ function mesAlteracaoSalario(expFim){
   return nomes[prox.getMonth()]+'/'+prox.getFullYear();
 }
 
+// ════ CICLOS 9BOX (semestrais) ════
+function cicloDe(dt){var p=dt.split('-');return p[0]+'-'+(parseInt(p[1],10)<=6?1:2);}
+function cicloFim(c){var p=c.split('-');return p[0]+(p[1]==='1'?'-06-30':'-12-31');}
+function cicloProx(c){var p=c.split('-');return p[1]==='1'?p[0]+'-2':(parseInt(p[0])+1)+'-1';}
+function cicloLabel(c){var p=c.split('-');return p[1]+'º semestre/'+p[0];}
+function cicloCurto(c){var p=c.split('-');return p[1]+'S/'+p[0].slice(2);}
+function listaCiclos(de,ate){var out=[],c=de,g=0;while(c<=ate&&g<100){out.push(c);c=cicloProx(c);g++;}return out;}
+
+function nbKey(a){return 'p'+a.potencial+'d'+a.desempenho;}
+function getAvaliacoes(f){var e=_expData[f.id]||{};return (e.avaliacoes||[]).slice().sort(function(a,b){return a.ciclo.localeCompare(b.ciclo);});}
+function avDoCiclo(f,c){return getAvaliacoes(f).filter(function(a){return a.ciclo===c;})[0]||null;}
+function ultimaAv(f){var l=getAvaliacoes(f);return l.length?l[l.length-1]:null;}
+function nbChip(a,comCiclo){
+  if(!a)return'';var b=NB[nbKey(a)];
+  return '<span class="nb-chip" style="background:'+b.c+'1a;border-color:'+b.c+'66;color:var(--text)"><span class="nb-dot" style="background:'+b.c+'"></span>'+b.n+(comCiclo?' · '+cicloCurto(a.ciclo):'')+'</span>';
+}
+
+// Grade 3x3 genérica. cellFn(p,d,box) retorna o conteúdo interno; opts.click(p,d) string de onclick; opts.sel {p,d}
+function nbGrid(cellFn,opts){
+  opts=opts||{};
+  var h='<div class="nb-wrap"><div class="nb-ylab">Potencial →</div><div style="flex:1"><div class="nb-grid">';
+  for(var p=3;p>=1;p--){
+    for(var d=1;d<=3;d++){
+      var box=NB['p'+p+'d'+d];
+      var sel=opts.sel&&opts.sel.p===p&&opts.sel.d===d;
+      h+='<div class="nb-cell'+(opts.click?' click':'')+(sel?' sel':'')+'" style="background:'+box.c+'22"'
+        +(opts.click?' onclick="'+opts.click(p,d)+'"':'')+'>'+cellFn(p,d,box)+'</div>';
+    }
+  }
+  h+='</div><div class="nb-xlab">Desempenho →</div></div></div>';
+  return h;
+}
+
+// ════ OCORRÊNCIAS (atividades com vencimento) ════
+// Retorna todas as atividades do funcionário com vencimento até "ate" (as da experiência sempre entram)
+function getOcorrencias(f,ate){
+  var exp=_expData[f.id]||{},ck=exp.checks||{},out=[];
+  var adm=f.admissao,fim=dataEfetivacao(f),par=P();
+
+  _cfg.videos.forEach(function(v){
+    out.push({key:'video_'+v.id,fase:'exp',icon:'ti-video',titulo:'Enviar vídeo: '+v.titulo,lbl:'Dia<br>'+v.dia,venc:addDays(adm,parseInt(v.dia)-1),link:v.link||''});
+  });
+  _cfg.contatos.forEach(function(c){
+    out.push({key:'contato_'+c.id,fase:'exp',icon:'ti-phone',titulo:'Contato RH: '+c.desc,lbl:'Dia<br>'+c.dia,venc:addDays(adm,parseInt(c.dia)-1)});
+  });
+  out.push({key:'feedback45',fase:'exp',icon:'ti-message-2',titulo:'Feedback formal — 45 dias',lbl:'Dia<br>45',venc:addDays(adm,44)});
+  out.push({key:'feedback90',fase:'exp',icon:'ti-message-2',titulo:'Feedback formal — 90 dias',lbl:'Dia<br>90',venc:addDays(adm,89),alerta:addDays(adm,84)});
+  out.push({key:'efetivacao',fase:'exp',icon:'ti-hat',titulo:'Cerimônia — Troca de Capacete',lbl:'Dia<br>90',venc:dataCerimonia(fim),semAlerta:true});
+
+  // Rotinas pós-experiência
+  (_cfg.rotinasPos||[]).forEach(function(r){
+    var m=parseInt(r.meses)||0;if(!m)return;
+    for(var n=1;n<=240;n++){
+      var venc=addMonths(fim,m*n);
+      if(venc>ate)break;
+      if(venc>=par.inicio){
+        out.push({key:'pos_'+r.id+'_'+n,fase:'pos',icon:'ti-clipboard-check',rotinaId:r.id,
+          titulo:r.titulo+(r.recorrente?' — '+n+'º':''),lbl:(m*n)+'<br>meses',venc:venc});
+      }
+      if(!r.recorrente)break;
+    }
+  });
+
+  // Avaliação 9Box semestral
+  var c0=cicloDe(fim);
+  listaCiclos(c0,cicloDe(ate)).forEach(function(c){
+    var venc=cicloFim(c);
+    if(venc>ate||venc<par.inicio)return;
+    if(addDays(fim,par.carencia)>venc)return;
+    out.push({key:'nb_'+c,fase:'9box',icon:'ti-layout-grid',ciclo:c,titulo:'Avaliação 9Box — '+cicloLabel(c),lbl:cicloCurto(c),venc:venc});
+  });
+
+  var avs=exp.avaliacoes||[];
+  out.forEach(function(o){
+    if(o.fase==='9box'){
+      var a=avs.filter(function(x){return x.ciclo===o.ciclo;})[0];
+      o.done=!!a;o.doneDate=a?a.data:'';o.resp=a?a.resp:'';o.obs=a?NB[nbKey(a)].n:'';o.av=a||null;
+    }else{
+      var k=ck[o.key];
+      o.done=!!(k&&k.done);o.doneDate=k?k.date:'';o.resp=k?k.resp:'';o.obs=k?k.obs:'';
+    }
+  });
+  return out;
+}
+
+function getAlertas(f){
+  var hoje=today(),efet=isEfetivado(f);
+  return getOcorrencias(f,hoje).filter(function(o){
+    if(efet&&o.fase==='exp')return false; // experiência encerrada: itens viram histórico
+    return !o.done&&!o.semAlerta&&(o.alerta||o.venc)<=hoje;
+  }).map(function(o){return o.titulo;});
+}
+
+function proximaPos(f){
+  var hoje=today();
+  var l=getOcorrencias(f,addMonths(hoje,36)).filter(function(o){return o.fase!=='exp'&&!o.done&&o.venc>=hoje;});
+  l.sort(function(a,b){return a.venc.localeCompare(b.venc);});
+  return l[0]||null;
+}
+
 // ════ LISTENERS ════
 function iniciarListeners(){
   db.collection('adm_processos').onSnapshot(function(snap){
-    var admFuncs=snap.docs.map(function(d){
+    _funcs=snap.docs.map(function(d){
       var p=d.data(),dd=p.dados||{};
-      // Normalizar data de admissão para yyyy-mm-dd
-      var adm = dd.admissao||'';
-      if (adm && adm.includes('/')) {
-        var parts = adm.split('/');
-        if (parts.length === 3) adm = parts[2]+'-'+parts[1].padStart(2,'0')+'-'+parts[0].padStart(2,'0');
+      var adm=dd.admissao||'';
+      if(adm&&adm.includes('/')){
+        var parts=adm.split('/');
+        if(parts.length===3)adm=parts[2]+'-'+parts[1].padStart(2,'0')+'-'+parts[0].padStart(2,'0');
       }
       return {id:'adm_'+d.id,_admId:d.id,nome:dd.nome||'',cargo:dd.cargo||'',empresa:dd.empresa||'',
         departamento:dd.estrutura||'',admissao:adm,status:p.status,temAlteracao:false,
         desligado:!!p.desligado,desligadoEm:p.desligadoEm||''};
     }).filter(function(f){return !!f.admissao;});
-    _funcs=admFuncs;
-    renderLista();
+    popularSetores();
+    refresh();
   });
   db.collection('exp_data').onSnapshot(function(snap){
     _expData={};
     snap.docs.forEach(function(d){_expData[d.id]=d.data();});
-    renderLista();
+    refresh();
   });
   db.collection('exp_cfg').doc('config').onSnapshot(function(doc){
-    _cfg=doc.exists?doc.data():{videos:[],contatos:[]};
+    _cfg=doc.exists?doc.data():{};
     if(!_cfg.videos)_cfg.videos=[];
     if(!_cfg.contatos)_cfg.contatos=[];
+    if(!_cfg.rotinasPos)_cfg.rotinasPos=[];
+    if(!_cfg.params)_cfg.params={};
     renderCfg();
+    refresh();
   });
 }
 
+function refresh(){
+  if(_view==='lista')renderLista();
+  else if(_view==='detalhe')renderDetalhe();
+  else if(_view==='rel')renderRel();
+}
+
 function salvarCfg(){
-  db.collection('exp_cfg').doc('config').set(_cfg).then(function(){toast('Configurações salvas!','ok');});
+  return db.collection('exp_cfg').doc('config').set(_cfg).then(function(){toast('Configurações salvas!','ok');})
+    .catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+function popularSetores(){
+  var setores={};
+  _funcs.forEach(function(f){if(f.departamento)setores[f.departamento]=1;});
+  var lista=Object.keys(setores).sort();
+  ['f-setor','r-setor'].forEach(function(id){
+    var sel=document.getElementById(id),atual=sel.value;
+    while(sel.options.length>1)sel.remove(1);
+    lista.forEach(function(s){var o=document.createElement('option');o.value=s;o.textContent=s;sel.appendChild(o);});
+    sel.value=atual;
+  });
+}
+function popularEmpresas(){
+  document.querySelectorAll('.sel-empresa').forEach(function(sel){
+    EMPRESAS.forEach(function(e){var o=document.createElement('option');o.value=e;o.textContent=e;sel.appendChild(o);});
+  });
+}
+
+// ════ NAVEGAÇÃO ════
+function mostrarView(v){
+  _view=v;
+  ['lista','detalhe','cfg','rel'].forEach(function(x){
+    document.getElementById('view-'+x).style.display=x===v?'block':'none';
+  });
+  var t=document.getElementById('topbar-title'),a=document.getElementById('topbar-actions');
+  var voltar='<button class="btn btn-sm" onclick="voltarLista()"><i class="ti ti-arrow-left"></i> Voltar</button>';
+  if(v==='lista'){
+    t.textContent='Acompanhamento';
+    a.innerHTML='<button class="btn btn-sm" onclick="mostrarRel()"><i class="ti ti-report-analytics"></i> Relatório</button>'
+      +'<button class="btn btn-sm" onclick="mostrarConfig()"><i class="ti ti-settings"></i> Configurações</button>';
+  }else if(v==='detalhe'){t.textContent='Acompanhamento do colaborador';a.innerHTML=voltar;}
+  else if(v==='cfg'){t.textContent='Configurações';a.innerHTML=voltar;}
+  else if(v==='rel'){t.textContent='Relatório de atividades';a.innerHTML=voltar;}
+}
+function voltarLista(){_funcAtivoId=null;mostrarView('lista');renderLista();}
+function mostrarConfig(){mostrarView('cfg');renderCfg();}
+function mostrarDetalhe(id){_funcAtivoId=id;mostrarView('detalhe');renderDetalhe();document.getElementById('view-detalhe').scrollTop=0;}
+function mostrarRel(){
+  if(!document.getElementById('r-ini').value)relPeriodo('mes',true);
+  mostrarView('rel');renderRel();
 }
 
 // ════ TABS ════
 function setTabAtivos(tab,el){
-  _tabAtiva=tab;
-  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  _tabAtiva=tab;_nbFiltro=null;
+  document.querySelectorAll('#tabs-lista .tab-btn').forEach(function(b){b.classList.remove('active');});
   el.classList.add('active');
   renderFuncs();
 }
 
-function getFuncsEmExp(){return _funcs.filter(function(f){return f.admissao&&!f.desligado&&diasRestantes(f.admissao)>0;});}
-function getFuncsEfetivados(){return _funcs.filter(function(f){return f.admissao&&!f.desligado&&diasRestantes(f.admissao)<=0;});}
-function getFuncsDesligados(){return _funcs.filter(function(f){return f.admissao&&f.desligado;});}
-
-function getAlertas(f){
-  var exp=_expData[f.id]||{checks:{}};
-  var dd=diasDecorridos(f.admissao);
-  var alertas=[];
-  _cfg.videos.forEach(function(v){
-    var ck=exp.checks&&exp.checks['video_'+v.id];
-    var dataAlvo=addDays(f.admissao,parseInt(v.dia)-1);
-    if(!ck&&dataAlvo<=today())alertas.push('Vídeo dia '+v.dia+': '+v.titulo);
-  });
-  _cfg.contatos.forEach(function(c){
-    var ck=exp.checks&&exp.checks['contato_'+c.id];
-    var dataAlvo=addDays(f.admissao,parseInt(c.dia)-1);
-    if(!ck&&dataAlvo<=today())alertas.push('Contato dia '+c.dia+': '+c.desc);
-  });
-  if(dd>=45&&!(exp.checks&&exp.checks.feedback45))alertas.push('Feedback 45 dias');
-  if(dd>=85&&!(exp.checks&&exp.checks.feedback90))alertas.push('Feedback 90 dias');
-  return alertas;
-}
+function getFuncsEmExp(){return _funcs.filter(function(f){return !f.desligado&&!isEfetivado(f);});}
+function getFuncsEfetivados(){return _funcs.filter(function(f){return !f.desligado&&isEfetivado(f);});}
+function getFuncsDesligados(){return _funcs.filter(function(f){return f.desligado;});}
 
 // ════ LISTA ════
 function renderLista(){
-  var emExp=getFuncsEmExp();
-  var efetiv=getFuncsEfetivados();
-  var mes=new Date().getMonth();
-  var cap=emExp.filter(function(f){return new Date(addDays(f.admissao,90)+'T12:00:00').getMonth()===mes;}).length;
-  var pend=emExp.filter(function(f){return getAlertas(f).length>0;}).length;
+  var emExp=getFuncsEmExp(),efetiv=getFuncsEfetivados();
+  var hoje=new Date(),mes=hoje.getMonth(),ano=hoje.getFullYear();
+  var cap=emExp.filter(function(f){var d=new Date(dataEfetivacao(f)+'T12:00:00');return d.getMonth()===mes&&d.getFullYear()===ano;}).length;
+  var pend=emExp.concat(efetiv).filter(function(f){return getAlertas(f).length>0;}).length;
+  var efetMes=efetiv.filter(function(f){var d=new Date(dataEfetivacao(f)+'T12:00:00');return d.getMonth()===mes&&d.getFullYear()===ano;}).length;
 
   document.getElementById('st-exp').textContent=emExp.length;
   document.getElementById('st-pend').textContent=pend;
-  document.getElementById('st-efet').textContent=efetivados_mes(efetiv);
+  document.getElementById('st-efet').textContent=efetMes;
+  document.getElementById('st-efet-sub').textContent='este mês · '+efetiv.length+' no total';
   document.getElementById('st-cap').textContent=cap;
+  document.getElementById('tab-efetivados').textContent='Efetivados'+(efetiv.length?' ('+efetiv.length+')':'');
   var nDesl=getFuncsDesligados().length;
-  var tabDesl=document.getElementById('tab-desligados');
-  if(tabDesl)tabDesl.textContent='Desligados'+(nDesl?' ('+nDesl+')':'');
+  document.getElementById('tab-desligados').textContent='Desligados'+(nDesl?' ('+nDesl+')':'');
   renderFuncs();
 }
 
-function efetivados_mes(lista){
-  var mes=new Date().getMonth(),ano=new Date().getFullYear();
-  return lista.filter(function(f){
-    if(!f.admissao)return false;
-    var fim=new Date(addDays(f.admissao,90)+'T12:00:00');
-    return fim.getMonth()===mes&&fim.getFullYear()===ano;
-  }).length;
-}
-
 function renderFuncs(){
-  var emp    = document.getElementById('f-empresa').value;
-  var busca  = (document.getElementById('f-busca').value||'').toLowerCase().trim();
-  var setor  = document.getElementById('f-setor').value;
-
-  // Popular select de setores dinamicamente (só se ainda não populado)
-  var selSetor = document.getElementById('f-setor');
-  if (selSetor.options.length <= 1) {
-    var setores = {};
-    _funcs.forEach(function(f){ if (f.departamento) setores[f.departamento] = 1; });
-    Object.keys(setores).sort().forEach(function(s){
-      var o = document.createElement('option'); o.value = s; o.textContent = s; selSetor.appendChild(o);
-    });
-  }
+  var emp=document.getElementById('f-empresa').value;
+  var busca=(document.getElementById('f-busca').value||'').toLowerCase().trim();
+  var setor=document.getElementById('f-setor').value;
 
   var base=_tabAtiva==='desligados'?getFuncsDesligados():(_tabAtiva==='ativos'?getFuncsEmExp():getFuncsEfetivados());
   var lista=base.filter(function(f){
-    if (emp   && f.empresa !== emp) return false;
-    if (setor && (f.departamento||'') !== setor) return false;
-    if (busca && !(f.nome||'').toLowerCase().includes(busca)) return false;
+    if(emp&&f.empresa!==emp)return false;
+    if(setor&&(f.departamento||'')!==setor)return false;
+    if(busca&&!(f.nome||'').toLowerCase().includes(busca))return false;
     return true;
   });
+
+  renderNbPanel(lista);
+
+  if(_tabAtiva==='efetivados'&&_nbFiltro){
+    lista=lista.filter(function(f){
+      var a=avDoCiclo(f,_nbCiclo);
+      return _nbFiltro==='none'?!a:(a&&nbKey(a)===_nbFiltro);
+    });
+  }
   lista.sort(function(a,b){return (a.admissao||'').localeCompare(b.admissao||'');});
 
   var el=document.getElementById('lista-funcs');
@@ -417,140 +708,236 @@ function renderFuncs(){
 
   el.onclick=function(e){var c=e.target.closest('[data-func-id]');if(c)mostrarDetalhe(c.dataset.funcId);};
   el.innerHTML=lista.map(function(f){
-    var dd=Math.max(0,diasDecorridos(f.admissao));
-    var dr=diasRestantes(f.admissao);
-    var pct=Math.min(100,Math.round(dd/90*100));
-    var alertas=getAlertas(f);
-    var statusBadge=f.desligado
-      ?'<span class="badge badge-gray"><i class="ti ti-user-off" style="font-size:9px"></i> Desligado'+(f.desligadoEm?' · '+fmtDate((f.desligadoEm||'').split('T')[0]):'')+'</span>'
-      :dr>0
-      ?(dr<=5?'<span class="badge badge-red">Vence em '+dr+'d</span>'
-        :dr<=15?'<span class="badge badge-amber">'+dr+'d restantes</span>'
-        :'<span class="badge badge-lime">'+dr+'d restantes</span>')
-      :'<span class="badge badge-lime">Efetivado</span>';
-    return '<div class="func-card" data-func-id="'+f.id+'">'
-      +'<div class="func-top">'
-      +'<div><div class="func-nome">'+f.nome+'</div>'
-      +'<div class="func-meta">'+(f.cargo||'')+(f.empresa?' · '+f.empresa:'')+(f.admissao?' · Admissão: '+fmtDate(f.admissao):'')+'</div>'
-      +'<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'
-      +statusBadge
-      +(!f.desligado&&alertas.length?'<span class="alert-badge"><i class="ti ti-alert-triangle" style="font-size:9px"></i> '+alertas.length+' pendência'+(alertas.length!==1?'s':'')+'</span>':'')
-      +'<span class="badge-empresa">'+f.empresa+'</span>'
-      +'</div></div></div>'
-      +'<div class="func-footer">'
-      +'<span style="font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap">Dia '+Math.min(90,dd)+' de 90</span>'
-      +'<div class="progress-wrap"><div class="progress-fill" style="width:'+pct+'%"></div></div>'
-      +'<span style="font-size:12px;font-weight:800">'+pct+'%</span>'
-      +'</div></div>';
+    return f.desligado||!isEfetivado(f)?cardExperiencia(f):cardEfetivado(f);
   }).join('');
 }
 
+function cardExperiencia(f){
+  var dd=diasDecorridos(f.admissao),dr=diasRestantes(f.admissao);
+  var pct=Math.min(100,Math.round(dd/90*100));
+  var alertas=f.desligado?[]:getAlertas(f);
+  var statusBadge=f.desligado
+    ?'<span class="badge badge-gray"><i class="ti ti-user-off" style="font-size:9px"></i> Desligado'+(f.desligadoEm?' · '+fmtDate((f.desligadoEm||'').split('T')[0]):'')+'</span>'
+    :dr>0
+    ?(dr<=5?'<span class="badge badge-red">Vence em '+dr+'d</span>'
+      :dr<=15?'<span class="badge badge-amber">'+dr+'d restantes</span>'
+      :'<span class="badge badge-lime">'+dr+'d restantes</span>')
+    :'<span class="badge badge-lime">Efetivado</span>';
+  return '<div class="func-card" data-func-id="'+f.id+'">'
+    +'<div class="func-top"><div><div class="func-nome">'+esc(f.nome)+'</div>'
+    +'<div class="func-meta">'+esc(f.cargo||'')+(f.empresa?' · '+esc(f.empresa):'')+' · Admissão: '+fmtDate(f.admissao)+'</div>'
+    +'<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'+statusBadge
+    +(alertas.length?'<span class="alert-badge"><i class="ti ti-alert-triangle" style="font-size:9px"></i> '+alertas.length+' pendência'+(alertas.length!==1?'s':'')+'</span>':'')
+    +(f.empresa?'<span class="badge-empresa">'+esc(f.empresa)+'</span>':'')
+    +'</div></div></div>'
+    +'<div class="func-footer">'
+    +'<span style="font-size:12px;font-weight:600;color:var(--text2);white-space:nowrap">Dia '+Math.min(90,dd)+' de 90</span>'
+    +'<div class="progress-wrap"><div class="progress-fill" style="width:'+pct+'%"></div></div>'
+    +'<span style="font-size:12px;font-weight:800">'+pct+'%</span>'
+    +'</div></div>';
+}
+
+function cardEfetivado(f){
+  var alertas=getAlertas(f),ult=ultimaAv(f),prox=proximaPos(f),hoje=today();
+  var proxHtml=prox
+    ?'<span style="font-size:12px;color:var(--text2)"><i class="ti ti-calendar-event" style="font-size:13px;vertical-align:-2px"></i> Próxima: <strong>'+esc(prox.titulo)+'</strong> · '+fmtDate(prox.venc)+'</span>'
+    :'<span style="font-size:12px;color:var(--text3)">Nenhuma atividade futura configurada.</span>';
+  return '<div class="func-card" data-func-id="'+f.id+'">'
+    +'<div class="func-top"><div><div class="func-nome">'+esc(f.nome)+'</div>'
+    +'<div class="func-meta">'+esc(f.cargo||'')+(f.empresa?' · '+esc(f.empresa):'')+' · Efetivado em '+fmtDate(dataEfetivacao(f))+'</div>'
+    +'<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">'
+    +'<span class="badge badge-blue"><i class="ti ti-calendar" style="font-size:10px"></i> '+tempoCasa(f.admissao)+' de empresa</span>'
+    +(alertas.length?'<span class="alert-badge"><i class="ti ti-alert-triangle" style="font-size:9px"></i> '+alertas.length+' pendência'+(alertas.length!==1?'s':'')+'</span>':'')
+    +(ult?nbChip(ult,true):'<span class="badge badge-gray">Sem avaliação 9Box</span>')
+    +(f.empresa?'<span class="badge-empresa">'+esc(f.empresa)+'</span>':'')
+    +'</div></div></div>'
+    +'<div class="func-footer">'+proxHtml+'</div></div>';
+}
+
+// ════ PAINEL 9BOX (aba Efetivados) ════
+function renderNbPanel(lista){
+  var el=document.getElementById('nb-panel');
+  if(_tabAtiva!=='efetivados'){el.style.display='none';return;}
+  el.style.display='block';
+  var ciclos=listaCiclos(cicloDe(P().inicio),cicloDe(today()));
+  if(!ciclos.length)ciclos=[cicloDe(today())];
+  if(!_nbCiclo||ciclos.indexOf(_nbCiclo)<0)_nbCiclo=ciclos[ciclos.length-1];
+
+  var cont={},semAv=0;
+  lista.forEach(function(f){
+    var a=avDoCiclo(f,_nbCiclo);
+    if(a){var k=nbKey(a);cont[k]=(cont[k]||0)+1;}else semAv++;
+  });
+  var total=lista.length;
+
+  var html='<div class="nb-card">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">'
+    +'<div><div style="font-size:13px;font-weight:800">Matriz 9Box</div>'
+    +'<div style="font-size:12px;color:var(--text2)">Distribuição dos efetivados no ciclo. Clique em um quadrante para filtrar a lista.</div></div>'
+    +'<div style="display:flex;gap:8px;align-items:center">'
+    +(_nbFiltro?'<button class="chip-btn" onclick="setNbFiltro(null)"><i class="ti ti-x" style="font-size:10px"></i> Limpar filtro</button>':'')
+    +'<select class="form-select" onchange="_nbCiclo=this.value;_nbFiltro=null;renderFuncs()">'
+    +ciclos.slice().reverse().map(function(c){return '<option value="'+c+'"'+(c===_nbCiclo?' selected':'')+'>'+cicloLabel(c)+'</option>';}).join('')
+    +'</select></div></div>'
+    +nbGrid(function(p,d,box){
+      var n=cont['p'+p+'d'+d]||0,pct=total?Math.round(n/total*100):0;
+      return '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px"><span>'+box.n+'</span></div>'
+        +'<div style="display:flex;align-items:baseline;gap:6px"><span class="nb-num">'+n+'</span><span style="font-size:11px;color:var(--text2)">'+(n?pct+'%':'')+'</span></div>';
+    },{click:function(p,d){return "setNbFiltro('p"+p+"d"+d+"')";},sel:_nbFiltro&&_nbFiltro!=='none'?{p:+_nbFiltro[1],d:+_nbFiltro[3]}:null})
+    +'<div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
+    +'<button class="chip-btn" onclick="setNbFiltro(\'none\')" style="'+(_nbFiltro==='none'?'background:var(--black);color:var(--lime);border-color:var(--black)':'')+'">'
+    +'<i class="ti ti-help-circle" style="font-size:11px"></i> Sem avaliação no ciclo: '+semAv+'</button>'
+    +'<span style="font-size:11px;color:var(--text3)">Vencimento do ciclo: '+fmtDate(cicloFim(_nbCiclo))+'</span>'
+    +'</div></div>';
+  el.innerHTML=html;
+}
+function setNbFiltro(v){_nbFiltro=(_nbFiltro===v?null:v);renderFuncs();}
+
 // ════ DETALHE ════
-function mostrarDetalhe(id){
-  _funcAtivoId=id;
-  document.getElementById('view-lista').style.display='none';
-  document.getElementById('view-detalhe').style.display='block';
-  document.getElementById('view-cfg').style.display='none';
-  document.getElementById('topbar-title').textContent='Acompanhamento';
-  document.getElementById('topbar-actions').innerHTML='<button class="btn btn-sm" onclick="voltarLista()"><i class="ti ti-arrow-left"></i> Voltar</button>';
-  renderDetalhe();
-}
-
-function voltarLista(){
-  _funcAtivoId=null;
-  document.getElementById('view-lista').style.display='block';
-  document.getElementById('view-detalhe').style.display='none';
-  document.getElementById('topbar-title').textContent='Período de Experiência';
-  document.getElementById('topbar-actions').innerHTML='<button class="btn btn-sm" onclick="mostrarConfig()"><i class="ti ti-settings"></i> Configurações</button>';
-  renderLista();
-}
-
-function mostrarConfig(){
-  document.getElementById('view-lista').style.display='none';
-  document.getElementById('view-cfg').style.display='block';
-  document.getElementById('topbar-title').textContent='Configurações';
-  document.getElementById('topbar-actions').innerHTML='<button class="btn btn-sm" onclick="voltarLista()"><i class="ti ti-arrow-left"></i> Voltar</button>';
-}
-
 function renderDetalhe(){
   var f=_funcs.find(function(x){return x.id===_funcAtivoId;});
-  if(!f){document.getElementById('view-detalhe').innerHTML='<div class="empty"><i class="ti ti-user-x"></i><p>Funcionário não encontrado.</p></div>';return;}
-  var exp=_expData[f.id]||{checks:{}};
-  var dd=Math.max(0,diasDecorridos(f.admissao));
-  var dr=diasRestantes(f.admissao);
+  var box=document.getElementById('view-detalhe');
+  if(!f){box.innerHTML='<div class="empty"><i class="ti ti-user-x"></i><p>Funcionário não encontrado.</p></div>';return;}
+  _tlMap={};
+  var efet=isEfetivado(f)&&!f.desligado;
+  var dd=diasDecorridos(f.admissao);
   var pct=Math.min(100,Math.round(dd/90*100));
-  var expFim=addDays(f.admissao,90);
-  var proxSexta=proximaUltimaSexta();
+  var expFim=dataEfetivacao(f);
+  var ult=ultimaAv(f);
+
   var html='<div class="det-header">'
-    +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
-    +'<div><div class="det-nome">'+f.nome+'</div>'
-    +'<div class="det-meta">'+(f.cargo||'')+(f.departamento?' · '+f.departamento:'')+(f.empresa?' · '+f.empresa:'')+'</div>'
-    +'<div class="det-meta">Admissão: '+fmtDate(f.admissao)+' · Fim: '+fmtDate(expFim)+'</div></div>'
-    +'<div style="text-align:right"><div style="font-size:32px;font-weight:900;color:var(--lime)">'+pct+'%</div>'
-    +'<div style="font-size:11px;color:rgba(242,238,229,.6)">Dia '+Math.min(90,dd)+' de 90</div></div></div>'
-    +'<div class="det-progress"><div class="det-progress-fill" style="width:'+pct+'%"></div></div>'
-    +'</div>';
+    +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">'
+    +'<div><div class="det-nome">'+esc(f.nome)+'</div>'
+    +'<div class="det-meta">'+esc(f.cargo||'')+(f.departamento?' · '+esc(f.departamento):'')+(f.empresa?' · '+esc(f.empresa):'')+'</div>'
+    +'<div class="det-meta">Admissão: '+fmtDate(f.admissao)+' · '+(efet?'Efetivado em ':'Fim da experiência: ')+fmtDate(expFim)+'</div></div>';
+  if(efet){
+    html+='<div style="text-align:right"><div style="font-size:22px;font-weight:900;color:var(--lime)">'+tempoCasa(f.admissao)+'</div>'
+      +'<div style="font-size:11px;color:rgba(242,238,229,.6);margin-bottom:6px">de empresa</div>'
+      +(ult?'<div style="display:inline-block;background:var(--cream);border-radius:20px">'+nbChip(ult,true)+'</div>':'')+'</div></div></div>';
+  }else{
+    html+='<div style="text-align:right"><div style="font-size:32px;font-weight:900;color:var(--lime)">'+pct+'%</div>'
+      +'<div style="font-size:11px;color:rgba(242,238,229,.6)">Dia '+Math.min(90,dd)+' de 90</div></div></div>'
+      +'<div class="det-progress"><div class="det-progress-fill" style="width:'+pct+'%"></div></div></div>';
+  }
 
   if(f.temAlteracao){
-    var mes=mesAlteracaoSalario(expFim);
-    var d=new Date(expFim+'T12:00:00');
+    var mes=mesAlteracaoSalario(expFim),d=new Date(expFim+'T12:00:00');
     var regra=d.getDate()<=15?'vence até dia 15 — alteração no mesmo mês':'vence após dia 15 — alteração no mês seguinte';
     html+='<div class="notice notice-amber"><i class="ti ti-alert-triangle"></i><span><strong>Alerta DP:</strong> Alteração de cargo/salário na efetivação. Competência: '+mes+' ('+regra+').</span></div>';
   }
 
-  html+='<div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:1px;color:var(--text3);margin-bottom:12px">Linha do tempo</div>';
+  var hoje=today();
+  var todas=getOcorrencias(f,addMonths(hoje,36));
+  var expItems=todas.filter(function(o){return o.fase==='exp';}).sort(function(a,b){return a.venc.localeCompare(b.venc);});
 
-  // Vídeos
-  _cfg.videos.slice().sort(function(a,b){return a.dia-b.dia;}).forEach(function(v){
-    var ck=exp.checks&&exp.checks['video_'+v.id];
-    var dataAlvo=addDays(f.admissao,parseInt(v.dia)-1);
-    var atrasado=dataAlvo<=today()&&!ck;
-    html+=renderTlItem('video_'+v.id,'ti-video',ck?'#4caf80':atrasado?'#e05252':'#b0c8e4','Enviar vídeo: '+v.titulo,v.dia,dataAlvo,ck,v.link||'');
-  });
+  if(efet){
+    // Rotinas pós: vencidas + a próxima de cada rotina
+    var pos=todas.filter(function(o){return o.fase==='pos';}).sort(function(a,b){return a.venc.localeCompare(b.venc);});
+    var vistos={};
+    pos=pos.filter(function(o){
+      if(o.venc<=hoje||o.done)return true;
+      if(vistos[o.rotinaId])return false;
+      vistos[o.rotinaId]=1;return true;
+    });
+    html+='<div class="sec-title"><span>Rotinas pós-experiência</span></div>';
+    if(!(_cfg.rotinasPos||[]).length){
+      html+='<div class="notice notice-blue"><i class="ti ti-info-circle"></i><span>Nenhuma rotina configurada. Cadastre em <strong>Configurações → Rotinas Pós-Experiência</strong>.</span></div>';
+    }else if(!pos.length){
+      html+='<div class="notice notice-blue"><i class="ti ti-info-circle"></i><span>Nenhuma rotina com vencimento a partir de '+fmtDate(P().inicio)+'.</span></div>';
+    }
+    pos.forEach(function(o){html+=renderTlItem(o);});
 
-  // Contatos
-  _cfg.contatos.slice().sort(function(a,b){return a.dia-b.dia;}).forEach(function(c){
-    var ck=exp.checks&&exp.checks['contato_'+c.id];
-    var dataAlvo=addDays(f.admissao,parseInt(c.dia)-1);
-    var atrasado=dataAlvo<=today()&&!ck;
-    html+=renderTlItem('contato_'+c.id,'ti-phone',ck?'#4caf80':atrasado?'#e05252':'#b0c8e4','Contato RH: '+c.desc,c.dia,dataAlvo,ck,'');
-  });
-
-  // Feedbacks
-  var fb45=exp.checks&&exp.checks.feedback45;
-  html+=renderTlItem('feedback45','ti-message-2',fb45?'#4caf80':dd>=45?'#e05252':'#b0c8e4','Feedback formal — 45 dias',45,addDays(f.admissao,44),fb45,'');
-  var fb90=exp.checks&&exp.checks.feedback90;
-  html+=renderTlItem('feedback90','ti-message-2',fb90?'#4caf80':dd>=90?'#e05252':dd>=85?'#d4a020':'#b0c8e4','Feedback formal — 90 dias',90,addDays(f.admissao,89),fb90,'');
-
-  // Cerimônia
-  var efet=exp.checks&&exp.checks.efetivacao;
-  html+=renderTlItem('efetivacao','ti-hat',efet?'#4caf80':'#d4a020','Cerimônia — Troca de Capacete',90,proxSexta,efet,'');
-
-  document.getElementById('view-detalhe').innerHTML=html;
+    html+=render9BoxSecao(f,todas);
+    html+='<div class="sec-title"><span>Histórico do período de experiência</span></div>';
+  }else{
+    html+='<div class="sec-title"><span>Linha do tempo</span></div>';
+  }
+  expItems.forEach(function(o){html+=renderTlItem(o);});
+  box.innerHTML=html;
 }
 
-function renderTlItem(id,icon,color,titulo,dia,dataAlvo,ck,link){
-  var feito=ck&&ck.done;
-  var linkBtn=link?'<a href="'+link+'" target="_blank" class="btn btn-sm" style="text-decoration:none"><i class="ti ti-external-link"></i></a>':'';
+function render9BoxSecao(f,todas){
+  var avs=getAvaliacoes(f),hoje=today(),cicloAtual=cicloDe(hoje);
+  var ciclosNb=todas.filter(function(o){return o.fase==='9box'&&o.ciclo<=cicloAtual;});
+  // inclui ciclos avaliados fora da regra (ex.: avaliação antecipada)
+  avs.forEach(function(a){
+    if(!ciclosNb.some(function(o){return o.ciclo===a.ciclo;}))
+      ciclosNb.push({ciclo:a.ciclo,venc:cicloFim(a.ciclo),done:true,av:a,doneDate:a.data,resp:a.resp});
+  });
+  ciclosNb.sort(function(a,b){return b.ciclo.localeCompare(a.ciclo);});
+  var ultimo=avs.length?avs[avs.length-1]:null;
+
+  var h='<div class="sec-title"><span>Avaliação de desempenho — 9Box</span>'
+    +'<button class="btn btn-primary btn-sm" onclick="abrirAvaliacao()"><i class="ti ti-plus"></i> Lançar avaliação</button></div>'
+    +'<div class="nb-card"><div style="display:grid;grid-template-columns:minmax(260px,1fr) 1.2fr;gap:22px;align-items:start">';
+
+  // Grade com trajetória
+  h+='<div><div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">Evolução na matriz</div>'
+    +nbGrid(function(p,d,box){
+      var tags=avs.filter(function(a){return a.potencial===p&&a.desempenho===d;}).map(function(a){
+        return '<span class="nb-tag'+(ultimo&&a.ciclo===ultimo.ciclo?' last':'')+'">'+cicloCurto(a.ciclo)+'</span>';
+      }).join('');
+      return '<span style="font-size:10px">'+box.n+'</span><div>'+tags+'</div>';
+    })+'</div>';
+
+  // Histórico por ciclo
+  h+='<div><div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">Histórico por ciclo</div>';
+  if(!ciclosNb.length){
+    h+='<div style="font-size:12px;color:var(--text3);padding:10px 0">Nenhum ciclo 9Box aplicável ainda (considera a carência de '+P().carencia+' dias após a efetivação).</div>';
+  }else{
+    h+='<table class="cfg-table"><thead><tr><th>Ciclo</th><th>Resultado</th><th>Data</th><th style="width:70px"></th></tr></thead><tbody>';
+    ciclosNb.forEach(function(o){
+      var a=o.av,atras=!a&&o.venc<hoje;
+      h+='<tr><td style="font-weight:700;white-space:nowrap">'+cicloLabel(o.ciclo)+'</td><td>'
+        +(a?nbChip(a)+'<div style="font-size:11px;color:var(--text3);margin-top:4px">Desempenho '+NIVEL[a.desempenho]+' · Potencial '+NIVEL[a.potencial]+'</div>'
+            +(a.obs?'<div style="font-size:11px;color:var(--text2);margin-top:3px">'+esc(a.obs)+'</div>':'')
+           :(atras?'<span class="badge badge-red">Atrasada · venceu '+fmtDate(o.venc)+'</span>':'<span class="badge badge-amber">Pendente · vence '+fmtDate(o.venc)+'</span>'))
+        +'</td><td style="font-size:12px;white-space:nowrap">'+(a?fmtDate(a.data)+(a.resp?'<div style="font-size:11px;color:var(--text3)">'+esc(a.resp)+'</div>':''):'—')+'</td>'
+        +'<td style="white-space:nowrap">'
+        +(a?'<button class="btn-icon" title="Editar" onclick="abrirAvaliacao(\''+o.ciclo+'\')"><i class="ti ti-pencil" style="font-size:14px"></i></button>'
+            +'<button class="btn-icon" title="Excluir" onclick="excluirAvaliacao(\''+o.ciclo+'\')"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button>'
+           :'<button class="btn btn-primary btn-sm" onclick="abrirAvaliacao(\''+o.ciclo+'\')">Avaliar</button>')
+        +'</td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  h+='</div></div></div>';
+  return h;
+}
+
+function renderTlItem(o){
+  _tlMap[o.key]=o;
+  var hoje=today(),feito=o.done;
+  var alvo=o.alerta||o.venc;
+  var color=feito?'#4caf80':(!o.semAlerta&&alvo<=hoje)?'#e05252':(diffDays(hoje,o.venc)<=15&&o.venc>=hoje)?'#d4a020':'#b0c8e4';
+  var linkBtn=o.link?'<a href="'+esc(o.link)+'" target="_blank" class="btn btn-sm" style="text-decoration:none"><i class="ti ti-external-link"></i></a>':'';
   var regBtn=feito
-    ?'<span class="badge badge-lime"><i class="ti ti-check"></i> '+fmtDate(ck.date)+'</span>'
-    :'<button class="btn btn-primary btn-sm" onclick="abrirRegistro(\''+_funcAtivoId+'\',\''+id+'\',\''+titulo.replace(/'/g,"\\'")+'\')">' + (dataAlvo<=today()?'<i class="ti ti-alert-triangle" style="font-size:11px"></i> ':'')+'Registrar</button>';
+    ?'<span class="badge badge-lime"><i class="ti ti-check"></i> '+fmtDate(o.doneDate)+'</span>'
+      +'<button class="btn-icon" title="Desfazer registro" onclick="desfazerRegistro(\''+o.key+'\')"><i class="ti ti-arrow-back-up" style="font-size:14px"></i></button>'
+    :'<button class="btn btn-primary btn-sm" onclick="abrirRegistro(\''+o.key+'\')">'+(!o.semAlerta&&alvo<=hoje?'<i class="ti ti-alert-triangle" style="font-size:11px"></i> ':'')+'Registrar</button>';
+  var sub=feito
+    ?(o.fase==='pos'?'Entregue pelo gestor em ':'Concluído em ')+fmtDate(o.doneDate)+(o.obs?' · '+esc(o.obs):'')+' <span style="color:var(--text3)">(previsto '+fmtDate(o.venc)+')</span>'
+    :(o.fase==='pos'?'Vencimento: ':'Previsto: ')+fmtDate(o.venc);
   return '<div class="tl-item">'
     +'<div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;width:44px">'
-    +'<div class="tl-icon" style="background:'+color+'22;border:1.5px solid '+color+'"><i class="ti '+icon+'" style="color:'+color+'"></i></div>'
-    +'<div class="tl-day">Dia<br>'+dia+'</div></div>'
+    +'<div class="tl-icon" style="background:'+color+'22;border:1.5px solid '+color+'"><i class="ti '+o.icon+'" style="color:'+color+'"></i></div>'
+    +'<div class="tl-day">'+o.lbl+'</div></div>'
     +'<div class="tl-body">'
-    +'<div class="tl-title'+(feito?' feito':'')+'">'+titulo+'</div>'
-    +'<div class="tl-sub">'+(feito?'Concluído em '+fmtDate(ck.date)+(ck.obs?' · '+ck.obs:''):'Previsto: '+fmtDate(dataAlvo))+'</div>'
-    +(ck&&ck.resp?'<div style="font-size:11px;color:var(--text3);margin-top:4px"><i class="ti ti-user" style="font-size:11px;vertical-align:-2px"></i> '+ck.resp+'</div>':'')
+    +'<div class="tl-title'+(feito?' feito':'')+'">'+esc(o.titulo)+'</div>'
+    +'<div class="tl-sub">'+sub+'</div>'
+    +(o.resp?'<div style="font-size:11px;color:var(--text3);margin-top:4px"><i class="ti ti-user" style="font-size:11px;vertical-align:-2px"></i> '+esc(o.resp)+'</div>':'')
     +'</div>'
     +'<div class="tl-actions">'+linkBtn+regBtn+'</div></div>';
 }
 
 // ════ REGISTRAR ════
-function abrirRegistro(funcId,itemId,titulo){
-  _acaoPendente={funcId:funcId,itemId:itemId};
-  document.getElementById('reg-title').textContent=titulo;
+function abrirRegistro(key){
+  var o=_tlMap[key];if(!o)return;
+  _acaoPendente={funcId:_funcAtivoId,itemId:key};
+  document.getElementById('reg-title').textContent=o.titulo;
+  document.getElementById('reg-data-label').textContent=o.fase==='pos'?'Data de entrega pelo gestor':'Data de realização';
+  document.getElementById('reg-hint').innerHTML=o.fase==='pos'
+    ?'<div class="notice notice-blue"><i class="ti ti-info-circle"></i><span>Informe a data em que o gestor devolveu o feedback preenchido ao RH. Vencimento: <strong>'+fmtDate(o.venc)+'</strong>.</span></div>':'';
   document.getElementById('reg-data').value=today();
   document.getElementById('reg-obs').value='';
   document.getElementById('reg-resp').value='';
@@ -563,20 +950,163 @@ function confirmarRegistro(){
   var obs=(document.getElementById('reg-obs').value||'').trim();
   var resp=(document.getElementById('reg-resp').value||'').trim();
   if(!data){toast('Informe a data.','err');return;}
-
-  var funcId=_acaoPendente.funcId;
-  var itemId=_acaoPendente.itemId;
-  var exp=_expData[funcId]||{checks:{}};
-  if(!exp.checks)exp.checks={};
-  exp.checks[itemId]={done:true,date:data,obs:obs,resp:resp};
-
-  db.collection('exp_data').doc(funcId).set(exp,{merge:true}).then(function(){
-    _expData[funcId]=exp;
+  var payload={checks:{}};
+  payload.checks[_acaoPendente.itemId]={done:true,date:data,obs:obs,resp:resp,registradoEm:new Date().toISOString()};
+  db.collection('exp_data').doc(_acaoPendente.funcId).set(payload,{merge:true}).then(function(){
     toast('Registrado!','ok');
     closeModal('modal-reg');
     _acaoPendente=null;
-    renderDetalhe();
   }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+function desfazerRegistro(key){
+  if(!confirm('Desfazer este registro? A atividade voltará a ficar pendente.'))return;
+  var upd={};upd['checks.'+key]=firebase.firestore.FieldValue.delete();
+  db.collection('exp_data').doc(_funcAtivoId).update(upd)
+    .then(function(){toast('Registro desfeito.','ok');})
+    .catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ════ AVALIAÇÃO 9BOX ════
+function abrirAvaliacao(ciclo){
+  var f=_funcs.find(function(x){return x.id===_funcAtivoId;});if(!f)return;
+  var hoje=today();
+  var ciclos=listaCiclos(cicloDe(dataEfetivacao(f)),cicloDe(hoje));
+  getAvaliacoes(f).forEach(function(a){if(ciclos.indexOf(a.ciclo)<0)ciclos.push(a.ciclo);});
+  ciclos.sort().reverse();
+  if(!ciclo){
+    // sugere o ciclo mais antigo sem avaliação dentre os aplicáveis; senão o atual
+    var pend=getOcorrencias(f,cicloFim(cicloDe(hoje))).filter(function(o){return o.fase==='9box'&&!o.done;});
+    ciclo=pend.length?pend[0].ciclo:cicloDe(hoje);
+  }
+  var sel=document.getElementById('nb-ciclo');
+  sel.innerHTML=ciclos.map(function(c){return '<option value="'+c+'">'+cicloLabel(c)+(avDoCiclo(f,c)?' (já avaliado)':'')+'</option>';}).join('');
+  sel.value=ciclo;
+  sel.onchange=function(){carregarAvModal(f,this.value);};
+  carregarAvModal(f,ciclo);
+  openModal('modal-nb');
+}
+function carregarAvModal(f,ciclo){
+  var a=avDoCiclo(f,ciclo);
+  _nbSel=a?{p:a.potencial,d:a.desempenho}:null;
+  document.getElementById('nb-data').value=a?a.data:today();
+  document.getElementById('nb-obs').value=a?(a.obs||''):'';
+  document.getElementById('nb-resp').value=a?(a.resp||''):'';
+  renderNbModal();
+}
+function renderNbModal(){
+  document.getElementById('nb-grid-modal').innerHTML=nbGrid(function(p,d,box){
+    return '<span>'+box.n+'</span><span style="font-size:10px;font-weight:600;color:var(--text2)">D: '+NIVEL[d]+' · P: '+NIVEL[p]+'</span>';
+  },{click:function(p,d){return 'nbSelecionar('+p+','+d+')';},sel:_nbSel});
+  document.getElementById('nb-sel-info').innerHTML=_nbSel
+    ?'Selecionado: <strong>'+NB['p'+_nbSel.p+'d'+_nbSel.d].n+'</strong> — Desempenho '+NIVEL[_nbSel.d]+', Potencial '+NIVEL[_nbSel.p]
+    :'Nenhum quadrante selecionado.';
+}
+function nbSelecionar(p,d){_nbSel={p:p,d:d};renderNbModal();}
+
+function salvarAvaliacao(){
+  var f=_funcs.find(function(x){return x.id===_funcAtivoId;});if(!f)return;
+  var ciclo=document.getElementById('nb-ciclo').value;
+  var data=document.getElementById('nb-data').value;
+  if(!_nbSel){toast('Selecione o quadrante da matriz.','err');return;}
+  if(!data){toast('Informe a data da avaliação.','err');return;}
+  var avs=getAvaliacoes(f).filter(function(a){return a.ciclo!==ciclo;});
+  avs.push({id:'av'+Date.now(),ciclo:ciclo,desempenho:_nbSel.d,potencial:_nbSel.p,data:data,
+    obs:(document.getElementById('nb-obs').value||'').trim(),
+    resp:(document.getElementById('nb-resp').value||'').trim(),
+    registradoEm:new Date().toISOString()});
+  db.collection('exp_data').doc(f.id).set({avaliacoes:avs},{merge:true}).then(function(){
+    toast('Avaliação salva!','ok');closeModal('modal-nb');
+  }).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+function excluirAvaliacao(ciclo){
+  var f=_funcs.find(function(x){return x.id===_funcAtivoId;});if(!f)return;
+  if(!confirm('Excluir a avaliação do '+cicloLabel(ciclo)+'?'))return;
+  var avs=getAvaliacoes(f).filter(function(a){return a.ciclo!==ciclo;});
+  db.collection('exp_data').doc(f.id).set({avaliacoes:avs},{merge:true})
+    .then(function(){toast('Avaliação excluída.','ok');})
+    .catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ════ RELATÓRIO ════
+function relPeriodo(tipo,silencioso){
+  var n=new Date(),ini,fim;
+  if(tipo==='mes'){ini=new Date(n.getFullYear(),n.getMonth(),1);fim=new Date(n.getFullYear(),n.getMonth()+1,0);}
+  else if(tipo==='mesAnt'){ini=new Date(n.getFullYear(),n.getMonth()-1,1);fim=new Date(n.getFullYear(),n.getMonth(),0);}
+  else if(tipo==='prox'){ini=new Date(n.getFullYear(),n.getMonth()+1,1);fim=new Date(n.getFullYear(),n.getMonth()+2,0);}
+  else{ini=n;fim=new Date(n.getFullYear(),n.getMonth(),n.getDate()+30);}
+  document.getElementById('r-ini').value=iso(ini);
+  document.getElementById('r-fim').value=iso(fim);
+  if(!silencioso)renderRel();
+}
+
+function renderRel(){
+  var ini=document.getElementById('r-ini').value,fim=document.getElementById('r-fim').value;
+  var out=document.getElementById('rel-out');
+  if(!ini||!fim){out.innerHTML='<div class="empty"><i class="ti ti-calendar"></i><p>Informe o período.</p></div>';return;}
+  if(ini>fim){out.innerHTML='<div class="empty"><i class="ti ti-calendar-x"></i><p>A data inicial é maior que a final.</p></div>';return;}
+  var sit=document.getElementById('r-sit').value,fase=document.getElementById('r-fase').value;
+  var emp=document.getElementById('r-emp').value,setor=document.getElementById('r-setor').value;
+  var hoje=today(),rows=[];
+
+  _funcs.forEach(function(f){
+    if(f.desligado)return;
+    if(emp&&f.empresa!==emp)return;
+    if(setor&&(f.departamento||'')!==setor)return;
+    getOcorrencias(f,fim).forEach(function(o){
+      if(o.venc<ini||o.venc>fim)return;
+      if(fase&&o.fase!==fase)return;
+      if(sit==='pend'&&o.done)return;
+      if(sit==='conc'&&!o.done)return;
+      rows.push({f:f,o:o});
+    });
+  });
+  rows.sort(function(a,b){return a.o.venc.localeCompare(b.o.venc)||(a.f.nome||'').localeCompare(b.f.nome||'');});
+
+  var nConc=rows.filter(function(r){return r.o.done;}).length;
+  var nAtras=rows.filter(function(r){return !r.o.done&&r.o.venc<hoje;}).length;
+  var nPend=rows.length-nConc;
+  var faseNome={exp:'Experiência',pos:'Pós-experiência','9box':'Avaliação 9Box'};
+  var filtrosTxt=[
+    sit==='pend'?'Somente pendentes':sit==='conc'?'Somente concluídas':'Pendentes e concluídas',
+    fase?faseNome[fase]:'Todas as fases',
+    emp||'Todas as empresas',
+    setor||'Todos os setores'
+  ].join(' · ');
+
+  var h='<div class="rel-head">'
+    +'<div><div style="display:flex;align-items:baseline;gap:4px"><span style="font-size:18px;font-weight:900">NOVA</span><span style="width:7px;height:7px;background:var(--lime);border-radius:50%;display:inline-block;border:1px solid var(--black)"></span>'
+    +'<span style="font-size:14px;font-weight:700;margin-left:8px">Relatório de Atividades — Acompanhamento</span></div>'
+    +'<div style="font-size:12px;color:var(--text2);margin-top:4px">Vencimentos de <strong>'+fmtDate(ini)+'</strong> a <strong>'+fmtDate(fim)+'</strong> · '+esc(filtrosTxt)+'</div></div>'
+    +'<div style="font-size:11px;color:var(--text3);text-align:right">Emitido em '+fmtDate(hoje)+'<br>'+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'</div></div>'
+    +'<div class="rel-stats">'
+    +'<div class="rel-stat"><span>Atividades</span><b>'+rows.length+'</b></div>'
+    +'<div class="rel-stat"><span>Concluídas</span><b style="color:#1a5c35">'+nConc+'</b></div>'
+    +'<div class="rel-stat"><span>Pendentes</span><b style="color:#7d4e00">'+nPend+'</b></div>'
+    +'<div class="rel-stat"><span>Atrasadas</span><b style="color:#8b1c1c">'+nAtras+'</b></div>'
+    +'</div>';
+
+  if(!rows.length){
+    h+='<div class="empty"><i class="ti ti-clipboard-off"></i><p>Nenhuma atividade vence no período com esses filtros.</p></div>';
+  }else{
+    h+='<table class="rel-table"><thead><tr><th>Vencimento</th><th>Colaborador</th><th>Empresa · Setor</th><th>Atividade</th><th>Fase</th><th>Situação</th><th>Realizado / Entregue</th><th>Responsável</th></tr></thead><tbody>';
+    rows.forEach(function(r){
+      var o=r.o,f=r.f;
+      var st=o.done?'<span class="badge badge-lime">Concluída</span>'
+        :o.venc<hoje?'<span class="badge badge-red">Atrasada · '+diffDays(o.venc,hoje)+'d</span>'
+        :'<span class="badge badge-amber">Pendente</span>';
+      var faseB=o.fase==='exp'?'<span class="badge badge-gray">Experiência</span>':o.fase==='pos'?'<span class="badge badge-blue">Pós-exp.</span>':'<span class="badge badge-blue">9Box</span>';
+      var real=o.done?fmtDate(o.doneDate)+(o.fase==='9box'&&o.av?'<div class="sm">'+NB[nbKey(o.av)].n+'</div>':(o.obs?'<div class="sm">'+esc(o.obs)+'</div>':'')):'—';
+      h+='<tr><td style="font-weight:700;white-space:nowrap">'+fmtDate(o.venc)+'</td>'
+        +'<td><strong>'+esc(f.nome)+'</strong><div class="sm">'+esc(f.cargo||'')+'</div></td>'
+        +'<td class="sm">'+esc(f.empresa||'—')+(f.departamento?'<br>'+esc(f.departamento):'')+'</td>'
+        +'<td>'+esc(o.titulo)+'</td><td>'+faseB+'</td><td>'+st+'</td>'
+        +'<td style="white-space:nowrap">'+real+'</td><td class="sm">'+esc(o.resp||'—')+'</td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  out.innerHTML=h;
 }
 
 // ════ CONFIG ════
@@ -591,12 +1121,10 @@ function addVideo(){
   document.getElementById('nv-titulo').value='';
   document.getElementById('nv-link').value='';
 }
-
 function removerVideo(id){
-  _cfg.videos=_cfg.videos.filter(function(v){return v.id!==id;});
-  salvarCfg();
+  if(!confirm('Remover este vídeo?'))return;
+  _cfg.videos=_cfg.videos.filter(function(v){return v.id!==id;});salvarCfg();
 }
-
 function addContato(){
   var dia=parseInt(document.getElementById('nc-dia').value);
   var desc=(document.getElementById('nc-desc').value||'').trim();
@@ -606,33 +1134,62 @@ function addContato(){
   document.getElementById('nc-dia').value='';
   document.getElementById('nc-desc').value='';
 }
-
 function removerContato(id){
-  _cfg.contatos=_cfg.contatos.filter(function(c){return c.id!==id;});
+  if(!confirm('Remover este contato?'))return;
+  _cfg.contatos=_cfg.contatos.filter(function(c){return c.id!==id;});salvarCfg();
+}
+function addRotina(){
+  var titulo=(document.getElementById('nr-titulo').value||'').trim();
+  var meses=parseInt(document.getElementById('nr-meses').value);
+  var rec=document.getElementById('nr-rec').value==='1';
+  if(!titulo||!meses||meses<1){toast('Informe título e intervalo em meses.','err');return;}
+  _cfg.rotinasPos.push({id:'r'+Date.now(),titulo:titulo,meses:meses,recorrente:rec});
+  salvarCfg();
+  document.getElementById('nr-titulo').value='';
+  document.getElementById('nr-meses').value='';
+}
+function removerRotina(id){
+  if(!confirm('Remover esta rotina? Os registros já feitos continuam salvos, mas deixam de aparecer.'))return;
+  _cfg.rotinasPos=_cfg.rotinasPos.filter(function(r){return r.id!==id;});salvarCfg();
+}
+function salvarParams(){
+  var ini=document.getElementById('pr-inicio').value;
+  var car=parseInt(document.getElementById('pr-carencia').value);
+  if(!ini){toast('Informe a data inicial.','err');return;}
+  _cfg.params={inicio:ini,carencia:isNaN(car)?60:Math.max(0,car)};
   salvarCfg();
 }
 
 function renderCfg(){
-  var tbV=document.getElementById('tb-videos');
-  if(tbV){
-    tbV.innerHTML=_cfg.videos.slice().sort(function(a,b){return a.dia-b.dia;}).map(function(v){
-      return '<tr><td style="font-weight:700">'+v.dia+'</td><td>'+v.titulo+'</td>'
-        +'<td style="font-size:11px">'+(v.link?'<a href="'+v.link+'" target="_blank" style="color:var(--text2)">'+v.link.slice(0,30)+'...</a>':'—')+'</td>'
-        +'<td><button class="btn-icon" onclick="removerVideo(\''+v.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td></tr>';
-    }).join('')||'<tr><td colspan="4" style="color:var(--text3);font-size:12px;padding:16px">Nenhum vídeo configurado.</td></tr>';
-  }
-  var tbC=document.getElementById('tb-contatos');
-  if(tbC){
-    tbC.innerHTML=_cfg.contatos.slice().sort(function(a,b){return a.dia-b.dia;}).map(function(c){
-      return '<tr><td style="font-weight:700">'+c.dia+'</td><td>'+c.desc+'</td>'
-        +'<td><button class="btn-icon" onclick="removerContato(\''+c.id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td></tr>';
-    }).join('')||'<tr><td colspan="3" style="color:var(--text3);font-size:12px;padding:16px">Nenhum contato configurado.</td></tr>';
-  }
+  var lixo=function(fn,id){return '<td><button class="btn-icon" onclick="'+fn+'(\''+id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td>';};
+  document.getElementById('tb-videos').innerHTML=_cfg.videos.slice().sort(function(a,b){return a.dia-b.dia;}).map(function(v){
+    return '<tr><td style="font-weight:700">'+v.dia+'</td><td>'+esc(v.titulo)+'</td>'
+      +'<td style="font-size:11px">'+(v.link?'<a href="'+esc(v.link)+'" target="_blank" style="color:var(--text2)">'+esc(v.link.slice(0,30))+'...</a>':'—')+'</td>'
+      +lixo('removerVideo',v.id)+'</tr>';
+  }).join('')||'<tr><td colspan="4" style="color:var(--text3);font-size:12px;padding:16px">Nenhum vídeo configurado.</td></tr>';
+
+  document.getElementById('tb-contatos').innerHTML=_cfg.contatos.slice().sort(function(a,b){return a.dia-b.dia;}).map(function(c){
+    return '<tr><td style="font-weight:700">'+c.dia+'</td><td>'+esc(c.desc)+'</td>'+lixo('removerContato',c.id)+'</tr>';
+  }).join('')||'<tr><td colspan="3" style="color:var(--text3);font-size:12px;padding:16px">Nenhum contato configurado.</td></tr>';
+
+  document.getElementById('tb-rotinas').innerHTML=_cfg.rotinasPos.slice().sort(function(a,b){return a.meses-b.meses;}).map(function(r){
+    return '<tr><td style="font-weight:700">'+esc(r.titulo)+'</td><td>'+(r.recorrente?'A cada ':'')+r.meses+(r.meses===1?' mês':' meses')+' após a efetivação</td>'
+      +'<td>'+(r.recorrente?'<span class="badge badge-blue"><i class="ti ti-repeat" style="font-size:10px"></i> Recorrente</span>':'<span class="badge badge-gray">Uma vez</span>')+'</td>'
+      +lixo('removerRotina',r.id)+'</tr>';
+  }).join('')||'<tr><td colspan="4" style="color:var(--text3);font-size:12px;padding:16px">Nenhuma rotina configurada.</td></tr>';
+
+  var p=P();
+  var pi=document.getElementById('pr-inicio'),pc=document.getElementById('pr-carencia');
+  if(document.activeElement!==pi)pi.value=p.inicio;
+  if(document.activeElement!==pc)pc.value=p.carencia;
 }
 
+// ════ INIT ════
 document.querySelectorAll('.overlay').forEach(function(el){
   el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 });
+popularEmpresas();
+mostrarView('lista');
 iniciarListeners();
 </script>
 </body>

@@ -311,14 +311,41 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       </div>
 
       <div class="cfg-section">
-        <div style="font-size:13px;font-weight:800;margin-bottom:4px">Parâmetros <span class="badge badge-blue" style="margin-left:6px">Efetivados</span></div>
-        <div style="font-size:12px;color:var(--text2);margin-bottom:14px">A avaliação 9Box é semestral: vence em 30/06 (1º semestre) e 31/12 (2º semestre).</div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:14px">
+          <div><div style="font-size:13px;font-weight:800;margin-bottom:4px">Termos da Matriz 9Box <span class="badge badge-blue" style="margin-left:6px">Efetivados</span></div>
+          <div style="font-size:12px;color:var(--text2)">Nomes dos eixos, dos níveis e dos 9 quadrantes. Ao renomear, as avaliações já lançadas passam a exibir o novo nome (a posição na matriz não muda).</div></div>
+          <button class="btn btn-sm" onclick="restaurarTermosNb()" style="flex-shrink:0"><i class="ti ti-restore"></i> Restaurar padrão</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div>
+            <label class="cfg-label">Eixo horizontal</label><input class="fi" type="text" id="tn-eixoX" style="margin-bottom:8px">
+            <label class="cfg-label">Eixo vertical</label><input class="fi" type="text" id="tn-eixoY">
+          </div>
+          <div>
+            <label class="cfg-label">Níveis (do menor para o maior)</label>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+              <input class="fi" type="text" id="tn-n1"><input class="fi" type="text" id="tn-n2"><input class="fi" type="text" id="tn-n3">
+            </div>
+            <div style="font-size:11px;color:var(--text3);margin-top:6px">Esses termos também são os valores aceitos na planilha de importação.</div>
+          </div>
+        </div>
+        <label class="cfg-label">Quadrantes</label>
+        <div id="tn-grid"></div>
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button class="btn btn-primary" onclick="salvarTermosNb()"><i class="ti ti-device-floppy"></i> Salvar termos</button>
+        </div>
+      </div>
+
+      <div class="cfg-section">
+        <div style="font-size:13px;font-weight:800;margin-bottom:4px">Início do Acompanhamento <span class="badge badge-blue" style="margin-left:6px">Trava</span></div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Colaboradores cuja experiência terminou <strong>antes</strong> desta data não aparecem em Efetivados, na Matriz 9Box, na planilha nem no relatório. Rotinas e ciclos 9Box que vencem antes dela também não são gerados.</div>
         <div style="display:grid;grid-template-columns:auto auto auto;gap:12px;align-items:end;justify-content:start">
-          <div><label class="cfg-label">Considerar atividades a partir de</label><input class="fi" type="date" id="pr-inicio" style="width:200px"></div>
+          <div><label class="cfg-label">Início do acompanhamento</label><input class="fi" type="date" id="pr-inicio" style="width:200px"></div>
           <div><label class="cfg-label">Carência p/ 1ª avaliação 9Box (dias)</label><input class="fi" type="number" id="pr-carencia" style="width:200px" min="0"></div>
           <button class="btn btn-primary" style="height:38px" onclick="salvarParams()"><i class="ti ti-device-floppy"></i> Salvar</button>
         </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:10px">Atividades pós-experiência e ciclos 9Box com vencimento anterior à data acima não são gerados (evita pendências retroativas de funcionários antigos). A carência define quantos dias após a efetivação o colaborador precisa ter para entrar no ciclo semestral.</div>
+        <div id="pr-info" style="font-size:12px;font-weight:600;color:var(--text2);margin-top:12px"></div>
+        <div style="font-size:11px;color:var(--text3);margin-top:6px">A avaliação 9Box é semestral (vence em 30/06 e 31/12). A carência define quantos dias após a efetivação o colaborador precisa ter para entrar no ciclo.</div>
       </div>
     </div>
   </div>
@@ -364,6 +391,19 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
   </div>
 </div>
 
+<!-- MODAL IMPORTAR PLANILHA -->
+<div class="overlay" id="modal-imp">
+  <div class="modal" style="width:860px">
+    <div class="modal-h"><span class="modal-title">Importar planilha 9Box</span><button class="btn-icon" onclick="closeModal('modal-imp')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b" id="imp-body"></div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-imp')">Cancelar</button>
+      <button class="btn btn-primary" id="imp-btn" onclick="confirmarImportacao()"><i class="ti ti-upload"></i> Importar</button>
+    </div>
+  </div>
+</div>
+<input type="file" id="imp-file" accept=".xlsx,.xls,.csv" style="display:none" onchange="lerPlanilha(this)">
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -388,18 +428,24 @@ var EMPRESAS = [
 ];
 
 // Matriz 9Box: chave p{potencial}d{desempenho}, 1=baixo 2=médio 3=alto
-var NB = {
-  p3d1:{n:'Enigma',          c:'#d4a020'},
-  p3d2:{n:'Alto potencial',  c:'#8fbf4a'},
-  p3d3:{n:'Estrela',         c:'#3f9e6a'},
-  p2d1:{n:'Questionável',    c:'#e0823d'},
-  p2d2:{n:'Mantenedor',      c:'#d4a020'},
-  p2d3:{n:'Forte desempenho',c:'#8fbf4a'},
-  p1d1:{n:'Insuficiente',    c:'#e05252'},
-  p1d2:{n:'Eficaz',          c:'#e0823d'},
-  p1d3:{n:'Comprometido',    c:'#d4a020'}
+// Termos padrão — podem ser sobrescritos em Configurações (exp_cfg/config.nbTermos)
+var NB_PADRAO = {
+  eixoX:'Desempenho', eixoY:'Potencial', niveis:{1:'Baixo',2:'Médio',3:'Alto'},
+  quad:{p3d1:'Enigma',p3d2:'Alto potencial',p3d3:'Estrela',p2d1:'Questionável',p2d2:'Mantenedor',
+        p2d3:'Forte desempenho',p1d1:'Insuficiente',p1d2:'Eficaz',p1d3:'Comprometido'}
 };
-var NIVEL = {1:'Baixo',2:'Médio',3:'Alto'};
+var NB_CORES = {p3d1:'#d4a020',p3d2:'#8fbf4a',p3d3:'#3f9e6a',p2d1:'#e0823d',p2d2:'#d4a020',
+  p2d3:'#8fbf4a',p1d1:'#e05252',p1d2:'#e0823d',p1d3:'#d4a020'};
+var NB = {}, NIVEL = {}, EIXO_X = '', EIXO_Y = '';
+function aplicarTermosNb(){
+  var t=(_cfg&&_cfg.nbTermos)||{},q=t.quad||{},nv=t.niveis||{};
+  EIXO_X=t.eixoX||NB_PADRAO.eixoX; EIXO_Y=t.eixoY||NB_PADRAO.eixoY;
+  [1,2,3].forEach(function(i){NIVEL[i]=nv[i]||NB_PADRAO.niveis[i];});
+  Object.keys(NB_PADRAO.quad).forEach(function(k){
+    var v=q[k]||{};if(typeof v==='string')v={n:v};
+    NB[k]={n:v.n||NB_PADRAO.quad[k],desc:v.desc||'',c:NB_CORES[k]};
+  });
+}
 
 var _funcs    = [];
 var _expData  = {}; // {funcId: {checks:{}, avaliacoes:[]}}
@@ -445,6 +491,8 @@ function tempoCasa(adm){
   return a+(a===1?' ano':' anos')+(r?' e '+r+(r===1?' mês':' meses'):'');
 }
 function P(){var p=_cfg.params||{};return {inicio:p.inicio||'2026-07-01',carencia:(p.carencia!=null&&p.carencia!==''?parseInt(p.carencia):60)};}
+// Trava: efetivado cuja experiência terminou antes do início do acompanhamento
+function foraDoAcomp(f){return isEfetivado(f)&&dataEfetivacao(f)<P().inicio;}
 
 function ultSexta(m,a){var d=new Date(a,m+1,0,12);while(d.getDay()!==5)d.setDate(d.getDate()-1);return iso(d);}
 // Cerimônia: última sexta-feira do mês em que a experiência termina (ou do mês seguinte, se já passou)
@@ -478,22 +526,22 @@ function avDoCiclo(f,c){return getAvaliacoes(f).filter(function(a){return a.cicl
 function ultimaAv(f){var l=getAvaliacoes(f);return l.length?l[l.length-1]:null;}
 function nbChip(a,comCiclo){
   if(!a)return'';var b=NB[nbKey(a)];
-  return '<span class="nb-chip" style="background:'+b.c+'1a;border-color:'+b.c+'66;color:var(--text)"><span class="nb-dot" style="background:'+b.c+'"></span>'+b.n+(comCiclo?' · '+cicloCurto(a.ciclo):'')+'</span>';
+  return '<span class="nb-chip" style="background:'+b.c+'1a;border-color:'+b.c+'66;color:var(--text)"><span class="nb-dot" style="background:'+b.c+'"></span>'+esc(b.n)+(comCiclo?' · '+cicloCurto(a.ciclo):'')+'</span>';
 }
 
 // Grade 3x3 genérica. cellFn(p,d,box) retorna o conteúdo interno; opts.click(p,d) string de onclick; opts.sel {p,d}
 function nbGrid(cellFn,opts){
   opts=opts||{};
-  var h='<div class="nb-wrap"><div class="nb-ylab">Potencial →</div><div style="flex:1"><div class="nb-grid">';
+  var h='<div class="nb-wrap"><div class="nb-ylab">'+esc(EIXO_Y)+' →</div><div style="flex:1"><div class="nb-grid">';
   for(var p=3;p>=1;p--){
     for(var d=1;d<=3;d++){
       var box=NB['p'+p+'d'+d];
       var sel=opts.sel&&opts.sel.p===p&&opts.sel.d===d;
-      h+='<div class="nb-cell'+(opts.click?' click':'')+(sel?' sel':'')+'" style="background:'+box.c+'22"'
+      h+='<div class="nb-cell'+(opts.click?' click':'')+(sel?' sel':'')+'" style="background:'+box.c+'22"'+(box.desc?' title="'+esc(box.desc)+'"':'')
         +(opts.click?' onclick="'+opts.click(p,d)+'"':'')+'>'+cellFn(p,d,box)+'</div>';
     }
   }
-  h+='</div><div class="nb-xlab">Desempenho →</div></div></div>';
+  h+='</div><div class="nb-xlab">'+esc(EIXO_X)+' →</div></div></div>';
   return h;
 }
 
@@ -592,6 +640,7 @@ function iniciarListeners(){
     if(!_cfg.contatos)_cfg.contatos=[];
     if(!_cfg.rotinasPos)_cfg.rotinasPos=[];
     if(!_cfg.params)_cfg.params={};
+    aplicarTermosNb();
     renderCfg();
     refresh();
   });
@@ -601,6 +650,7 @@ function refresh(){
   if(_view==='lista')renderLista();
   else if(_view==='detalhe')renderDetalhe();
   else if(_view==='rel')renderRel();
+  else if(_view==='cfg')renderPrInfo();
 }
 
 function salvarCfg(){
@@ -658,7 +708,8 @@ function setTabAtivos(tab,el){
 }
 
 function getFuncsEmExp(){return _funcs.filter(function(f){return !f.desligado&&!isEfetivado(f);});}
-function getFuncsEfetivados(){return _funcs.filter(function(f){return !f.desligado&&isEfetivado(f);});}
+function getFuncsEfetivados(){return _funcs.filter(function(f){return !f.desligado&&isEfetivado(f)&&!foraDoAcomp(f);});}
+function getFuncsTravados(){return _funcs.filter(function(f){return !f.desligado&&foraDoAcomp(f);});}
 function getFuncsDesligados(){return _funcs.filter(function(f){return f.desligado;});}
 
 // ════ LISTA ════
@@ -781,13 +832,16 @@ function renderNbPanel(lista){
     +'</select></div></div>'
     +nbGrid(function(p,d,box){
       var n=cont['p'+p+'d'+d]||0,pct=total?Math.round(n/total*100):0;
-      return '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px"><span>'+box.n+'</span></div>'
+      return '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:6px"><span>'+esc(box.n)+'</span></div>'
         +'<div style="display:flex;align-items:baseline;gap:6px"><span class="nb-num">'+n+'</span><span style="font-size:11px;color:var(--text2)">'+(n?pct+'%':'')+'</span></div>';
     },{click:function(p,d){return "setNbFiltro('p"+p+"d"+d+"')";},sel:_nbFiltro&&_nbFiltro!=='none'?{p:+_nbFiltro[1],d:+_nbFiltro[3]}:null})
     +'<div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
     +'<button class="chip-btn" onclick="setNbFiltro(\'none\')" style="'+(_nbFiltro==='none'?'background:var(--black);color:var(--lime);border-color:var(--black)':'')+'">'
     +'<i class="ti ti-help-circle" style="font-size:11px"></i> Sem avaliação no ciclo: '+semAv+'</button>'
     +'<span style="font-size:11px;color:var(--text3)">Vencimento do ciclo: '+fmtDate(cicloFim(_nbCiclo))+'</span>'
+    +'<div style="flex:1"></div>'
+    +'<button class="btn btn-sm" onclick="baixarPlanilhaNb()" title="Gera a planilha do ciclo selecionado com os filtros de empresa/setor aplicados"><i class="ti ti-file-spreadsheet"></i> Baixar planilha do ciclo</button>'
+    +'<button class="btn btn-sm btn-primary" onclick="document.getElementById(\'imp-file\').click()"><i class="ti ti-upload"></i> Importar planilha</button>'
     +'</div></div>';
   el.innerHTML=html;
 }
@@ -877,7 +931,7 @@ function render9BoxSecao(f,todas){
       var tags=avs.filter(function(a){return a.potencial===p&&a.desempenho===d;}).map(function(a){
         return '<span class="nb-tag'+(ultimo&&a.ciclo===ultimo.ciclo?' last':'')+'">'+cicloCurto(a.ciclo)+'</span>';
       }).join('');
-      return '<span style="font-size:10px">'+box.n+'</span><div>'+tags+'</div>';
+      return '<span style="font-size:10px">'+esc(box.n)+'</span><div>'+tags+'</div>';
     })+'</div>';
 
   // Histórico por ciclo
@@ -889,7 +943,7 @@ function render9BoxSecao(f,todas){
     ciclosNb.forEach(function(o){
       var a=o.av,atras=!a&&o.venc<hoje;
       h+='<tr><td style="font-weight:700;white-space:nowrap">'+cicloLabel(o.ciclo)+'</td><td>'
-        +(a?nbChip(a)+'<div style="font-size:11px;color:var(--text3);margin-top:4px">Desempenho '+NIVEL[a.desempenho]+' · Potencial '+NIVEL[a.potencial]+'</div>'
+        +(a?nbChip(a)+'<div style="font-size:11px;color:var(--text3);margin-top:4px">'+esc(EIXO_X)+' '+esc(NIVEL[a.desempenho])+' · '+esc(EIXO_Y)+' '+esc(NIVEL[a.potencial])+'</div>'
             +(a.obs?'<div style="font-size:11px;color:var(--text2);margin-top:3px">'+esc(a.obs)+'</div>':'')
            :(atras?'<span class="badge badge-red">Atrasada · venceu '+fmtDate(o.venc)+'</span>':'<span class="badge badge-amber">Pendente · vence '+fmtDate(o.venc)+'</span>'))
         +'</td><td style="font-size:12px;white-space:nowrap">'+(a?fmtDate(a.data)+(a.resp?'<div style="font-size:11px;color:var(--text3)">'+esc(a.resp)+'</div>':''):'—')+'</td>'
@@ -996,10 +1050,10 @@ function carregarAvModal(f,ciclo){
 }
 function renderNbModal(){
   document.getElementById('nb-grid-modal').innerHTML=nbGrid(function(p,d,box){
-    return '<span>'+box.n+'</span><span style="font-size:10px;font-weight:600;color:var(--text2)">D: '+NIVEL[d]+' · P: '+NIVEL[p]+'</span>';
+    return '<span>'+esc(box.n)+'</span><span style="font-size:10px;font-weight:600;color:var(--text2)">'+esc(EIXO_X.charAt(0))+': '+esc(NIVEL[d])+' · '+esc(EIXO_Y.charAt(0))+': '+esc(NIVEL[p])+'</span>';
   },{click:function(p,d){return 'nbSelecionar('+p+','+d+')';},sel:_nbSel});
   document.getElementById('nb-sel-info').innerHTML=_nbSel
-    ?'Selecionado: <strong>'+NB['p'+_nbSel.p+'d'+_nbSel.d].n+'</strong> — Desempenho '+NIVEL[_nbSel.d]+', Potencial '+NIVEL[_nbSel.p]
+    ?'Selecionado: <strong>'+esc(NB['p'+_nbSel.p+'d'+_nbSel.d].n)+'</strong> — '+esc(EIXO_X)+' '+esc(NIVEL[_nbSel.d])+', '+esc(EIXO_Y)+' '+esc(NIVEL[_nbSel.p])+(NB['p'+_nbSel.p+'d'+_nbSel.d].desc?'<div style="font-weight:500;color:var(--text3);margin-top:3px">'+esc(NB['p'+_nbSel.p+'d'+_nbSel.d].desc)+'</div>':'')
     :'Nenhum quadrante selecionado.';
 }
 function nbSelecionar(p,d){_nbSel={p:p,d:d};renderNbModal();}
@@ -1051,7 +1105,7 @@ function renderRel(){
   var hoje=today(),rows=[];
 
   _funcs.forEach(function(f){
-    if(f.desligado)return;
+    if(f.desligado||foraDoAcomp(f))return;
     if(emp&&f.empresa!==emp)return;
     if(setor&&(f.departamento||'')!==setor)return;
     getOcorrencias(f,fim).forEach(function(o){
@@ -1097,7 +1151,7 @@ function renderRel(){
         :o.venc<hoje?'<span class="badge badge-red">Atrasada · '+diffDays(o.venc,hoje)+'d</span>'
         :'<span class="badge badge-amber">Pendente</span>';
       var faseB=o.fase==='exp'?'<span class="badge badge-gray">Experiência</span>':o.fase==='pos'?'<span class="badge badge-blue">Pós-exp.</span>':'<span class="badge badge-blue">9Box</span>';
-      var real=o.done?fmtDate(o.doneDate)+(o.fase==='9box'&&o.av?'<div class="sm">'+NB[nbKey(o.av)].n+'</div>':(o.obs?'<div class="sm">'+esc(o.obs)+'</div>':'')):'—';
+      var real=o.done?fmtDate(o.doneDate)+(o.fase==='9box'&&o.av?'<div class="sm">'+esc(NB[nbKey(o.av)].n)+'</div>':(o.obs?'<div class="sm">'+esc(o.obs)+'</div>':'')):'—';
       h+='<tr><td style="font-weight:700;white-space:nowrap">'+fmtDate(o.venc)+'</td>'
         +'<td><strong>'+esc(f.nome)+'</strong><div class="sm">'+esc(f.cargo||'')+'</div></td>'
         +'<td class="sm">'+esc(f.empresa||'—')+(f.departamento?'<br>'+esc(f.departamento):'')+'</td>'
@@ -1160,6 +1214,269 @@ function salvarParams(){
   salvarCfg();
 }
 
+function renderPrInfo(){
+  var el=document.getElementById('pr-info');if(!el)return;
+  var n=getFuncsTravados().length,v=getFuncsEfetivados().length;
+  el.innerHTML='<i class="ti ti-lock" style="font-size:13px;vertical-align:-2px"></i> Com a data atual ('+fmtDate(P().inicio)+'): '
+    +'<strong>'+v+'</strong> efetivado'+(v!==1?'s':'')+' em acompanhamento · <strong>'+n+'</strong> oculto'+(n!==1?'s':'')+' pela trava.';
+}
+
+// ════ TERMOS 9BOX ════
+function renderTermosNb(){
+  var sec=document.getElementById('tn-grid');if(!sec)return;
+  var cfgSec=sec.closest('.cfg-section');
+  if(cfgSec.contains(document.activeElement))return; // não sobrescrever enquanto edita
+  document.getElementById('tn-eixoX').value=EIXO_X;
+  document.getElementById('tn-eixoY').value=EIXO_Y;
+  [1,2,3].forEach(function(i){document.getElementById('tn-n'+i).value=NIVEL[i];});
+  var h='<div class="nb-wrap"><div class="nb-ylab">'+esc(EIXO_Y)+' →</div><div style="flex:1"><div class="nb-grid">';
+  for(var p=3;p>=1;p--)for(var d=1;d<=3;d++){
+    var k='p'+p+'d'+d,b=NB[k];
+    h+='<div class="nb-cell" style="background:'+b.c+'22;gap:5px">'
+      +'<span style="font-size:10px;font-weight:700;color:var(--text2)">'+esc(EIXO_Y)+' '+esc(NIVEL[p])+' · '+esc(EIXO_X)+' '+esc(NIVEL[d])+'</span>'
+      +'<input class="fi" id="tn-'+k+'" value="'+esc(b.n)+'" placeholder="'+esc(NB_PADRAO.quad[k])+'" style="padding:6px 8px;font-weight:700">'
+      +'<input class="fi" id="tn-'+k+'-d" value="'+esc(b.desc)+'" placeholder="Descrição (opcional)" style="padding:5px 8px;font-size:11px">'
+      +'</div>';
+  }
+  h+='</div><div class="nb-xlab">'+esc(EIXO_X)+' →</div></div></div>';
+  sec.innerHTML=h;
+}
+function salvarTermosNb(){
+  var v=function(id){return (document.getElementById(id).value||'').trim();};
+  var t={eixoX:v('tn-eixoX')||NB_PADRAO.eixoX,eixoY:v('tn-eixoY')||NB_PADRAO.eixoY,niveis:{},quad:{}};
+  [1,2,3].forEach(function(i){t.niveis[i]=v('tn-n'+i)||NB_PADRAO.niveis[i];});
+  var ns=[t.niveis[1],t.niveis[2],t.niveis[3]].map(normTxt);
+  if(ns[0]===ns[1]||ns[1]===ns[2]||ns[0]===ns[2]){toast('Os três níveis precisam ter nomes diferentes.','err');return;}
+  Object.keys(NB_PADRAO.quad).forEach(function(k){t.quad[k]={n:v('tn-'+k)||NB_PADRAO.quad[k],desc:v('tn-'+k+'-d')};});
+  _cfg.nbTermos=t;
+  if(document.activeElement)document.activeElement.blur();
+  salvarCfg();
+}
+function restaurarTermosNb(){
+  if(!confirm('Restaurar os nomes padrão da matriz 9Box? As avaliações lançadas não são alteradas.'))return;
+  delete _cfg.nbTermos;
+  if(document.activeElement)document.activeElement.blur();
+  salvarCfg();
+}
+
+// ════ PLANILHA 9BOX (download / upload) ════
+var _xlsxPromise=null;
+function carregarXLSX(){
+  if(window.XLSX)return Promise.resolve();
+  if(_xlsxPromise)return _xlsxPromise;
+  _xlsxPromise=new Promise(function(ok,err){
+    var s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    s.onload=ok;s.onerror=function(){_xlsxPromise=null;err(new Error('Não foi possível carregar o leitor de planilhas.'));};
+    document.head.appendChild(s);
+  });
+  return _xlsxPromise;
+}
+function normTxt(s){return String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();}
+
+// Colaboradores elegíveis ao ciclo, respeitando filtros de empresa/setor da tela
+function elegiveisCiclo(ciclo){
+  var emp=document.getElementById('f-empresa').value,setor=document.getElementById('f-setor').value;
+  return getFuncsEfetivados().filter(function(f){
+    if(emp&&f.empresa!==emp)return false;
+    if(setor&&(f.departamento||'')!==setor)return false;
+    return getOcorrencias(f,cicloFim(ciclo)).some(function(o){return o.fase==='9box'&&o.ciclo===ciclo;})||!!avDoCiclo(f,ciclo);
+  }).sort(function(a,b){return (a.nome||'').localeCompare(b.nome||'');});
+}
+
+var PLAN_COLS=['ID','Colaborador','Cargo','Empresa','Setor','Efetivação','Ciclo','__X','__Y','Data da avaliação','Observações','Responsável'];
+function planHeaders(){return PLAN_COLS.map(function(c){return c==='__X'?EIXO_X:c==='__Y'?EIXO_Y:c;});}
+
+function baixarPlanilhaNb(){
+  var ciclo=_nbCiclo,lista=elegiveisCiclo(ciclo);
+  if(!lista.length){toast('Nenhum colaborador elegível para '+cicloLabel(ciclo)+' com esses filtros.','warn');return;}
+  carregarXLSX().then(function(){
+    var rows=[planHeaders()];
+    lista.forEach(function(f){
+      var a=avDoCiclo(f,ciclo);
+      rows.push([f.id,f.nome,f.cargo||'',f.empresa||'',f.departamento||'',fmtDate(dataEfetivacao(f)),cicloLabel(ciclo),
+        a?NIVEL[a.desempenho]:'',a?NIVEL[a.potencial]:'',a?fmtDate(a.data):'',a?(a.obs||''):'',a?(a.resp||''):'']);
+    });
+    var ws=XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols']=[{wch:4,hidden:true},{wch:34},{wch:22},{wch:26},{wch:18},{wch:12},{wch:18},{wch:14},{wch:14},{wch:16},{wch:40},{wch:18}];
+    ws['!autofilter']={ref:'A1:L'+rows.length};
+
+    var niveis=[NIVEL[1],NIVEL[2],NIVEL[3]].join(' / ');
+    var ins=[
+      ['Planilha de avaliação 9Box — '+cicloLabel(ciclo)],[],
+      ['Como preencher'],
+      ['1. Preencha as colunas "'+EIXO_X+'" e "'+EIXO_Y+'" com um destes valores: '+niveis+' (ou 1, 2, 3).'],
+      ['2. "Data da avaliação" no formato dd/mm/aaaa. Se ficar vazia, será usada a data da importação.'],
+      ['3. Linhas com '+EIXO_X+' e '+EIXO_Y+' vazios são ignoradas.'],
+      ['4. Não altere a coluna oculta ID nem a coluna Ciclo.'],
+      ['5. Se o colaborador já tiver avaliação no ciclo, a importação substitui o resultado anterior.'],[],
+      ['Quadrantes','',EIXO_Y,EIXO_X,'Descrição']
+    ];
+    for(var p=3;p>=1;p--)for(var d=3;d>=1;d--){var b=NB['p'+p+'d'+d];ins.push([b.n,'',NIVEL[p],NIVEL[d],b.desc||'']);}
+    var wi=XLSX.utils.aoa_to_sheet(ins);
+    wi['!cols']=[{wch:24},{wch:2},{wch:14},{wch:14},{wch:60}];
+
+    var wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb,ws,'Avaliações');
+    XLSX.utils.book_append_sheet(wb,wi,'Instruções');
+    var sufixo=[document.getElementById('f-empresa').value,document.getElementById('f-setor').value].filter(Boolean).join('_');
+    XLSX.writeFile(wb,('9box_'+ciclo+(sufixo?'_'+sufixo:'')).replace(/[^\w\-]+/g,'_').slice(0,80)+'.xlsx');
+    toast('Planilha gerada com '+lista.length+' colaborador'+(lista.length!==1?'es':'')+'.','ok');
+  }).catch(function(e){toast(e.message,'err');});
+}
+
+function parseNivel(v){
+  if(v==null||v==='')return null;
+  var s=normTxt(v);
+  if(s==='1'||s==='2'||s==='3')return parseInt(s);
+  for(var i=1;i<=3;i++)if(normTxt(NIVEL[i])===s)return i;
+  for(var j=1;j<=3;j++)if(normTxt(NB_PADRAO.niveis[j])===s)return j;
+  return -1;
+}
+function parseCicloTxt(v){
+  var s=String(v==null?'':v).trim();
+  var m=s.match(/^(\d{4})\s*-\s*([12])$/);if(m)return m[1]+'-'+m[2];
+  m=s.match(/([12])\s*[ºo°]?\s*(?:s|sem|semestre)?\D*(\d{4})/i);if(m)return m[2]+'-'+m[1];
+  return null;
+}
+function parseDataCel(v){
+  if(v==null||v==='')return '';
+  if(v instanceof Date&&!isNaN(v))return iso(new Date(v.getTime()+12*3600000)); // evita virar o dia por fuso
+  if(typeof v==='number'){var d=new Date(Math.round((v-25569)*86400000));d.setMinutes(d.getMinutes()+d.getTimezoneOffset());return iso(d);}
+  var s=String(v).trim(),m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if(m){var y=m[3].length===2?'20'+m[3]:m[3];return y+'-'+pad(m[2])+'-'+pad(m[1]);}
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);
+  return null;
+}
+
+var _impLinhas=[];
+function lerPlanilha(input){
+  var file=input.files&&input.files[0];input.value='';
+  if(!file)return;
+  carregarXLSX().then(function(){return file.arrayBuffer();}).then(function(buf){
+    var wb=XLSX.read(buf,{type:'array',cellDates:true});
+    var nome=wb.SheetNames.indexOf('Avaliações')>=0?'Avaliações':wb.SheetNames[0];
+    var rows=XLSX.utils.sheet_to_json(wb.Sheets[nome],{header:1,defval:'',raw:true});
+    processarPlanilha(rows);
+  }).catch(function(e){toast('Erro ao ler a planilha: '+e.message,'err');});
+}
+
+function processarPlanilha(rows){
+  if(!rows.length){toast('Planilha vazia.','err');return;}
+  var head=rows[0].map(normTxt),col={};
+  var alvo={id:'id',nome:'colaborador',ciclo:'ciclo',x:normTxt(EIXO_X),y:normTxt(EIXO_Y),data:'data da avaliacao',obs:'observacoes',resp:'responsavel'};
+  var alt={x:normTxt(NB_PADRAO.eixoX),y:normTxt(NB_PADRAO.eixoY)};
+  Object.keys(alvo).forEach(function(k){
+    var i=head.indexOf(alvo[k]);if(i<0&&alt[k])i=head.indexOf(alt[k]);
+    col[k]=i;
+  });
+  if(col.x<0||col.y<0||(col.id<0&&col.nome<0)){
+    toast('Colunas não reconhecidas. Use a planilha baixada pelo sistema.','err');return;
+  }
+  var porNome={};
+  _funcs.forEach(function(f){var k=normTxt(f.nome);(porNome[k]=porNome[k]||[]).push(f);});
+  var cel=function(r,k){return col[k]>=0?r[col[k]]:'';};
+  var vistos={};
+  _impLinhas=[];
+  rows.slice(1).forEach(function(r,i){
+    if(!r.some(function(c){return String(c).trim()!=='';}))return;
+    var L={linha:i+2,nome:String(cel(r,'nome')||''),erros:[]};
+    var xv=cel(r,'x'),yv=cel(r,'y');
+    if(String(xv).trim()===''&&String(yv).trim()===''){L.ignorar=true;}
+    var f=null,id=String(cel(r,'id')||'').trim();
+    if(id)f=_funcs.find(function(x){return x.id===id;});
+    if(!f&&L.nome){var c=porNome[normTxt(L.nome)]||[];if(c.length===1)f=c[0];else if(c.length>1)L.erros.push('Nome duplicado no sistema');}
+    if(!f&&!L.erros.length)L.erros.push('Colaborador não encontrado');
+    L.f=f;if(f)L.nome=f.nome;
+    if(L.ignorar){_impLinhas.push(L);return;}
+    if(f&&foraDoAcomp(f))L.erros.push('Fora do acompanhamento (trava)');
+    L.ciclo=parseCicloTxt(cel(r,'ciclo'))||_nbCiclo;
+    if(col.ciclo>=0&&String(cel(r,'ciclo')).trim()&&!parseCicloTxt(cel(r,'ciclo')))L.erros.push('Ciclo inválido');
+    L.d=parseNivel(xv);L.p=parseNivel(yv);
+    if(L.d===null)L.erros.push(EIXO_X+' vazio');else if(L.d<0)L.erros.push(EIXO_X+' inválido: "'+xv+'"');
+    if(L.p===null)L.erros.push(EIXO_Y+' vazio');else if(L.p<0)L.erros.push(EIXO_Y+' inválido: "'+yv+'"');
+    var dt=parseDataCel(cel(r,'data'));
+    if(dt===null)L.erros.push('Data inválida');
+    L.data=dt||today();
+    L.obs=String(cel(r,'obs')||'').trim();L.resp=String(cel(r,'resp')||'').trim();
+    if(f&&L.ciclo){
+      var ch=f.id+'|'+L.ciclo;
+      if(vistos[ch])L.erros.push('Linha repetida (mesmo colaborador e ciclo)');
+      vistos[ch]=1;
+      var ant=avDoCiclo(f,L.ciclo);
+      if(ant)L.substitui=NB[nbKey(ant)].n;
+    }
+    _impLinhas.push(L);
+  });
+  renderImportacao();
+  openModal('modal-imp');
+}
+
+function renderImportacao(){
+  var ok=_impLinhas.filter(function(l){return !l.ignorar&&!l.erros.length;});
+  var err=_impLinhas.filter(function(l){return !l.ignorar&&l.erros.length;});
+  var ign=_impLinhas.filter(function(l){return l.ignorar;});
+  var subst=ok.filter(function(l){return l.substitui;}).length;
+  var h='<div class="rel-stats" style="grid-template-columns:repeat(4,1fr)">'
+    +'<div class="rel-stat"><span>Prontas p/ importar</span><b style="color:#1a5c35">'+ok.length+'</b></div>'
+    +'<div class="rel-stat"><span>Substituem existentes</span><b style="color:#7d4e00">'+subst+'</b></div>'
+    +'<div class="rel-stat"><span>Com erro</span><b style="color:#8b1c1c">'+err.length+'</b></div>'
+    +'<div class="rel-stat"><span>Não preenchidas</span><b style="color:var(--text3)">'+ign.length+'</b></div></div>';
+  if(err.length)h+='<div class="notice notice-red"><i class="ti ti-alert-triangle"></i><span>Linhas com erro não serão importadas. Corrija na planilha e importe de novo se precisar.</span></div>';
+  var lista=err.concat(ok);
+  if(!lista.length){h+='<div class="empty"><i class="ti ti-table-off"></i><p>Nenhuma linha preenchida na planilha.</p></div>';}
+  else{
+    h+='<table class="rel-table"><thead><tr><th>Linha</th><th>Colaborador</th><th>Ciclo</th><th>Resultado</th><th>Data</th><th>Situação</th></tr></thead><tbody>';
+    lista.forEach(function(l){
+      var res=(l.d>0&&l.p>0)?nbChip({desempenho:l.d,potencial:l.p,ciclo:l.ciclo}):'—';
+      var st=l.erros.length?'<span class="badge badge-red">'+esc(l.erros.join(' · '))+'</span>'
+        :l.substitui?'<span class="badge badge-amber">Substitui: '+esc(l.substitui)+'</span>'
+        :'<span class="badge badge-lime">Nova</span>';
+      h+='<tr><td class="sm">'+l.linha+'</td><td><strong>'+esc(l.nome||'—')+'</strong></td><td class="sm">'+(l.ciclo?cicloLabel(l.ciclo):'—')+'</td>'
+        +'<td>'+res+'</td><td class="sm">'+(l.data?fmtDate(l.data):'—')+'</td><td>'+st+'</td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  document.getElementById('imp-body').innerHTML=h;
+  var btn=document.getElementById('imp-btn');
+  btn.disabled=!ok.length;btn.style.opacity=ok.length?1:.4;
+  btn.innerHTML='<i class="ti ti-upload"></i> Importar '+ok.length+' avaliaç'+(ok.length!==1?'ões':'ão');
+}
+
+function confirmarImportacao(){
+  var ok=_impLinhas.filter(function(l){return !l.ignorar&&!l.erros.length;});
+  if(!ok.length)return;
+  var porFunc={};
+  ok.forEach(function(l){(porFunc[l.f.id]=porFunc[l.f.id]||[]).push(l);});
+  var ids=Object.keys(porFunc),agora=new Date().toISOString();
+  var btn=document.getElementById('imp-btn');btn.disabled=true;btn.innerHTML='<i class="ti ti-loader"></i> Importando...';
+  var lotes=[];
+  for(var i=0;i<ids.length;i+=400)lotes.push(ids.slice(i,i+400));
+  var n=0;
+  lotes.reduce(function(prom,lote){
+    return prom.then(function(){
+      var batch=db.batch();
+      lote.forEach(function(fid){
+        var f=_funcs.find(function(x){return x.id===fid;});
+        var ciclosNovos=porFunc[fid].map(function(l){return l.ciclo;});
+        var avs=getAvaliacoes(f).filter(function(a){return ciclosNovos.indexOf(a.ciclo)<0;});
+        porFunc[fid].forEach(function(l){
+          avs.push({id:'av'+Date.now()+'_'+(n++),ciclo:l.ciclo,desempenho:l.d,potencial:l.p,data:l.data,obs:l.obs,resp:l.resp,
+            registradoEm:agora,origem:'planilha'});
+        });
+        batch.set(db.collection('exp_data').doc(fid),{avaliacoes:avs},{merge:true});
+      });
+      return batch.commit();
+    });
+  },Promise.resolve()).then(function(){
+    toast(ok.length+' avaliaç'+(ok.length!==1?'ões importadas':'ão importada')+'!','ok');
+    closeModal('modal-imp');_impLinhas=[];
+  }).catch(function(e){
+    toast('Erro na importação: '+e.message,'err');
+    btn.disabled=false;renderImportacao();
+  });
+}
+
 function renderCfg(){
   var lixo=function(fn,id){return '<td><button class="btn-icon" onclick="'+fn+'(\''+id+'\')" title="Remover"><i class="ti ti-trash" style="font-size:14px;color:#c0392b"></i></button></td>';};
   document.getElementById('tb-videos').innerHTML=_cfg.videos.slice().sort(function(a,b){return a.dia-b.dia;}).map(function(v){
@@ -1182,12 +1499,15 @@ function renderCfg(){
   var pi=document.getElementById('pr-inicio'),pc=document.getElementById('pr-carencia');
   if(document.activeElement!==pi)pi.value=p.inicio;
   if(document.activeElement!==pc)pc.value=p.carencia;
+  renderPrInfo();
+  renderTermosNb();
 }
 
 // ════ INIT ════
 document.querySelectorAll('.overlay').forEach(function(el){
   el.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
 });
+aplicarTermosNb();
 popularEmpresas();
 mostrarView('lista');
 iniciarListeners();

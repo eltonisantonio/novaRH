@@ -204,6 +204,7 @@ iframe{flex:1;border:none;width:100%;height:100%;}
       <div class="nav-group" id="grp-jornada">
         <div class="nav-grp-head" onclick="toggleGroup('jornada')"><i class="ti ti-route grp-ic"></i><span>Jornada do Colaborador</span><i class="ti ti-chevron-down grp-chev"></i></div>
         <div class="nav-grp-body">
+          <div class="nav-item" id="nav-guia" onclick="loadMod('guia')"><i class="ti ti-book-2"></i> Guia RH</div>
           <div class="nav-item" id="nav-admissao" onclick="loadMod('admissao')"><i class="ti ti-file-check"></i> Admissão</div>
           <div class="nav-item" id="nav-experiencia" onclick="loadMod('experiencia')"><i class="ti ti-clock"></i> Experiência</div>
           <div class="nav-item" id="nav-dossie" onclick="loadMod('dossie')"><i class="ti ti-notebook"></i> Dossiê</div>
@@ -278,6 +279,7 @@ iframe{flex:1;border:none;width:100%;height:100%;}
           <div class="mod-check-grid" id="nu-modulos">
             <label class="mod-check"><input type="checkbox" value="dashboard" checked> Dashboard</label>
             <label class="mod-check"><input type="checkbox" value="rs" checked> R&amp;S</label>
+            <label class="mod-check"><input type="checkbox" value="guia" checked> Guia RH</label>
             <label class="mod-check"><input type="checkbox" value="admissao" checked> Admissão</label>
             <label class="mod-check"><input type="checkbox" value="experiencia" checked> Experiência</label>
             <label class="mod-check"><input type="checkbox" value="dossie" checked> Dossiê</label>
@@ -334,6 +336,7 @@ iframe{flex:1;border:none;width:100%;height:100%;}
             <div class="mod-check-grid" id="eu-modulos">
               <label class="mod-check"><input type="checkbox" value="dashboard"> Dashboard</label>
               <label class="mod-check"><input type="checkbox" value="rs"> R&amp;S</label>
+              <label class="mod-check"><input type="checkbox" value="guia"> Guia RH</label>
               <label class="mod-check"><input type="checkbox" value="admissao"> Admissão</label>
               <label class="mod-check"><input type="checkbox" value="experiencia"> Experiência</label>
               <label class="mod-check"><input type="checkbox" value="dossie"> Dossiê</label>
@@ -410,6 +413,7 @@ var _db = firebase.firestore();
 var MODS = {
   dashboard:   {nome:'Dashboard',              tag:'Analytics', file:'nova-dashboard.html',   icon:'ti-layout-dashboard', desc:'Indicadores consolidados de R&S, Admissão, Experiência, Rescisão e Solicitações.'},
   rs:          {nome:'Recrutamento & Seleção', tag:'Módulo 1', file:'nova-rs.html',         icon:'ti-user-search', desc:'Vagas, candidatos, kanban de seleção, banco de talentos e agenda do RH.'},
+  guia:        {nome:'Guia RH',                tag:'Módulo 11',file:'nova-guia.html',       icon:'ti-book-2',      desc:'Passo a passo da jornada do colaborador: etapas, responsáveis, pontos de atenção e POPs/ITs da admissão ao desligamento.'},
   admissao:    {nome:'Admissão',               tag:'Módulo 3', file:'nova-admissao.html',   icon:'ti-file-check',  desc:'Checklist de admissão por perfil, integração com R&S e controle de etapas.'},
   experiencia: {nome:'Período de Experiência', tag:'Módulo 4', file:'nova-experiencia.html',icon:'ti-clock',       desc:'Acompanhamento do período de experiência, feedbacks e cerimônia de capacete.'},
   dossie:      {nome:'Dossiê',                 tag:'Módulo 5', file:'nova-dossie.html',     icon:'ti-notebook',    desc:'Histórico completo de registros por funcionário, filtros, exportação em PDF.'},
@@ -598,8 +602,8 @@ function updateBadgeSol(){
 // NAVEGAÇÃO
 // ────────────────────────────────────────────────
 var modAtivo = null;
-var GRUPOS = {rs:['rs','solicitacao'], jornada:['admissao','experiencia','dossie','rescisao'], gestao:['dashboard','equipe','salario']};
-var GRUPO_MOD = {rs:'rs',solicitacao:'rs',admissao:'jornada',experiencia:'jornada',dossie:'jornada',rescisao:'jornada',dashboard:'gestao',equipe:'gestao',salario:'gestao'};
+var GRUPOS = {rs:['rs','solicitacao'], jornada:['guia','admissao','experiencia','dossie','rescisao'], gestao:['dashboard','equipe','salario']};
+var GRUPO_MOD = {rs:'rs',solicitacao:'rs',guia:'jornada',admissao:'jornada',experiencia:'jornada',dossie:'jornada',rescisao:'jornada',dashboard:'gestao',equipe:'gestao',salario:'gestao'};
 function toggleGroup(g){ var el=document.getElementById('grp-'+g); if(el) el.classList.toggle('open'); }
 
 function goHome(){
@@ -675,10 +679,10 @@ function openAdmin(){
 function renderUsuarios(){
   getUsuarios().then(function(users){
   var el=document.getElementById('lista-usuarios');
-  if(!users.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:10px 0">Nenhum usu\u00e1rio.</div>';return;}
+  if(!users.length){el.innerHTML='<div style="font-size:13px;color:var(--text3);padding:10px 0">Nenhum usuário.</div>';return;}
     el.innerHTML=users.map(function(u){
     var isAdmin=(u.id==='u_admin');
-    var modsList=(u.modulos||[]).join(', ')||'\u2014';
+    var modsList=(u.modulos||[]).join(', ')||'—';
     var badgeClass=u.perfil==='admin'?'badge-admin':'badge-user';
     var editBtn='<button class="btn-sm" onclick="abrirEditarUsuario(\''+u.id+'\')" title="Editar"><i class="ti ti-pencil" style="font-size:13px"></i></button>';
     var acaoBtn=isAdmin

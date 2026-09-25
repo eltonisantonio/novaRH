@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova. RH — Guia RH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.30.0/dist/tabler-icons.min.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root{--black:#0e0f12;--cream:#f2eee5;--lime:#d7ff3d;--gold:#b6904a;--white:#fff;--s2:#f7f5f0;--border:#e8e3d8;--border2:#d4cec0;--text:#0e0f12;--text2:#6b6558;--text3:#a09890;--r:6px;--rl:10px;--rx:14px;}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;}
+.app{display:flex;min-height:100vh;}
+.sidebar{width:230px;background:var(--black);color:#fff;flex-shrink:0;display:flex;flex-direction:column;}
+.sidebar-logo{padding:28px 24px 22px;border-bottom:1px solid rgba(255,255,255,.08);}
+.logo-mark{display:flex;align-items:baseline;}
+.logo-text{font-size:22px;font-weight:900;letter-spacing:-.5px;color:var(--cream);}
+.logo-dot{width:9px;height:9px;background:var(--lime);border-radius:50%;display:inline-block;margin-left:2px;margin-bottom:1px;}
+.logo-sub{font-size:10px;font-weight:500;color:rgba(242,238,229,.4);letter-spacing:2px;text-transform:uppercase;margin-top:5px;}
+.sidebar-nav{padding:20px 0;flex:1;}
+.nav-s{padding:8px 24px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,.25);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 24px;font-size:13px;font-weight:500;color:rgba(255,255,255,.5);border-left:2px solid transparent;}
+.nav-item.active{color:var(--lime);border-left-color:var(--lime);background:rgba(215,255,61,.06);}
+.nav-item.dis{opacity:.25;}
+.nav-item i{font-size:16px;}
+.main{flex:1;display:flex;flex-direction:column;min-width:0;}
+.topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:20;}
+.topbar-title{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.topbar-actions{display:flex;gap:8px;align-items:center;}
+.content{flex:1;padding:24px 32px 60px;max-width:1280px;width:100%;margin:0 auto;}
+
+/* BOTÕES */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 16px;border-radius:var(--r);border:1px solid var(--border2);background:var(--white);color:var(--text);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s;white-space:nowrap;text-decoration:none;}
+.btn:hover{background:var(--s2);}
+.btn-primary{background:var(--black);color:var(--lime);border-color:var(--black);}
+.btn-primary:hover{background:#1e2026;}
+.btn-sm{padding:6px 11px;font-size:12px;}
+.btn-ghost{border-color:transparent;background:transparent;}
+.btn-danger{color:#8b1c1c;}
+.btn-icon{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:var(--r);border:none;background:transparent;cursor:pointer;color:var(--text2);font-size:16px;}
+.btn-icon:hover{background:var(--s2);color:var(--text);}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;cursor:pointer;user-select:none;padding:6px 10px;border-radius:20px;border:1px solid var(--border2);background:var(--white);}
+.toggle .sw{width:30px;height:17px;border-radius:10px;background:var(--border2);position:relative;transition:.15s;}
+.toggle .sw::after{content:'';position:absolute;left:2px;top:2px;width:13px;height:13px;border-radius:50%;background:#fff;transition:.15s;}
+.toggle.on{border-color:var(--black);}
+.toggle.on .sw{background:var(--black);}
+.toggle.on .sw::after{left:15px;background:var(--lime);}
+
+/* HERO */
+.hero{background:var(--black);border-radius:var(--rx);padding:28px 30px;color:var(--cream);position:relative;overflow:hidden;margin-bottom:18px;}
+.hero::before{content:'';position:absolute;right:-60px;top:-80px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(215,255,61,.18),transparent 65%);}
+.hero-kicker{font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--lime);display:flex;align-items:center;gap:6px;}
+.hero h1{font-size:30px;font-weight:900;letter-spacing:-.8px;margin:6px 0 4px;}
+.hero p{font-size:13px;color:rgba(242,238,229,.65);max-width:620px;line-height:1.5;}
+.hero-row{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap;position:relative;}
+.hero-stats{display:flex;gap:22px;}
+.hero-stat b{display:block;font-size:24px;font-weight:900;letter-spacing:-.5px;color:var(--cream);}
+.hero-stat span{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(242,238,229,.45);}
+.hero-stat.warn b{color:#f0c35a;}
+.hero-tools{display:flex;gap:10px;margin-top:20px;position:relative;flex-wrap:wrap;}
+.search{position:relative;flex:1;min-width:260px;}
+.search i{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:18px;color:rgba(242,238,229,.45);}
+.search input{width:100%;padding:12px 14px 12px 42px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:var(--cream);font-size:14px;font-family:'Inter',sans-serif;font-weight:500;outline:none;}
+.search input::placeholder{color:rgba(242,238,229,.4);}
+.search input:focus{border-color:var(--lime);background:rgba(255,255,255,.09);}
+.hero-select{padding:0 14px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:var(--cream);font-size:13px;font-family:'Inter',sans-serif;font-weight:600;outline:none;min-width:200px;}
+.hero-select option{color:var(--text);}
+
+/* JORNADA (trilho de fases) */
+.rail{background:var(--white);border:1px solid var(--border);border-radius:var(--rx);padding:22px 20px 16px;margin-bottom:18px;}
+.rail-track{display:flex;align-items:flex-start;position:relative;}
+.rail-line{position:absolute;top:27px;left:6%;right:6%;height:3px;background:repeating-linear-gradient(90deg,var(--border2) 0 8px,transparent 8px 14px);z-index:0;}
+.rail-node{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;position:relative;z-index:1;padding:0 4px;text-align:center;}
+.rail-dot{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:25px;color:#fff;border:4px solid var(--white);box-shadow:0 0 0 1px var(--border);transition:all .18s;}
+.rail-node:hover .rail-dot{transform:translateY(-2px) scale(1.04);}
+.rail-node.active .rail-dot{box-shadow:0 0 0 3px var(--black),0 8px 18px rgba(0,0,0,.15);}
+.rail-node.dim .rail-dot{filter:grayscale(.85);opacity:.45;}
+.rail-name{font-size:13px;font-weight:800;}
+.rail-meta{font-size:11px;font-weight:600;color:var(--text3);}
+.rail-num{position:absolute;top:-4px;left:calc(50% + 16px);background:var(--black);color:var(--lime);font-size:10px;font-weight:900;border-radius:10px;padding:1px 6px;border:2px solid var(--white);}
+.rail-foot{display:flex;justify-content:space-between;align-items:center;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);gap:10px;flex-wrap:wrap;}
+.tabs{display:flex;gap:6px;}
+.tab{padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border2);background:var(--white);color:var(--text2);font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:6px;}
+.tab.active{background:var(--black);color:var(--lime);border-color:var(--black);}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;border:1px solid var(--border2);background:var(--white);color:var(--text2);cursor:pointer;font-family:'Inter',sans-serif;}
+.chip.on{background:var(--black);color:var(--lime);border-color:var(--black);}
+
+/* FASE */
+.fase{margin-bottom:34px;scroll-margin-top:76px;}
+.fase-h{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.fase-ic{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:23px;color:#fff;flex-shrink:0;}
+.fase-t{flex:1;min-width:0;}
+.fase-kick{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:1.5px;color:var(--text3);}
+.fase-nome{font-size:21px;font-weight:900;letter-spacing:-.4px;}
+.fase-desc{font-size:12.5px;color:var(--text2);margin-top:2px;}
+.fase-acts{display:flex;gap:6px;}
+
+/* LINHA DO TEMPO */
+.tl{position:relative;}
+.tl-row{display:grid;grid-template-columns:118px 34px 1fr;gap:0 10px;position:relative;}
+.tl-row::before{content:'';position:absolute;left:144px;top:0;bottom:0;width:2px;background:var(--border2);}
+.tl-row:first-child::before{top:26px;}
+.tl-row:last-child::before{bottom:calc(100% - 26px);}
+.tl-row:only-child::before{display:none;}
+.tl-when{padding-top:12px;text-align:right;}
+.when-pill{display:inline-flex;flex-direction:column;align-items:flex-end;gap:1px;}
+.when-main{font-size:15px;font-weight:900;letter-spacing:-.3px;padding:3px 9px;border-radius:7px;background:var(--white);border:1px solid var(--border);white-space:nowrap;}
+.when-sub{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;max-width:118px;line-height:1.25;}
+.tl-dot{width:34px;height:34px;border-radius:50%;margin-top:9px;display:flex;align-items:center;justify-content:center;font-size:16px;color:#fff;position:relative;z-index:1;border:3px solid var(--cream);}
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--rl);margin-bottom:14px;overflow:hidden;transition:box-shadow .15s;}
+.card:hover{box-shadow:0 4px 18px rgba(0,0,0,.05);}
+.card-h{display:flex;align-items:flex-start;gap:12px;padding:16px 18px 0;}
+.card-t{flex:1;min-width:0;}
+.card-title{font-size:15.5px;font-weight:800;letter-spacing:-.2px;}
+.card-desc{font-size:12.5px;color:var(--text2);margin-top:4px;line-height:1.55;white-space:pre-line;}
+.card-acts{display:flex;gap:2px;opacity:.55;transition:opacity .15s;}
+.card:hover .card-acts{opacity:1;}
+.card-b{padding:12px 18px 16px;}
+.card-f{padding:9px 18px;border-top:1px solid var(--border);background:var(--s2);font-size:10.5px;color:var(--text3);font-weight:600;display:flex;justify-content:space-between;gap:10px;}
+.tags{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px;}
+.tag{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:12px;background:var(--s2);border:1px solid var(--border);color:var(--text2);}
+.tag.perfil{background:#eef4fb;border-color:#c5d8ee;color:#1f4f82;}
+.docs-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.doc{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 6px;border-radius:7px;font-size:11.5px;font-weight:700;border:1px solid;text-decoration:none;color:var(--text);background:var(--white);transition:all .12s;max-width:100%;}
+.doc:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.08);}
+.doc .dt{font-size:9.5px;font-weight:900;letter-spacing:.5px;padding:2px 5px;border-radius:4px;color:#fff;flex-shrink:0;}
+.doc .dn{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.doc.sem{border-style:dashed;opacity:.75;cursor:help;}
+.doc.sem:hover{transform:none;box-shadow:none;}
+.doc .ti-external-link{font-size:12px;color:var(--text3);}
+.passos{list-style:none;counter-reset:p;}
+.passo{display:grid;grid-template-columns:26px 1fr;gap:10px;padding:10px 0;border-top:1px dashed var(--border);}
+.passo:first-child{border-top:none;padding-top:4px;}
+.passo-n{width:24px;height:24px;border-radius:50%;background:var(--black);color:var(--lime);font-size:11px;font-weight:900;display:flex;align-items:center;justify-content:center;margin-top:1px;}
+.passo-top{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;}
+.passo-t{font-size:13.5px;font-weight:600;line-height:1.45;flex:1;min-width:200px;}
+.resp{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:12px;white-space:nowrap;}
+.obs{display:flex;gap:8px;align-items:flex-start;margin-top:7px;padding:8px 10px;border-radius:7px;background:#fef8ec;border:1px solid #f0d080;color:#6b4300;font-size:12px;font-weight:500;line-height:1.5;white-space:pre-line;}
+.obs i{font-size:15px;margin-top:1px;flex-shrink:0;}
+.passo .docs-row{margin:8px 0 0;}
+/* RECOLHER */
+.card-h.tog{cursor:pointer;padding-bottom:14px;}
+.card.aberto .card-h.tog{padding-bottom:0;}
+.card:not(.aberto) .card-b,.card:not(.aberto) .card-f,.card:not(.aberto) .card-desc,.card:not(.aberto) .tags{display:none;}
+.chev{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--text3);font-size:18px;transition:transform .2s,background .15s;flex-shrink:0;}
+.card-h.tog:hover .chev{background:var(--s2);color:var(--text);}
+.card.aberto .chev{transform:rotate(180deg);}
+.resumo{display:none;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px;font-size:11px;font-weight:700;color:var(--text3);}
+.card:not(.aberto) .resumo{display:flex;}
+.resumo .sep{opacity:.5;}
+.fase-h.tog{cursor:pointer;}
+.fase-h .chev{border:1px solid var(--border2);background:var(--white);}
+.fase.fechada .fase-h .chev{transform:rotate(-90deg);}
+.fase.fechada .tl,.fase.fechada .fase-extra{display:none;}
+.fase-count{font-size:11px;font-weight:700;color:var(--text3);white-space:nowrap;}
+.doc.rede .ti-folder-share{font-size:13px;color:var(--text3);}
+mark{background:var(--lime);color:var(--black);border-radius:2px;padding:0 1px;}
+
+/* EMPTY */
+.empty{text-align:center;padding:56px 20px;color:var(--text2);background:var(--white);border:1px dashed var(--border2);border-radius:var(--rx);}
+.empty .big{width:72px;height:72px;border-radius:50%;background:var(--black);color:var(--lime);display:inline-flex;align-items:center;justify-content:center;font-size:34px;margin-bottom:14px;}
+.empty h3{font-size:18px;font-weight:900;color:var(--text);margin-bottom:6px;}
+.empty p{font-size:13px;max-width:460px;margin:0 auto 18px;line-height:1.5;}
+.add-etapa{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:1.5px dashed var(--border2);border-radius:var(--rl);font-size:12.5px;font-weight:700;color:var(--text2);cursor:pointer;background:transparent;width:100%;font-family:'Inter',sans-serif;}
+.add-etapa:hover{border-color:var(--black);color:var(--text);background:var(--white);}
+
+/* BIBLIOTECA */
+.lib{background:var(--white);border:1px solid var(--border);border-radius:var(--rx);overflow:hidden;}
+.lib-h{padding:16px 18px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--border);}
+.lib table{width:100%;border-collapse:collapse;}
+.lib th{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.6px;color:var(--text3);text-align:left;padding:10px 14px;background:var(--s2);border-bottom:1px solid var(--border);}
+.lib td{font-size:12.5px;padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.lib tr:last-child td{border-bottom:none;}
+.lib .where{font-size:11.5px;color:var(--text2);}
+.lib .where b{color:var(--text);}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(14,15,18,.55);z-index:100;align-items:center;justify-content:center;padding:16px;}
+.overlay.open{display:flex;}
+.modal{background:var(--white);border-radius:var(--rx);width:560px;max-width:100%;max-height:94vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25);}
+.modal.xl{width:980px;}
+.modal-h{padding:18px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.modal-title{font-size:16px;font-weight:900;display:flex;align-items:center;gap:8px;}
+.modal-b{padding:20px 24px;overflow-y:auto;}
+.modal-f{padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;align-items:center;}
+.fg{display:flex;flex-direction:column;gap:5px;margin-bottom:14px;}
+.fl{font-size:10.5px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;}
+.hint{font-size:11px;color:var(--text3);font-weight:500;}
+.fi,.fs,.ft{padding:9px 11px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);color:var(--text);font-size:13px;font-family:'Inter',sans-serif;font-weight:500;outline:none;width:100%;}
+.fi:focus,.fs:focus,.ft:focus{border-color:var(--black);}
+.ft{resize:vertical;min-height:60px;line-height:1.5;}
+.row{display:grid;gap:12px;}
+.r2{grid-template-columns:1fr 1fr;}
+.r3{grid-template-columns:1fr 1fr 1fr;}
+.ed-sec{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:1px;margin:6px 0 10px;display:flex;align-items:center;gap:8px;color:var(--text);}
+.ed-sec::after{content:'';flex:1;height:1px;background:var(--border);}
+.ic-btn{width:42px;height:38px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.ic-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;padding:8px;border:1px solid var(--border);border-radius:var(--r);background:var(--s2);margin-top:6px;}
+.ic-grid button{height:32px;border:1px solid transparent;border-radius:5px;background:transparent;font-size:18px;cursor:pointer;color:var(--text2);}
+.ic-grid button:hover{background:var(--white);border-color:var(--border2);color:var(--text);}
+.ic-grid button.on{background:var(--black);color:var(--lime);}
+.swatches{display:flex;gap:6px;flex-wrap:wrap;}
+.sw-c{width:30px;height:30px;border-radius:50%;cursor:pointer;border:3px solid var(--white);box-shadow:0 0 0 1px var(--border2);}
+.sw-c.on{box-shadow:0 0 0 2px var(--black);}
+.meses{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;}
+.meses label{display:flex;align-items:center;justify-content:center;gap:4px;padding:6px 4px;border:1px solid var(--border2);border-radius:var(--r);font-size:12px;font-weight:700;cursor:pointer;user-select:none;}
+.meses label.on{background:var(--black);color:var(--lime);border-color:var(--black);}
+.meses input{display:none;}
+.chips-sel{display:flex;gap:5px;flex-wrap:wrap;}
+.chips-sel .chip{font-size:11px;}
+.pe{border:1px solid var(--border);border-radius:var(--rl);padding:12px;margin-bottom:10px;background:var(--s2);}
+.pe-h{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.pe-h .passo-n{flex-shrink:0;}
+.pe-h .fi{font-weight:600;}
+.pe-grid{display:grid;grid-template-columns:200px 1fr;gap:10px;}
+.de{display:grid;grid-template-columns:130px 110px 1fr 1.3fr 30px;gap:6px;margin-bottom:6px;align-items:center;}
+.de .fi,.de .fs{padding:7px 8px;font-size:12px;}
+.de-h{font-size:9.5px;font-weight:800;text-transform:uppercase;color:var(--text3);letter-spacing:.5px;}
+.link-add{font-size:12px;font-weight:700;color:var(--text2);background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;display:inline-flex;align-items:center;gap:4px;padding:4px 0;}
+.link-add:hover{color:var(--text);}
+.preview-when{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--text2);margin-top:6px;}
+
+/* TOAST / DEMO */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--black);color:var(--cream);padding:12px 18px;border-radius:var(--r);font-size:13px;font-weight:600;z-index:9999;opacity:0;transform:translateY(8px);transition:all .2s;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.err{background:#8b1c1c;}.toast.ok{background:#1a5c35;}.toast.warn{background:#7d4e00;}
+.demo-bar{background:var(--lime);color:var(--black);font-size:12px;font-weight:700;padding:8px 32px;display:flex;align-items:center;gap:8px;}
+
+/* IMPRESSÃO */
+@media print{
+  @page{size:A4;margin:12mm;}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  body{background:#fff;}
+  .sidebar,.topbar,.rail,.no-print,.toast,.overlay,.card-acts,.fase-acts,.add-etapa,.demo-bar,.hero-tools{display:none!important;}
+  .app{display:block;}.content{padding:0;max-width:none;}
+  .hero{padding:16px 20px;margin-bottom:14px;}
+  .hero h1{font-size:22px;}
+  .fase{page-break-before:always;}
+  .fase:first-of-type{page-break-before:auto;}
+  .card{page-break-inside:avoid;box-shadow:none!important;}
+  .doc .ti-external-link{display:none;}
+  .doc[href]:not(.rede)::after,.doc[data-path]::after{content:' — ' attr(href);font-weight:500;font-size:9px;color:#6b6558;}
+  .doc[data-path]::after{content:' — ' attr(data-path);}
+  .card .card-b,.card .card-f,.card .card-desc,.card .tags{display:block!important;}
+  .card .tags,.card .docs-row{display:flex!important;}
+  .resumo,.chev{display:none!important;}
+  .fase .tl{display:block!important;}
+}
+@media (max-width:900px){
+  .tl-row{grid-template-columns:1fr;}
+  .tl-row::before,.tl-dot{display:none;}
+  .tl-when{text-align:left;padding:0 0 6px;}
+  .when-pill{align-items:flex-start;}
+  .rail-track{overflow-x:auto;}
+  .rail-node{min-width:110px;}
+  .de,.pe-grid,.r3{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark"><span class="logo-text">NOVA</span><span class="logo-dot"></span></div>
+      <div class="logo-sub">Sistema de RH</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-s">Módulos</div>
+      <div class="nav-item active"><i class="ti ti-book-2"></i> Guia RH</div>
+      <div class="nav-item dis"><i class="ti ti-file-check"></i> Admissão</div>
+      <div class="nav-item dis"><i class="ti ti-heart-handshake"></i> Acompanhamento</div>
+      <div class="nav-item dis"><i class="ti ti-file-minus"></i> Rescisão</div>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="demo-bar" id="demo-bar" style="display:none"><i class="ti ti-flask"></i> Protótipo com conteúdo de exemplo — nada do que for alterado aqui é salvo.</div>
+    <div class="topbar">
+      <span class="topbar-title"><i class="ti ti-book-2" style="font-size:18px"></i> Guia RH</span>
+      <div class="topbar-actions">
+        <button class="btn btn-sm no-print" onclick="imprimir()"><i class="ti ti-printer"></i> Imprimir / PDF</button>
+        <span class="toggle no-print" id="tg-edit" onclick="toggleEdicao()"><span class="sw"></span> Modo edição</span>
+      </div>
+    </div>
+
+    <div class="content">
+      <div class="hero">
+        <div class="hero-row">
+          <div>
+            <div class="hero-kicker"><i class="ti ti-route"></i> Jornada do colaborador</div>
+            <h1>Guia RH</h1>
+            <p>O passo a passo de cada etapa — da admissão ao desligamento — com responsáveis, pontos de atenção e os documentos (POP, IT e checklists) para consultar.</p>
+          </div>
+          <div class="hero-stats" id="hero-stats"></div>
+        </div>
+        <div class="hero-tools">
+          <div class="search"><i class="ti ti-search"></i><input id="q" type="text" placeholder="Buscar no guia: ASO, contrato, EPI, feedback…" oninput="render()"></div>
+          <select class="hero-select" id="f-perfil" onchange="render()"><option value="">Todos os perfis</option></select>
+        </div>
+      </div>
+
+      <div class="rail" id="rail"></div>
+      <div id="out"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FASE -->
+<div class="overlay" id="m-fase">
+  <div class="modal">
+    <div class="modal-h"><span class="modal-title" id="mf-title">Fase</span><button class="btn-icon" onclick="fechar('m-fase')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b" id="mf-body"></div>
+    <div class="modal-f">
+      <button class="btn btn-sm btn-ghost btn-danger" id="mf-del" onclick="excluirFase()"><i class="ti ti-trash"></i> Excluir fase</button>
+      <div style="display:flex;gap:8px"><button class="btn" onclick="fechar('m-fase')">Cancelar</button><button class="btn btn-primary" onclick="salvarFase()"><i class="ti ti-check"></i> Salvar</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ETAPA -->
+<div class="overlay" id="m-etapa">
+  <div class="modal xl">
+    <div class="modal-h"><span class="modal-title" id="me-title">Etapa</span><button class="btn-icon" onclick="fechar('m-etapa')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b" id="me-body"></div>
+    <div class="modal-f">
+      <button class="btn btn-sm btn-ghost btn-danger" id="me-del" onclick="excluirEtapa()"><i class="ti ti-trash"></i> Excluir etapa</button>
+      <div style="display:flex;gap:8px"><button class="btn" onclick="fechar('m-etapa')">Cancelar</button><button class="btn btn-primary" onclick="salvarEtapa()"><i class="ti ti-check"></i> Salvar etapa</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════════
+var DEMO = /[?&]demo\b/.test(location.search) || window.GUIA_DEMO === true;
+var db = null;
+if(!DEMO){
+  if(!firebase.apps.length){
+    firebase.initializeApp({
+      apiKey:"AIzaSyAhoLSoe7bRdDakJ6apJcnWMBL5RHmQtDI",
+      authDomain:"novarh-4fbc6.firebaseapp.com",
+      projectId:"novarh-4fbc6",
+      storageBucket:"novarh-4fbc6.firebasestorage.app",
+      messagingSenderId:"805399291743",
+      appId:"1:805399291743:web:ac13f2572f875c0ec1b8ea"
+    });
+  }
+  db = firebase.firestore();
+}
+var COL_FASES='guia_fases', COL_ETAPAS='guia_etapas';
+
+var CORES=['#2f6fdb','#7a5af5','#d99a1e','#2f9e6a','#e0703d','#d94c4c','#0f9fb0','#0e0f12'];
+var ICONES=['ti-file-check','ti-id-badge-2','ti-writing-sign','ti-stethoscope','ti-school','ti-users-group','ti-hand-love-you','ti-helmet','ti-shield-check','ti-clock','ti-hourglass','ti-calendar-event',
+  'ti-calendar-repeat','ti-message-2','ti-messages','ti-layout-grid','ti-chart-line','ti-star','ti-trophy','ti-cake','ti-beach','ti-first-aid-kit','ti-arrows-exchange','ti-cash',
+  'ti-file-minus','ti-door-exit','ti-logout','ti-clipboard-list','ti-checklist','ti-video','ti-phone','ti-mail','ti-device-laptop','ti-key','ti-truck','ti-building-factory-2',
+  'ti-certificate','ti-file-description','ti-heart-handshake','ti-route','ti-flag','ti-rocket','ti-bulb','ti-alert-triangle','ti-gavel','ti-scale','ti-user-check','ti-user-x'];
+var DOC_TIPOS={
+  POP:{cor:'#2f6fdb',nome:'Procedimento Operacional Padrão'},
+  IT:{cor:'#7a5af5',nome:'Instrução de Trabalho'},
+  CHK:{cor:'#2f9e6a',nome:'Checklist'},
+  FORM:{cor:'#e0703d',nome:'Formulário / Modelo'},
+  MOD:{cor:'#0e0f12',nome:'Módulo do Nova. RH'},
+  LINK:{cor:'#6b6558',nome:'Link / Pasta'}
+};
+var DOC_ROT={POP:'POP',IT:'IT',CHK:'CHECKLIST',FORM:'FORM',MOD:'SISTEMA',LINK:'LINK'};
+var RESPS=['RH','DP','Gestor','SESMT','Ambulatório','TI','Almoxarifado','Logística','Qualidade','Psicóloga','Colaborador','Financeiro'];
+var RESP_COR={'RH':'#2f6fdb','DP':'#0f9fb0','Gestor':'#d99a1e','SESMT':'#2f9e6a','Ambulatório':'#d94c4c','TI':'#7a5af5','Almoxarifado':'#e0703d','Logística':'#8a6d3b','Qualidade':'#3b8a7a','Psicóloga':'#b0569c','Colaborador':'#6b6558','Financeiro':'#4a6b3b'};
+var PERFIS_PADRAO=['Geral','Operacional','Administrativo','Liderança','Motorista','Ajudante de Motorista','Comercial','PCD'];
+var MESES=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+var GATILHOS={
+  dias:{nome:'Dias após a admissão',icon:'ti-calendar-plus'},
+  calendario:{nome:'Calendário fixo (meses do ano)',icon:'ti-calendar-repeat'},
+  evento:{nome:'Quando acontecer um evento',icon:'ti-bolt'},
+  livre:{nome:'Sem data definida / sempre que necessário',icon:'ti-infinity'}
+};
+
+var _fases=[], _etapas=[], _perfis=PERFIS_PADRAO.slice();
+var _edit=false, _faseSel='', _view='tl', _libTipo='', _libSem=false;
+var _ed=null, _fed=null, _icAberto=null;
+var _abertos=lerLS('guia_abertos')||{}, _fasesFech=lerLS('guia_fases_fech')||{};
+function lerLS(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+function gravarLS(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+function toast(msg,tp){var el=document.getElementById('toast');el.textContent=msg;el.className='toast '+(tp||'');el.classList.add('show');setTimeout(function(){el.classList.remove('show');},2800);}
+function abrir(id){document.getElementById(id).classList.add('open');}
+function fechar(id){document.getElementById(id).classList.remove('open');}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function norm(s){return String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();}
+function uid(p){return (p||'')+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
+function fmtData(iso){if(!iso)return'';var d=new Date(iso);return d.toLocaleDateString('pt-BR');}
+function usuario(){try{var s=JSON.parse(sessionStorage.getItem('nova_rh_session_v1')||'null');return s&&s.nome||'';}catch(e){return '';}}
+function clone(o){return JSON.parse(JSON.stringify(o));}
+function hexA(hex,a){var n=parseInt(hex.slice(1),16);return 'rgba('+(n>>16&255)+','+(n>>8&255)+','+(n&255)+','+a+')';}
+function respCor(r){return RESP_COR[r]||CORES[Math.abs(norm(r).split('').reduce(function(a,c){return a*31+c.charCodeAt(0)|0;},7))%CORES.length];}
+// destaca termo buscado (texto já escapado)
+function hl(txt){
+  var t=esc(txt),q=(document.getElementById('q').value||'').trim();
+  if(!q||q.length<2)return t;
+  var re=new RegExp('('+esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig');
+  return t.replace(re,'<mark>$1</mark>');
+}
+
+// ════════════════════════════════════════════
+// DADOS
+// ════════════════════════════════════════════
+function iniciar(){
+  if(DEMO){
+    document.getElementById('demo-bar').style.display='flex';
+    var m=modeloInicial();_fases=m.fases;_etapas=m.etapas;
+    popularPerfis();render();return;
+  }
+  db.collection(COL_FASES).onSnapshot(function(s){_fases=s.docs.map(function(d){return Object.assign({id:d.id},d.data());});render();},
+    function(e){toast('Erro ao carregar fases: '+e.message,'err');});
+  db.collection(COL_ETAPAS).onSnapshot(function(s){_etapas=s.docs.map(function(d){return Object.assign({id:d.id},d.data());});render();},
+    function(e){toast('Erro ao carregar etapas: '+e.message,'err');});
+  db.collection('adm_perfis').get().then(function(s){
+    var n=s.docs.map(function(d){var x=d.data();return x.nome||x.label||'';}).filter(Boolean);
+    if(n.length)_perfis=n.map(function(x){return x.charAt(0)+x.slice(1).toLowerCase();});
+    popularPerfis();render();
+  }).catch(function(){popularPerfis();});
+}
+function gravar(col,obj){
+  obj.atualizadoEm=new Date().toISOString();
+  obj.atualizadoPor=usuario()||'—';
+  if(DEMO){
+    var arr=col===COL_FASES?_fases:_etapas,i=arr.findIndex(function(x){return x.id===obj.id;});
+    if(i>=0)arr[i]=obj;else arr.push(obj);
+    render();return Promise.resolve();
+  }
+  var id=obj.id,data=clone(obj);delete data.id;
+  return db.collection(col).doc(id).set(data); // grava SOMENTE este documento
+}
+function apagar(col,id){
+  if(DEMO){
+    if(col===COL_FASES)_fases=_fases.filter(function(x){return x.id!==id;});
+    else _etapas=_etapas.filter(function(x){return x.id!==id;});
+    render();return Promise.resolve();
+  }
+  return db.collection(col).doc(id).delete(); // apaga SOMENTE este documento
+}
+function popularPerfis(){
+  var sel=document.getElementById('f-perfil'),v=sel.value;
+  sel.innerHTML='<option value="">Todos os perfis</option>'+_perfis.map(function(p){return '<option'+(p===v?' selected':'')+'>'+esc(p)+'</option>';}).join('');
+}
+function fasesOrd(){return _fases.slice().sort(function(a,b){return (a.ordem||0)-(b.ordem||0);});}
+function etapasDa(fid){return _etapas.filter(function(e){return e.faseId===fid;}).sort(function(a,b){return (a.ordem||0)-(b.ordem||0);});}
+function faseDe(id){return _fases.find(function(f){return f.id===id;});}
+
+// ════════════════════════════════════════════
+// QUANDO (gatilho)
+// ════════════════════════════════════════════
+function quando(g){
+  g=g||{tipo:'livre'};
+  if(g.tipo==='dias'){
+    var n=parseInt(g.dias,10)||0;
+    if(n===0)return {main:'Dia 1',sub:'dia da admissão',icon:'ti-calendar-plus'};
+    if(n<0)return {main:'D'+n,sub:Math.abs(n)+' dia'+(Math.abs(n)>1?'s':'')+' antes da admissão',icon:'ti-calendar-minus'};
+    return {main:'D+'+n,sub:'após a admissão',icon:'ti-calendar-plus'};
+  }
+  if(g.tipo==='calendario'){
+    var ms=(g.meses||[]).slice().sort(function(a,b){return a-b;});
+    if(!ms.length)return {main:'—',sub:'calendário',icon:'ti-calendar-repeat'};
+    return {main:ms.map(function(m){return MESES[m-1].slice(0,3);}).join(' · '),sub:ms.length===12?'todo mês':'todo ano',icon:'ti-calendar-repeat'};
+  }
+  if(g.tipo==='evento')return {main:'Evento',sub:g.texto||'quando ocorrer',icon:'ti-bolt'};
+  return {main:'Contínuo',sub:g.texto||'sempre que necessário',icon:'ti-infinity'};
+}
+function quandoTexto(g){var q=quando(g);return q.main+' — '+q.sub;}
+
+// ════════════════════════════════════════════
+// FILTROS
+// ════════════════════════════════════════════
+function passaPerfil(perfis,p){return !p||!perfis||!perfis.length||perfis.indexOf(p)>=0;}
+function textoEtapa(e){
+  var t=[e.titulo,e.descricao,quandoTexto(e.gatilho)];
+  (e.docs||[]).forEach(function(d){t.push(d.codigo,d.titulo,DOC_ROT[d.tipo]);});
+  (e.passos||[]).forEach(function(p){t.push(p.texto,p.obs,(p.resp||[]).join(' '));(p.docs||[]).forEach(function(d){t.push(d.codigo,d.titulo,DOC_ROT[d.tipo]);});});
+  return norm(t.join(' '));
+}
+function etapaVisivel(e){
+  var q=norm((document.getElementById('q').value||'').trim()),p=document.getElementById('f-perfil').value;
+  if(!passaPerfil(e.perfis,p))return false;
+  if(q&&textoEtapa(e).indexOf(q)<0)return false;
+  return true;
+}
+
+// ════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════
+function render(){
+  renderStats();renderRail();
+  var out=document.getElementById('out');
+  if(!_fases.length){
+    out.innerHTML='<div class="empty"><div class="big"><i class="ti ti-book-2"></i></div><h3>O Guia RH ainda está vazio</h3>'
+      +'<p>Monte a jornada do colaborador em fases (Admissão, Integração, Experiência…) e descreva o passo a passo de cada etapa. Você pode começar de um modelo pronto e ajustar.</p>'
+      +'<div style="display:flex;gap:8px;justify-content:center"><button class="btn btn-primary" onclick="carregarModelo()"><i class="ti ti-sparkles"></i> Começar com o modelo sugerido</button>'
+      +'<button class="btn" onclick="novaFase()"><i class="ti ti-plus"></i> Criar do zero</button></div></div>';
+    return;
+  }
+  out.innerHTML=_view==='lib'?renderLib():renderTimeline();
+}
+
+function renderStats(){
+  var nP=0,docs=docsTodos(),sem=docs.filter(function(d){return !d.url;}).length;
+  _etapas.forEach(function(e){nP+=(e.passos||[]).length;});
+  document.getElementById('hero-stats').innerHTML=
+     '<div class="hero-stat"><b>'+_fases.length+'</b><span>Fases</span></div>'
+    +'<div class="hero-stat"><b>'+_etapas.length+'</b><span>Etapas</span></div>'
+    +'<div class="hero-stat"><b>'+nP+'</b><span>Passos</span></div>'
+    +'<div class="hero-stat"><b>'+docs.length+'</b><span>Documentos</span></div>'
+    +(sem?'<div class="hero-stat warn" title="Documentos citados que ainda não têm link"><b>'+sem+'</b><span>Sem link</span></div>':'');
+}
+
+function renderRail(){
+  var el=document.getElementById('rail');
+  if(!_fases.length){el.style.display='none';return;}
+  el.style.display='block';
+  var fs=fasesOrd();
+  var h='<div class="rail-track"><div class="rail-line"></div>';
+  fs.forEach(function(f,i){
+    var n=etapasDa(f.id).filter(etapaVisivel).length,tot=etapasDa(f.id).length;
+    var cls=(_faseSel===f.id?' active':'')+(_faseSel&&_faseSel!==f.id?' dim':'');
+    h+='<div class="rail-node'+cls+'" onclick="selFase(\''+f.id+'\')" title="'+esc(f.descricao||'')+'">'
+      +'<div style="position:relative"><div class="rail-dot" style="background:'+(f.cor||CORES[i%CORES.length])+'"><i class="ti '+(f.icon||'ti-point')+'"></i></div>'
+      +'<span class="rail-num">'+(i+1)+'</span></div>'
+      +'<div class="rail-name">'+esc(f.nome)+'</div>'
+      +'<div class="rail-meta">'+(n!==tot?n+' de '+tot:tot)+' etapa'+(tot!==1?'s':'')+'</div></div>';
+  });
+  h+='</div><div class="rail-foot">'
+    +'<div class="tabs"><button class="tab'+(_view==='tl'?' active':'')+'" onclick="setView(\'tl\')"><i class="ti ti-timeline"></i> Linha do tempo</button>'
+    +'<button class="tab'+(_view==='lib'?' active':'')+'" onclick="setView(\'lib\')"><i class="ti ti-books"></i> Biblioteca de documentos</button></div>'
+    +'<div style="display:flex;gap:8px;align-items:center">'
+    +(_faseSel?'<button class="chip" onclick="selFase(\'\')"><i class="ti ti-arrows-maximize"></i> Ver jornada completa</button>':'<span class="hint">Clique numa fase para focar nela</span>')
+    +(_view==='tl'?'<button class="chip" onclick="abrirTudo(true)"><i class="ti ti-fold-down"></i> Expandir tudo</button><button class="chip" onclick="abrirTudo(false)"><i class="ti ti-fold-up"></i> Recolher tudo</button>':'')
+    +(_edit?'<button class="btn btn-sm" onclick="novaFase()"><i class="ti ti-plus"></i> Nova fase</button>':'')
+    +'</div></div>';
+  el.innerHTML=h;
+}
+function selFase(id){_faseSel=(_faseSel===id?'':id);render();if(_faseSel&&_view==='tl'){var el=document.getElementById('fase-'+_faseSel);if(el)el.scrollIntoView({behavior:'smooth'});}}
+function setView(v){_view=v;render();}
+
+function renderTimeline(){
+  var fs=fasesOrd().filter(function(f){return !_faseSel||f.id===_faseSel;});
+  var busca=(document.getElementById('q').value||'').trim()||document.getElementById('f-perfil').value;
+  var h='',algum=false;
+  fs.forEach(function(f){
+    var idx=fasesOrd().indexOf(f),cor=f.cor||CORES[idx%CORES.length];
+    var ets=etapasDa(f.id).filter(etapaVisivel);
+    if(busca&&!ets.length&&!_edit)return;
+    algum=true;
+    var fech=_fasesFech[f.id]&&!busca;
+    h+='<section class="fase'+(fech?' fechada':'')+'" id="fase-'+f.id+'"><div class="fase-h tog" onclick="toggleFase(\''+f.id+'\')">'
+      +'<div class="fase-ic" style="background:'+cor+'"><i class="ti '+(f.icon||'ti-point')+'"></i></div>'
+      +'<div class="fase-t"><div class="fase-kick">Fase '+(idx+1)+'</div><div class="fase-nome">'+esc(f.nome)+'</div>'
+      +(f.descricao?'<div class="fase-desc">'+esc(f.descricao)+'</div>':'')+'</div>'
+      +'<span class="fase-count">'+ets.length+' etapa'+(ets.length!==1?'s':'')+'</span>'
+      +(_edit?'<div class="fase-acts" onclick="event.stopPropagation()">'
+        +'<button class="btn-icon" title="Mover para cima" onclick="moverFase(\''+f.id+'\',-1)"><i class="ti ti-arrow-up"></i></button>'
+        +'<button class="btn-icon" title="Mover para baixo" onclick="moverFase(\''+f.id+'\',1)"><i class="ti ti-arrow-down"></i></button>'
+        +'<button class="btn btn-sm" onclick="editarFase(\''+f.id+'\')"><i class="ti ti-pencil"></i> Editar fase</button></div>':'')
+      +'<span class="chev"><i class="ti ti-chevron-down"></i></span>'
+      +'</div><div class="tl">';
+    ets.forEach(function(e,i){h+=renderEtapa(e,cor,i,ets.length);});
+    h+='</div>';
+    h+='<div class="fase-extra">';
+    if(!ets.length)h+='<div class="hint" style="padding:6px 0 12px 164px">'+(busca?'Nenhuma etapa desta fase corresponde ao filtro.':'Nenhuma etapa cadastrada nesta fase.')+'</div>';
+    if(_edit)h+='<div style="padding-left:162px"><button class="add-etapa" onclick="novaEtapa(\''+f.id+'\')"><i class="ti ti-plus"></i> Adicionar etapa em '+esc(f.nome)+'</button></div>';
+    h+='</div></section>';
+  });
+  if(!algum)h='<div class="empty"><div class="big"><i class="ti ti-search-off"></i></div><h3>Nada encontrado</h3><p>Nenhuma etapa corresponde à busca ou ao perfil selecionado.</p></div>';
+  return h;
+}
+
+function etapaAberta(e){
+  var q=(document.getElementById('q').value||'').trim();
+  if(q.length>=2)return true; // na busca, abre o que encontrou
+  return !!_abertos[e.id];
+}
+function toggleEtapa(id){
+  var c=document.getElementById('card-'+id);if(!c)return;
+  var ab=!c.classList.contains('aberto');c.classList.toggle('aberto',ab);
+  if(ab)_abertos[id]=1;else delete _abertos[id];gravarLS('guia_abertos',_abertos);
+}
+function toggleFase(id){
+  if(_fasesFech[id])delete _fasesFech[id];else _fasesFech[id]=1;gravarLS('guia_fases_fech',_fasesFech);
+  var el=document.getElementById('fase-'+id);if(el)el.classList.toggle('fechada',!!_fasesFech[id]);
+}
+function abrirTudo(v){
+  var fs=_faseSel?[_faseSel]:_fases.map(function(f){return f.id;});
+  _etapas.forEach(function(e){if(fs.indexOf(e.faseId)<0)return;if(v)_abertos[e.id]=1;else delete _abertos[e.id];});
+  if(v)fs.forEach(function(id){delete _fasesFech[id];});
+  gravarLS('guia_abertos',_abertos);gravarLS('guia_fases_fech',_fasesFech);render();
+}
+function resumoEtapa(e,passos){
+  var resp={},nd=(e.docs||[]).length;
+  passos.forEach(function(p){(p.resp||[]).forEach(function(r){resp[r]=1;});nd+=(p.docs||[]).length;});
+  var rs=Object.keys(resp),at=passos.filter(function(p){return p.obs;}).length;
+  var out=[];
+  out.push('<span><i class="ti ti-list-numbers" style="font-size:12px;vertical-align:-2px"></i> '+passos.length+' passo'+(passos.length!==1?'s':'')+'</span>');
+  if(nd)out.push('<span><i class="ti ti-files" style="font-size:12px;vertical-align:-2px"></i> '+nd+' documento'+(nd!==1?'s':'')+'</span>');
+  if(at)out.push('<span style="color:#b07a00"><i class="ti ti-alert-triangle" style="font-size:12px;vertical-align:-2px"></i> '+at+' ponto'+(at!==1?'s':'')+' de atenção</span>');
+  return '<div class="resumo">'+out.join('<span class="sep">·</span>')+(rs.length?'<span class="sep">·</span>'+rs.map(respChip).join(' '):'')+'</div>';
+}
+// caminhos de servidor (\\servidor\pasta, X:\pasta, file:) não abrem direto do navegador: copiamos o caminho
+function isRede(u){return /^(\\\\|[a-z]:\\|file:)/i.test(u||'');}
+function caminhoRede(u){
+  if(/^file:/i.test(u)){try{u=decodeURIComponent(u.replace(/^file:\/*/i,''));}catch(e){}if(!/^[a-z]:/i.test(u))u='\\\\'+u;u=u.replace(/\//g,'\\');}
+  return u;
+}
+function copiarCaminho(ev,path){
+  if(ev){ev.preventDefault();ev.stopPropagation();}
+  var ok=function(){toast('Caminho copiado! Abra o Explorador de Arquivos (Win+E) e cole na barra de endereço.','ok');};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(path).then(ok,function(){copiarFallback(path);ok();});}
+  else{copiarFallback(path);ok();}
+}
+function copiarFallback(t){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();try{document.execCommand('copy');}catch(e){}document.body.removeChild(ta);}
+function docChip(d){
+  var t=DOC_TIPOS[d.tipo]||DOC_TIPOS.LINK;
+  var nome=(d.codigo?d.codigo+' · ':'')+(d.titulo||t.nome);
+  var inner='<span class="dt" style="background:'+t.cor+'">'+DOC_ROT[d.tipo]+'</span><span class="dn">'+hl(nome)+'</span>';
+  if(!d.url)return '<span class="doc sem" style="border-color:'+hexA(t.cor,.5)+'" title="Link ainda não cadastrado">'+inner+'<i class="ti ti-link-off" style="font-size:12px;color:#b07a00"></i></span>';
+  if(isRede(d.url)){var cp=caminhoRede(d.url);
+    return '<a class="doc rede" style="border-color:'+hexA(t.cor,.45)+'" href="#" data-path="'+esc(cp)+'" onclick="copiarCaminho(event,this.dataset.path)" title="No servidor: '+esc(cp)+' — clique para copiar o caminho">'+inner+'<i class="ti ti-folder-share"></i></a>';}
+  return '<a class="doc" style="border-color:'+hexA(t.cor,.45)+'" href="'+esc(d.url)+'" target="_blank" rel="noopener" title="Abrir '+esc(t.nome)+'">'+inner+'<i class="ti ti-external-link"></i></a>';
+}
+function respChip(r){var c=respCor(r);return '<span class="resp" style="background:'+hexA(c,.12)+';color:'+c+'"><i class="ti ti-user" style="font-size:10px"></i>'+esc(r)+'</span>';}
+
+function renderEtapa(e,cor,i,n){
+  var q=quando(e.gatilho),p=document.getElementById('f-perfil').value;
+  var passos=(e.passos||[]).filter(function(ps){return passaPerfil(ps.perfis,p);});
+  var h='<div class="tl-row"><div class="tl-when"><div class="when-pill"><span class="when-main">'+esc(q.main)+'</span><span class="when-sub">'+esc(q.sub)+'</span></div></div>'
+    +'<div><div class="tl-dot" style="background:'+cor+'"><i class="ti '+(e.icon||q.icon)+'"></i></div></div>'
+    +'<div class="card'+(etapaAberta(e)?' aberto':'')+'" id="card-'+e.id+'"><div class="card-h tog" onclick="toggleEtapa(\''+e.id+'\')"><div class="card-t"><div class="card-title">'+hl(e.titulo)+'</div>'
+    +resumoEtapa(e,passos)
+    +(e.descricao?'<div class="card-desc">'+hl(e.descricao)+'</div>':'')
+    +(e.perfis&&e.perfis.length?'<div class="tags">'+e.perfis.map(function(x){return '<span class="tag perfil"><i class="ti ti-id-badge-2" style="font-size:11px"></i>'+esc(x)+'</span>';}).join('')+'</div>':'')
+    +'</div>'
+    +(_edit?'<div class="card-acts" onclick="event.stopPropagation()">'
+      +(i>0?'<button class="btn-icon" title="Subir" onclick="moverEtapa(\''+e.id+'\',-1)"><i class="ti ti-arrow-up"></i></button>':'')
+      +(i<n-1?'<button class="btn-icon" title="Descer" onclick="moverEtapa(\''+e.id+'\',1)"><i class="ti ti-arrow-down"></i></button>':'')
+      +'<button class="btn-icon" title="Duplicar" onclick="duplicarEtapa(\''+e.id+'\')"><i class="ti ti-copy"></i></button>'
+      +'<button class="btn btn-sm" onclick="editarEtapa(\''+e.id+'\')"><i class="ti ti-pencil"></i> Editar</button></div>':'')
+    +'<span class="chev"><i class="ti ti-chevron-down"></i></span>'
+    +'</div><div class="card-b">';
+  if((e.docs||[]).length)h+='<div class="docs-row">'+e.docs.map(docChip).join('')+'</div>';
+  if(passos.length){
+    h+='<ol class="passos">';
+    passos.forEach(function(ps,k){
+      h+='<li class="passo"><span class="passo-n">'+(k+1)+'</span><div>'
+        +'<div class="passo-top"><span class="passo-t">'+hl(ps.texto)+'</span>'+(ps.resp||[]).map(respChip).join(' ')+'</div>'
+        +(ps.perfis&&ps.perfis.length?'<div class="tags" style="margin-top:5px">'+ps.perfis.map(function(x){return '<span class="tag perfil">Só '+esc(x)+'</span>';}).join('')+'</div>':'')
+        +(ps.obs?'<div class="obs"><i class="ti ti-alert-triangle"></i><span>'+hl(ps.obs)+'</span></div>':'')
+        +((ps.docs||[]).length?'<div class="docs-row">'+ps.docs.map(docChip).join('')+'</div>':'')
+        +'</div></li>';
+    });
+    h+='</ol>';
+  }else if(!(e.docs||[]).length){
+    h+='<div class="hint">Nenhum passo descrito'+((e.passos||[]).length?' para este perfil':'')+'.</div>';
+  }
+  h+='</div>';
+  if(e.atualizadoEm)h+='<div class="card-f"><span>'+(passos.length?passos.length+' passo'+(passos.length!==1?'s':''):'')+'</span><span><i class="ti ti-history" style="font-size:11px;vertical-align:-1px"></i> Atualizado em '+fmtData(e.atualizadoEm)+(e.atualizadoPor&&e.atualizadoPor!=='—'?' por '+esc(e.atualizadoPor):'')+'</span></div>';
+  h+='</div></div>';
+  return h;
+}
+
+// ════════════════════════════════════════════
+// BIBLIOTECA DE DOCUMENTOS
+// ════════════════════════════════════════════
+function docsTodos(){
+  var out=[];
+  fasesOrd().forEach(function(f){
+    etapasDa(f.id).forEach(function(e){
+      (e.docs||[]).forEach(function(d){out.push(Object.assign({fase:f,etapa:e,passo:null},d));});
+      (e.passos||[]).forEach(function(p,k){(p.docs||[]).forEach(function(d){out.push(Object.assign({fase:f,etapa:e,passo:k+1},d));});});
+    });
+  });
+  _etapas.filter(function(e){return !faseDe(e.faseId);}).forEach(function(e){(e.docs||[]).forEach(function(d){out.push(Object.assign({fase:null,etapa:e,passo:null},d));});});
+  return out;
+}
+function renderLib(){
+  var q=norm((document.getElementById('q').value||'').trim());
+  var todos=docsTodos();
+  // agrupa o mesmo documento (mesmo tipo+código+título+url) usado em vários lugares
+  var mapa={},lista=[];
+  todos.forEach(function(d){
+    if(_faseSel&&(!d.fase||d.fase.id!==_faseSel))return;
+    var k=[d.tipo,norm(d.codigo),norm(d.titulo),d.url||''].join('|');
+    if(!mapa[k]){mapa[k]={tipo:d.tipo,codigo:d.codigo,titulo:d.titulo,url:d.url,usos:[]};lista.push(mapa[k]);}
+    mapa[k].usos.push(d);
+  });
+  var cont={};lista.forEach(function(d){cont[d.tipo]=(cont[d.tipo]||0)+1;});
+  var sem=lista.filter(function(d){return !d.url;}).length;
+  lista=lista.filter(function(d){
+    if(_libTipo&&d.tipo!==_libTipo)return false;
+    if(_libSem&&d.url)return false;
+    if(q&&norm([d.codigo,d.titulo,DOC_ROT[d.tipo]].concat(d.usos.map(function(u){return u.etapa.titulo;})).join(' ')).indexOf(q)<0)return false;
+    return true;
+  }).sort(function(a,b){return (a.tipo+(a.codigo||'')+(a.titulo||'')).localeCompare(b.tipo+(b.codigo||'')+(b.titulo||''),'pt',{numeric:true});});
+  var h='<div class="lib"><div class="lib-h">'
+    +'<button class="chip'+(!_libTipo&&!_libSem?' on':'')+'" onclick="libFiltro(\'\',false)">Todos</button>';
+  Object.keys(DOC_TIPOS).forEach(function(t){
+    if(!cont[t])return;
+    h+='<button class="chip'+(_libTipo===t?' on':'')+'" onclick="libFiltro(\''+t+'\',false)"><span style="width:8px;height:8px;border-radius:50%;background:'+DOC_TIPOS[t].cor+'"></span>'+DOC_ROT[t]+' <b>'+cont[t]+'</b></button>';
+  });
+  if(sem)h+='<button class="chip'+(_libSem?' on':'')+'" style="margin-left:auto;border-style:dashed" onclick="libFiltro(\'\',true)"><i class="ti ti-link-off"></i> Sem link <b>'+sem+'</b></button>';
+  h+='</div>';
+  if(!lista.length){h+='<div class="empty" style="border:none;border-radius:0"><div class="big"><i class="ti ti-files-off"></i></div><h3>Nenhum documento</h3><p>Os documentos aparecem aqui quando são vinculados a uma etapa ou a um passo.</p></div></div>';return h;}
+  h+='<table><thead><tr><th style="width:140px">Tipo</th><th>Documento</th><th>Onde é usado</th><th style="width:110px"></th></tr></thead><tbody>';
+  lista.forEach(function(d){
+    var t=DOC_TIPOS[d.tipo]||DOC_TIPOS.LINK;
+    h+='<tr><td><span class="doc" style="border-color:'+hexA(t.cor,.45)+';pointer-events:none"><span class="dt" style="background:'+t.cor+'">'+DOC_ROT[d.tipo]+'</span><span class="dn" style="font-size:10.5px;color:var(--text2)">'+esc(t.nome)+'</span></span></td>'
+      +'<td>'+(d.codigo?'<div style="font-size:11px;font-weight:800;color:var(--text2)">'+hl(d.codigo)+'</div>':'')+'<div style="font-weight:700">'+hl(d.titulo||'—')+'</div></td>'
+      +'<td class="where">'+d.usos.map(function(u){
+          return '<div><span style="color:'+(u.fase&&u.fase.cor||'#999')+'">●</span> '+esc(u.fase?u.fase.nome:'—')+' › <b style="cursor:pointer" onclick="irEtapa(\''+u.etapa.id+'\')">'+esc(u.etapa.titulo)+'</b>'+(u.passo?' · passo '+u.passo:'')+'</div>';
+        }).join('')+'</td>'
+      +'<td>'+(d.url&&isRede(d.url)?'<button class="btn btn-sm" data-path="'+esc(caminhoRede(d.url))+'" onclick="copiarCaminho(event,this.dataset.path)" title="'+esc(caminhoRede(d.url))+'"><i class="ti ti-copy"></i> Copiar caminho</button>'
+        :d.url?'<a class="btn btn-sm" href="'+esc(d.url)+'" target="_blank" rel="noopener"><i class="ti ti-external-link"></i> Abrir</a>':'<span class="tag" style="border-style:dashed;color:#b07a00"><i class="ti ti-link-off"></i> sem link</span>')+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+function libFiltro(t,sem){_libTipo=t;_libSem=sem;render();}
+function irEtapa(id){var e=_etapas.find(function(x){return x.id===id;});if(!e)return;_view='tl';_faseSel=e.faseId;document.getElementById('q').value='';render();
+  setTimeout(function(){var el=document.getElementById('fase-'+e.faseId);if(el)el.scrollIntoView({behavior:'smooth'});},50);}
+
+// ════════════════════════════════════════════
+// MODO EDIÇÃO
+// ════════════════════════════════════════════
+function toggleEdicao(){_edit=!_edit;document.getElementById('tg-edit').classList.toggle('on',_edit);if(_edit&&_view==='lib')_view='tl';render();}
+function imprimir(){var e=_edit;if(e){_edit=false;render();}setTimeout(function(){window.print();if(e){_edit=true;render();}},80);}
+
+// ---------- FASE ----------
+function novaFase(){
+  var ord=_fases.reduce(function(m,f){return Math.max(m,f.ordem||0);},0)+1;
+  _fed={id:uid('f_'),nome:'',descricao:'',icon:'ti-flag',cor:CORES[_fases.length%CORES.length],ordem:ord,_nova:true};
+  abrirFaseModal();
+}
+function editarFase(id){var f=faseDe(id);if(!f)return;_fed=clone(f);abrirFaseModal();}
+function abrirFaseModal(){
+  document.getElementById('mf-title').innerHTML='<i class="ti ti-route"></i> '+(_fed._nova?'Nova fase':'Editar fase');
+  document.getElementById('mf-del').style.visibility=_fed._nova?'hidden':'visible';
+  renderFaseModal();abrir('m-fase');
+  setTimeout(function(){document.getElementById('fd-nome').focus();},50);
+}
+function renderFaseModal(){
+  var f=_fed;
+  document.getElementById('mf-body').innerHTML=
+     '<div class="fg"><label class="fl">Nome da fase</label><input class="fi" id="fd-nome" value="'+esc(f.nome)+'" placeholder="Ex.: Integração" oninput="_fed.nome=this.value"></div>'
+    +'<div class="fg"><label class="fl">Descrição curta</label><input class="fi" value="'+esc(f.descricao||'')+'" placeholder="Ex.: Do primeiro dia até o fim da primeira semana" oninput="_fed.descricao=this.value"></div>'
+    +'<div class="fg"><label class="fl">Cor</label><div class="swatches">'+CORES.map(function(c){return '<span class="sw-c'+(f.cor===c?' on':'')+'" style="background:'+c+'" onclick="_fed.cor=\''+c+'\';renderFaseModal()"></span>';}).join('')+'</div></div>'
+    +'<div class="fg"><label class="fl">Ícone</label>'+icGrid(f.icon,'fase')+'</div>';
+}
+function salvarFase(){
+  var f=_fed;f.nome=(f.nome||'').trim();
+  if(!f.nome){toast('Dê um nome à fase.','err');return;}
+  var o=clone(f);delete o._nova;
+  gravar(COL_FASES,o).then(function(){toast('Fase salva.','ok');fechar('m-fase');}).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+function excluirFase(){
+  var n=etapasDa(_fed.id).length;
+  if(n){toast('Esta fase tem '+n+' etapa(s). Mova ou exclua as etapas antes.','warn');return;}
+  if(!confirm('Excluir a fase "'+_fed.nome+'"?'))return;
+  apagar(COL_FASES,_fed.id).then(function(){toast('Fase excluída.','ok');fechar('m-fase');});
+}
+function moverFase(id,dir){
+  var fs=fasesOrd(),i=fs.findIndex(function(f){return f.id===id;}),j=i+dir;
+  if(j<0||j>=fs.length)return;
+  var a=clone(fs[i]),b=clone(fs[j]);a.ordem=j+1;b.ordem=i+1;
+  fs.forEach(function(f,k){if(k!==i&&k!==j&&f.ordem!==k+1){var c=clone(f);c.ordem=k+1;gravar(COL_FASES,c);}});
+  Promise.all([gravar(COL_FASES,a),gravar(COL_FASES,b)]);
+}
+
+function icGrid(atual,alvo){
+  return '<div class="ic-grid">'+ICONES.map(function(ic){return '<button type="button" class="'+(ic===atual?'on':'')+'" title="'+ic.replace('ti-','')+'" onclick="setIcone(\''+alvo+'\',\''+ic+'\')"><i class="ti '+ic+'"></i></button>';}).join('')+'</div>';
+}
+function setIcone(alvo,ic){
+  if(alvo==='fase'){_fed.icon=ic;renderFaseModal();}
+  else{_ed.icon=ic;_icAberto=false;renderEtapaModal();}
+}
+
+// ---------- ETAPA ----------
+function novaEtapa(faseId){
+  var ord=etapasDa(faseId).reduce(function(m,e){return Math.max(m,e.ordem||0);},0)+1;
+  _ed={id:uid('e_'),faseId:faseId,ordem:ord,titulo:'',descricao:'',icon:'',gatilho:{tipo:'dias',dias:0},perfis:[],docs:[],passos:[{texto:'',resp:[],obs:'',perfis:[],docs:[]}],_nova:true};
+  abrirEtapaModal();
+}
+function editarEtapa(id){
+  var e=_etapas.find(function(x){return x.id===id;});if(!e)return;
+  _ed=clone(e);_ed.gatilho=_ed.gatilho||{tipo:'livre'};_ed.passos=_ed.passos||[];_ed.docs=_ed.docs||[];_ed.perfis=_ed.perfis||[];
+  _ed.passos.forEach(function(p){p.resp=p.resp||[];p.perfis=p.perfis||[];p.docs=p.docs||[];});
+  abrirEtapaModal();
+}
+function duplicarEtapa(id){
+  var e=_etapas.find(function(x){return x.id===id;});if(!e)return;
+  var c=clone(e);c.id=uid('e_');c.titulo=c.titulo+' (cópia)';c.ordem=(e.ordem||0)+0.5;
+  gravar(COL_ETAPAS,c).then(function(){renumerar(e.faseId);toast('Etapa duplicada.','ok');});
+}
+function abrirEtapaModal(){
+  _icAberto=false;
+  document.getElementById('me-title').innerHTML='<i class="ti ti-list-details"></i> '+(_ed._nova?'Nova etapa':'Editar etapa');
+  document.getElementById('me-del').style.visibility=_ed._nova?'hidden':'visible';
+  renderEtapaModal();abrir('m-etapa');
+  document.querySelector('#m-etapa .modal-b').scrollTop=0;
+}
+// liga inputs ao estado: data-k="passos.0.texto"
+function bindVal(path,val){
+  var ks=path.split('.'),o=_ed;
+  for(var i=0;i<ks.length-1;i++)o=o[ks[i]];
+  o[ks[ks.length-1]]=val;
+}
+function renderEtapaModal(){
+  var e=_ed,g=e.gatilho,q=quando(g);
+  var fOpts=fasesOrd().map(function(f){return '<option value="'+f.id+'"'+(f.id===e.faseId?' selected':'')+'>'+esc(f.nome)+'</option>';}).join('');
+  var h='<div class="row" style="grid-template-columns:auto 1fr 240px;align-items:end">'
+    +'<div class="fg"><label class="fl">Ícone</label><button type="button" class="ic-btn" onclick="_icAberto=!_icAberto;renderEtapaModal()" title="Escolher ícone"><i class="ti '+(e.icon||q.icon)+'"></i></button></div>'
+    +'<div class="fg"><label class="fl">Título da etapa</label><input class="fi" id="ed-titulo" value="'+esc(e.titulo)+'" placeholder="Ex.: Integração no primeiro dia" oninput="bindVal(\'titulo\',this.value)" style="font-weight:700;font-size:14px"></div>'
+    +'<div class="fg"><label class="fl">Fase</label><select class="fs" onchange="bindVal(\'faseId\',this.value)">'+fOpts+'</select></div></div>'
+    +(_icAberto?'<div class="fg" style="margin-top:-8px">'+icGrid(e.icon,'etapa')+'</div>':'')
+    +'<div class="fg"><label class="fl">Descrição / objetivo da etapa <span class="hint" style="text-transform:none">— opcional</span></label><textarea class="ft" rows="2" placeholder="Para que serve esta etapa e o que deve estar pronto ao final" oninput="bindVal(\'descricao\',this.value)">'+esc(e.descricao||'')+'</textarea></div>';
+
+  // QUANDO
+  h+='<div class="ed-sec"><i class="ti ti-calendar-time"></i> Quando acontece</div><div class="row" style="grid-template-columns:300px 1fr;align-items:start">'
+    +'<div class="fg"><select class="fs" onchange="setGatilho(this.value)">'+Object.keys(GATILHOS).map(function(k){return '<option value="'+k+'"'+(g.tipo===k?' selected':'')+'>'+GATILHOS[k].nome+'</option>';}).join('')+'</select>'
+    +'<div class="preview-when"><span class="when-main" style="font-size:13px">'+esc(q.main)+'</span> '+esc(q.sub)+'</div></div><div class="fg">';
+  if(g.tipo==='dias')h+='<div style="display:flex;align-items:center;gap:8px"><input class="fi" type="number" style="width:100px" value="'+(g.dias||0)+'" oninput="_ed.gatilho.dias=parseInt(this.value,10)||0;atualizarPreviewQuando()"> <span class="hint" style="font-size:12px">dias após a admissão · <b>0</b> = dia da admissão · negativo = antes da admissão</span></div>';
+  if(g.tipo==='calendario')h+='<div class="meses">'+MESES.map(function(m,i){var on=(g.meses||[]).indexOf(i+1)>=0;return '<label class="'+(on?'on':'')+'"><input type="checkbox"'+(on?' checked':'')+' onchange="toggleMes('+(i+1)+')">'+m.slice(0,3)+'</label>';}).join('')+'</div>';
+  if(g.tipo==='evento')h+='<input class="fi" value="'+esc(g.texto||'')+'" placeholder="Ex.: Ao receber o pedido de demissão · Ao retornar de afastamento" oninput="_ed.gatilho.texto=this.value;atualizarPreviewQuando()">';
+  if(g.tipo==='livre')h+='<input class="fi" value="'+esc(g.texto||'')+'" placeholder="Ex.: Sempre que houver mudança de cargo" oninput="_ed.gatilho.texto=this.value;atualizarPreviewQuando()">';
+  h+='</div></div>';
+
+  // PERFIS
+  h+='<div class="ed-sec"><i class="ti ti-id-badge-2"></i> Vale para quais perfis</div>'
+    +'<div class="chips-sel" style="margin-bottom:6px">'+perfChips('perfis',e.perfis)+'</div>'
+    +'<div class="hint" style="margin-bottom:14px">Nenhum selecionado = vale para todos os perfis.</div>';
+
+  // DOCS DA ETAPA
+  h+='<div class="ed-sec"><i class="ti ti-files"></i> Documentos da etapa <span class="hint" style="text-transform:none;letter-spacing:0">— checklists, pastas, POPs gerais</span></div>'
+    +docsEditor('docs',e.docs);
+
+  // PASSOS
+  h+='<div class="ed-sec" style="margin-top:14px"><i class="ti ti-list-numbers"></i> Passo a passo</div>';
+  e.passos.forEach(function(p,k){
+    var b='passos.'+k+'.';
+    h+='<div class="pe"><div class="pe-h"><span class="passo-n">'+(k+1)+'</span>'
+      +'<input class="fi" value="'+esc(p.texto)+'" placeholder="O que deve ser feito" oninput="bindVal(\''+b+'texto\',this.value)">'
+      +'<button class="btn-icon" title="Subir" onclick="moverPasso('+k+',-1)"'+(k===0?' disabled style="opacity:.3"':'')+'><i class="ti ti-arrow-up"></i></button>'
+      +'<button class="btn-icon" title="Descer" onclick="moverPasso('+k+',1)"'+(k===e.passos.length-1?' disabled style="opacity:.3"':'')+'><i class="ti ti-arrow-down"></i></button>'
+      +'<button class="btn-icon" title="Remover passo" onclick="removerPasso('+k+')"><i class="ti ti-trash" style="color:#c0392b"></i></button></div>'
+      +'<div class="pe-grid"><div><label class="fl" style="display:block;margin-bottom:5px">Responsável</label><div class="chips-sel">'+respChips(k,p.resp)+'</div></div>'
+      +'<div><label class="fl" style="display:block;margin-bottom:5px">Ponto de atenção <span class="hint" style="text-transform:none">— aparece em destaque</span></label>'
+      +'<textarea class="ft" rows="2" style="min-height:44px" placeholder="O que não pode ser esquecido, prazos legais, exceções…" oninput="bindVal(\''+b+'obs\',this.value)">'+esc(p.obs||'')+'</textarea></div></div>'
+      +'<details style="margin-top:8px"'+((p.perfis.length||p.docs.length)?' open':'')+'><summary style="font-size:11.5px;font-weight:700;color:var(--text2);cursor:pointer">Documentos e perfis deste passo'+(p.docs.length?' ('+p.docs.length+' doc)':'')+(p.perfis.length?' · só '+p.perfis.join(', '):'')+'</summary>'
+      +'<div style="margin-top:8px">'+docsEditor(b+'docs',p.docs)
+      +'<div style="margin-top:8px"><span class="fl">Só para os perfis</span> <span class="hint">(vazio = todos da etapa)</span><div class="chips-sel" style="margin-top:5px">'+perfChips(b+'perfis',p.perfis)+'</div></div></div></details>'
+      +'</div>';
+  });
+  h+='<button class="add-etapa" onclick="addPasso()"><i class="ti ti-plus"></i> Adicionar passo</button>';
+  document.getElementById('me-body').innerHTML=h;
+}
+function atualizarPreviewQuando(){var q=quando(_ed.gatilho),el=document.querySelector('#me-body .preview-when');if(el)el.innerHTML='<span class="when-main" style="font-size:13px">'+esc(q.main)+'</span> '+esc(q.sub);}
+function setGatilho(t){var g=_ed.gatilho;_ed.gatilho={tipo:t,dias:g.dias||0,meses:g.meses||[],texto:g.texto||''};renderEtapaModal();}
+function toggleMes(m){var ms=_ed.gatilho.meses=_ed.gatilho.meses||[],i=ms.indexOf(m);if(i>=0)ms.splice(i,1);else ms.push(m);renderEtapaModal();}
+function getPath(path){var ks=path.split('.'),o=_ed;ks.forEach(function(k){o=o[k];});return o;}
+function perfChips(path,sel){
+  return _perfis.map(function(p){var on=sel.indexOf(p)>=0;return '<button type="button" class="chip'+(on?' on':'')+'" onclick="toggleArr(\''+path+'\',\''+esc(p).replace(/'/g,"\\'")+'\')">'+esc(p)+'</button>';}).join('');
+}
+function respChips(k,sel){
+  var todos=RESPS.slice();sel.forEach(function(r){if(todos.indexOf(r)<0)todos.push(r);});
+  return todos.map(function(r){var on=sel.indexOf(r)>=0,c=respCor(r);
+    return '<button type="button" class="chip" style="'+(on?'background:'+c+';color:#fff;border-color:'+c:'')+'" onclick="toggleArr(\'passos.'+k+'.resp\',\''+esc(r)+'\')">'+esc(r)+'</button>';}).join('')
+    +'<button type="button" class="chip" style="border-style:dashed" onclick="outroResp('+k+')"><i class="ti ti-plus"></i> outro</button>';
+}
+function outroResp(k){var r=(prompt('Nome do responsável (setor ou função):')||'').trim();if(!r)return;var a=_ed.passos[k].resp;if(a.indexOf(r)<0)a.push(r);renderEtapaModal();}
+function toggleArr(path,v){var a=getPath(path),i=a.indexOf(v);if(i>=0)a.splice(i,1);else a.push(v);renderEtapaModal();}
+function docsEditor(path,docs){
+  var h='';
+  if(docs.length)h+='<div class="de" style="margin-bottom:2px"><span class="de-h">Tipo</span><span class="de-h">Código</span><span class="de-h">Título</span><span class="de-h">Caminho no servidor ou link</span><span></span></div>';
+  docs.forEach(function(d,i){
+    var b=path+'.'+i+'.';
+    h+='<div class="de"><select class="fs" onchange="bindVal(\''+b+'tipo\',this.value)">'+Object.keys(DOC_TIPOS).map(function(t){return '<option value="'+t+'"'+(d.tipo===t?' selected':'')+' title="'+DOC_TIPOS[t].nome+'">'+DOC_ROT[t]+'</option>';}).join('')+'</select>'
+      +'<input class="fi" value="'+esc(d.codigo||'')+'" placeholder="POP-001" oninput="bindVal(\''+b+'codigo\',this.value)">'
+      +'<input class="fi" value="'+esc(d.titulo||'')+'" placeholder="Título do documento" oninput="bindVal(\''+b+'titulo\',this.value)">'
+      +'<input class="fi" value="'+esc(d.url||'')+'" placeholder="\\\\servidor\\pasta\\arquivo.pdf ou https://…" oninput="bindVal(\''+b+'url\',this.value.trim())">'
+      +'<button class="btn-icon" title="Remover" onclick="removerDoc(\''+path+'\','+i+')"><i class="ti ti-x"></i></button></div>';
+  });
+  h+='<button class="link-add" onclick="addDoc(\''+path+'\')"><i class="ti ti-plus"></i> Adicionar documento</button>';
+  return h;
+}
+function addDoc(path){getPath(path).push({tipo:'POP',codigo:'',titulo:'',url:''});renderEtapaModal();}
+function removerDoc(path,i){getPath(path).splice(i,1);renderEtapaModal();}
+function addPasso(){_ed.passos.push({texto:'',resp:[],obs:'',perfis:[],docs:[]});renderEtapaModal();
+  var b=document.querySelector('#m-etapa .modal-b');b.scrollTop=b.scrollHeight;
+  var ins=document.querySelectorAll('#me-body .pe .pe-h .fi');if(ins.length)ins[ins.length-1].focus();}
+function removerPasso(k){var p=_ed.passos[k];if((p.texto||p.obs)&&!confirm('Remover o passo '+(k+1)+'?'))return;_ed.passos.splice(k,1);renderEtapaModal();}
+function moverPasso(k,d){var a=_ed.passos,j=k+d;if(j<0||j>=a.length)return;var t=a[k];a[k]=a[j];a[j]=t;renderEtapaModal();}
+function salvarEtapa(){
+  var e=clone(_ed);delete e._nova;
+  e.titulo=(e.titulo||'').trim();
+  if(!e.titulo){toast('Dê um título à etapa.','err');document.getElementById('ed-titulo').focus();return;}
+  var limpaDocs=function(ds){return (ds||[]).map(function(d){return {tipo:d.tipo||'LINK',codigo:(d.codigo||'').trim(),titulo:(d.titulo||'').trim(),url:(d.url||'').trim()};}).filter(function(d){return d.codigo||d.titulo||d.url;});};
+  var urlRuim=false;
+  e.docs=limpaDocs(e.docs);
+  e.passos=(e.passos||[]).map(function(p){return {texto:(p.texto||'').trim(),resp:p.resp||[],obs:(p.obs||'').trim(),perfis:p.perfis||[],docs:limpaDocs(p.docs)};})
+    .filter(function(p){return p.texto||p.obs||p.docs.length;});
+  [e.docs].concat(e.passos.map(function(p){return p.docs;})).forEach(function(ds){ds.forEach(function(d){if(d.url&&!/^(https?:|file:|\\\\|[a-z]:\\)/i.test(d.url))urlRuim=true;});});
+  if(urlRuim&&!confirm('Algum caminho não parece válido. Use \\\\servidor\\pasta\\arquivo, X:\\pasta ou https://… Salvar assim mesmo?'))return;
+  if(e.gatilho.tipo!=='calendario')delete e.gatilho.meses;
+  if(e.gatilho.tipo!=='dias')delete e.gatilho.dias;
+  var mudouFase=!_ed._nova&&(_etapas.find(function(x){return x.id===e.id;})||{}).faseId!==e.faseId;
+  if(mudouFase)e.ordem=etapasDa(e.faseId).reduce(function(m,x){return Math.max(m,x.ordem||0);},0)+1;
+  gravar(COL_ETAPAS,e).then(function(){toast('Etapa salva.','ok');fechar('m-etapa');}).catch(function(err){toast('Erro: '+err.message,'err');});
+}
+function excluirEtapa(){
+  if(!confirm('Excluir a etapa "'+(_ed.titulo||'sem título')+'"? Esta ação não pode ser desfeita.'))return;
+  apagar(COL_ETAPAS,_ed.id).then(function(){toast('Etapa excluída.','ok');fechar('m-etapa');});
+}
+function moverEtapa(id,dir){
+  var e=_etapas.find(function(x){return x.id===id;});if(!e)return;
+  var l=etapasDa(e.faseId),i=l.indexOf(e),j=i+dir;if(j<0||j>=l.length)return;
+  var a=clone(l[i]),b=clone(l[j]);a.ordem=j+1;b.ordem=i+1;
+  Promise.all([gravar(COL_ETAPAS,a),gravar(COL_ETAPAS,b)]).then(function(){renumerar(e.faseId);});
+}
+function renumerar(fid){etapasDa(fid).forEach(function(x,k){if(x.ordem!==k+1){var c=clone(x);c.ordem=k+1;gravar(COL_ETAPAS,c);}});}
+
+// ════════════════════════════════════════════
+// MODELO INICIAL (sugestão editável)
+// ════════════════════════════════════════════
+function modeloInicial(){
+  var P=function(texto,resp,obs,docs,perfis){return {texto:texto,resp:resp||[],obs:obs||'',docs:docs||[],perfis:perfis||[]};};
+  var D=function(tipo,codigo,titulo,url){return {tipo:tipo,codigo:codigo||'',titulo:titulo||'',url:url||''};};
+  var fases=[
+    {id:'f_admissao',nome:'Admissão',descricao:'Do aceite da proposta ao primeiro dia de trabalho.',icon:'ti-file-check',cor:'#2f6fdb',ordem:1},
+    {id:'f_integracao',nome:'Integração',descricao:'Primeiros dias: acolhimento, treinamentos obrigatórios e apresentação à equipe.',icon:'ti-users-group',cor:'#7a5af5',ordem:2},
+    {id:'f_experiencia',nome:'Experiência',descricao:'Contrato de experiência de 45 + 45 dias — acompanhamento até a efetivação.',icon:'ti-hourglass',cor:'#d99a1e',ordem:3},
+    {id:'f_permanencia',nome:'Permanência',descricao:'Ciclos de desenvolvimento dos efetivados: feedbacks e avaliação de desempenho.',icon:'ti-chart-line',cor:'#2f9e6a',ordem:4},
+    {id:'f_desligamento',nome:'Desligamento',descricao:'Da decisão do desligamento ao pagamento das verbas rescisórias.',icon:'ti-door-exit',cor:'#d94c4c',ordem:5}
+  ];
+  var etapas=[
+    {id:'e_adm1',faseId:'f_admissao',ordem:1,titulo:'Documentação e exame admissional',icon:'ti-id-badge-2',gatilho:{tipo:'evento',texto:'Após o aceite da proposta'},
+      descricao:'Reunir os documentos do candidato aprovado e garantir o ASO apto antes do início.',
+      docs:[D('CHK','','Checklist de admissão (módulo Admissão)',''),D('LINK','','Pasta de modelos da admissão','')],
+      passos:[P('Enviar ao candidato a lista de documentos necessários',['RH'],'',[D('FORM','','Lista de documentos para admissão','')]),
+        P('Conferir a documentação recebida e cadastrar o processo no módulo Admissão',['RH'],'Conferir CPF, PIS, título e dados bancários antes de seguir.'),
+        P('Agendar o exame admissional (ASO)',['RH','Ambulatório'],'O colaborador só pode iniciar com ASO apto.',[D('IT','','Agendamento de exame admissional','')]),
+        P('Conferir CNH e categoria compatível com o veículo',['RH'],'',[],['Motorista'])]},
+    {id:'e_adm2',faseId:'f_admissao',ordem:2,titulo:'Contrato, cadastro e preparação do posto',icon:'ti-writing-sign',gatilho:{tipo:'dias',dias:-2},
+      descricao:'Tudo pronto para o primeiro dia: contrato, folha, acessos e EPIs.',docs:[],
+      passos:[P('Cadastrar o colaborador na folha de pagamento e no eSocial',['DP'],'O evento de admissão deve ser enviado ao eSocial até o dia anterior ao início das atividades.'),
+        P('Preparar contrato de experiência (45 + 45 dias) para assinatura',['DP'],'',[D('FORM','','Modelo de contrato de experiência','')]),
+        P('Solicitar acessos, e-mail e equipamentos',['TI'],'',[],['Administrativo','Liderança','Comercial']),
+        P('Separar EPIs e uniforme conforme a função',['Almoxarifado','SESMT'],'',[],['Operacional','Motorista','Ajudante de Motorista'])]},
+    {id:'e_int1',faseId:'f_integracao',ordem:1,titulo:'Integração do primeiro dia',icon:'ti-hand-love-you',gatilho:{tipo:'dias',dias:0},
+      descricao:'Acolhimento e treinamentos obrigatórios antes de ir para o posto de trabalho.',
+      docs:[D('POP','','Integração de novos colaboradores','')],
+      passos:[P('Integração com o RH: cultura, benefícios, regras e assinatura do contrato',['RH']),
+        P('Integração com a psicóloga organizacional',['Psicóloga']),
+        P('Integração com o Controle de Qualidade',['Qualidade']),
+        P('Integração de Segurança do Trabalho e entrega de EPIs com ficha assinada',['SESMT'],'Sem a ficha de EPI assinada o colaborador não pode ir para a área.',[D('FORM','','Ficha de entrega de EPI','')]),
+        P('Entregar o kit de boas-vindas',['RH'])]},
+    {id:'e_int2',faseId:'f_integracao',ordem:2,titulo:'Primeira semana',icon:'ti-calendar-event',gatilho:{tipo:'dias',dias:7},descricao:'',docs:[],
+      passos:[P('Conversar com o gestor sobre a adaptação do colaborador',['RH','Gestor']),
+        P('Enviar o vídeo de boas-vindas',['RH'],'',[D('LINK','','Vídeo de boas-vindas','')])]},
+    {id:'e_exp1',faseId:'f_experiencia',ordem:1,titulo:'Contato de acompanhamento',icon:'ti-phone',gatilho:{tipo:'dias',dias:15},descricao:'',docs:[],
+      passos:[P('Ligar ou conversar com o colaborador para saber como está a adaptação',['RH'],'Registrar o contato no módulo Acompanhamento.',[D('MOD','','Acompanhamento','')])]},
+    {id:'e_exp2',faseId:'f_experiencia',ordem:2,titulo:'Feedback de 45 dias e prorrogação',icon:'ti-message-2',gatilho:{tipo:'dias',dias:45},descricao:'Fim do primeiro período do contrato de experiência.',docs:[],
+      passos:[P('Aplicar o feedback formal de 45 dias com o gestor',['Gestor','RH'],'',[D('FORM','','Formulário de feedback de 45 dias','')]),
+        P('Decidir e formalizar a prorrogação do contrato ou o desligamento',['Gestor','DP'],'A prorrogação precisa estar assinada antes do vencimento dos 45 dias.')]},
+    {id:'e_exp3',faseId:'f_experiencia',ordem:3,titulo:'Feedback de 90 dias e efetivação',icon:'ti-user-check',gatilho:{tipo:'dias',dias:85},descricao:'Decisão de efetivação antes do fim do contrato de experiência.',docs:[],
+      passos:[P('Aplicar o feedback formal de 90 dias',['Gestor','RH'],'',[D('FORM','','Formulário de feedback de 90 dias','')]),
+        P('Confirmar a efetivação e verificar mudança de cargo ou salário',['DP'],'Se a experiência vence até o dia 15, a alteração salarial entra no mesmo mês; depois do dia 15, no mês seguinte.')]},
+    {id:'e_exp4',faseId:'f_experiencia',ordem:4,titulo:'Cerimônia de troca de capacete',icon:'ti-helmet',gatilho:{tipo:'evento',texto:'Última sexta-feira do mês da efetivação'},descricao:'',docs:[],
+      passos:[P('Convidar os efetivados do mês e o gestor para a cerimônia',['RH']),P('Providenciar os capacetes de efetivado',['Almoxarifado','SESMT'])]},
+    {id:'e_per1',faseId:'f_permanencia',ordem:1,titulo:'Feedback de Desempenho',icon:'ti-messages',gatilho:{tipo:'calendario',meses:[5,9]},descricao:'Feedback do gestor com notas de calibração (1 a 5) em 15 critérios.',
+      docs:[D('FORM','','Feedback de Desenvolvimento',''),D('MOD','','Acompanhamento — Feedback de Desempenho','')],
+      passos:[P('Enviar aos gestores a lista de colaboradores e o formulário do ciclo',['RH']),
+        P('Aplicar o feedback com o colaborador e colher as assinaturas',['Gestor']),
+        P('Receber o formulário e lançar no sistema, registrando a data de entrega',['RH'],'O prazo de entrega ao RH é o último dia do mês do ciclo.')]},
+    {id:'e_per2',faseId:'f_permanencia',ordem:2,titulo:'Avaliação de desempenho (9Box)',icon:'ti-layout-grid',gatilho:{tipo:'calendario',meses:[6,12]},descricao:'',
+      docs:[D('MOD','','Acompanhamento — Avaliação 9Box','')],
+      passos:[P('Baixar a planilha do ciclo e enviar aos gestores',['RH']),P('Calibrar os resultados com as lideranças',['RH','Gestor']),P('Importar a planilha preenchida no sistema',['RH'])]},
+    {id:'e_des1',faseId:'f_desligamento',ordem:1,titulo:'Desligamento e rescisão',icon:'ti-file-minus',gatilho:{tipo:'evento',texto:'Ao decidir ou receber o pedido de desligamento'},descricao:'',
+      docs:[D('MOD','','Rescisão — checklist por setor','')],
+      passos:[P('Abrir o processo no módulo Rescisão com o perfil correto',['RH']),
+        P('Agendar o exame demissional',['RH','Ambulatório'],'Verificar no PCMSO se o último exame ocupacional ainda está dentro do prazo de validade.'),
+        P('Recolher crachá, EPIs, uniformes e equipamentos',['Almoxarifado','TI','SESMT']),
+        P('Calcular e pagar as verbas rescisórias',['DP'],'Prazo legal: até 10 dias corridos após o término do contrato (CLT, art. 477 §6º).'),
+        P('Realizar a entrevista de desligamento',['RH','Psicóloga'])]}
+  ];
+  var agora=new Date().toISOString();
+  etapas.forEach(function(e){e.atualizadoEm=agora;e.atualizadoPor='Modelo sugerido';e.perfis=e.perfis||[];});
+  return {fases:fases,etapas:etapas};
+}
+function carregarModelo(){
+  if(_fases.length||_etapas.length){toast('O guia já tem conteúdo.','warn');return;}
+  if(!confirm('Carregar o modelo sugerido? Ele cria 5 fases com etapas de exemplo, que vocês podem editar ou excluir.'))return;
+  var m=modeloInicial();
+  if(DEMO){_fases=m.fases;_etapas=m.etapas;render();return;}
+  var batch=db.batch();
+  m.fases.forEach(function(f){var d=clone(f);delete d.id;batch.set(db.collection(COL_FASES).doc(f.id),d);});
+  m.etapas.forEach(function(e){var d=clone(e);delete d.id;batch.set(db.collection(COL_ETAPAS).doc(e.id),d);});
+  batch.commit().then(function(){toast('Modelo carregado. Ative o modo edição para ajustar.','ok');}).catch(function(e){toast('Erro: '+e.message,'err');});
+}
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+document.querySelectorAll('.overlay').forEach(function(el){
+  el.addEventListener('mousedown',function(e){if(e.target===this)this.classList.remove('open');});
+});
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape')document.querySelectorAll('.overlay.open').forEach(function(o){o.classList.remove('open');});
+  if(e.key==='/'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();document.getElementById('q').focus();}
+});
+iniciar();
+</script>
+</body>
+</html>

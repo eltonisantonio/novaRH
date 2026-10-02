@@ -106,6 +106,10 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
 .overlay.open{display:flex;}
 .modal{background:var(--white);border-radius:var(--rl);width:520px;max-width:96vw;max-height:92vh;display:flex;flex-direction:column;}
 .modal.lg{width:680px;}
+.modal.xl{width:1000px;}
+.mix-tbl td,.mix-tbl th{padding:7px 8px;font-size:12px;}
+.mix-de{color:var(--text3);text-decoration:line-through;}
+.mix-para{font-weight:700;}
 .modal-h{padding:20px 24px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .modal-title{font-size:15px;font-weight:800;}
 .modal-b{padding:24px;overflow-y:auto;}
@@ -181,6 +185,7 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
       <div class="topbar-actions" id="topbar-actions">
         <button class="btn btn-sm" onclick="showTab('cfg')"><i class="ti ti-settings"></i> Configurações</button>
         <button class="btn btn-sm" onclick="openImportGinastica()"><i class="ti ti-download"></i> Importar Ginástica</button>
+        <button class="btn btn-sm" onclick="openImportMix()"><i class="ti ti-arrows-exchange"></i> Importar MIX</button>
         <button class="btn btn-sm" id="btn-evento-grupo" onclick="openEventoGrupo()"><i class="ti ti-users"></i> Evento em Grupo</button>
         <button class="btn btn-primary btn-sm" onclick="openCadastrarFunc()"><i class="ti ti-user-plus"></i> Novo Funcionário</button>
       </div>
@@ -722,6 +727,35 @@ body{font-family:'Inter',sans-serif;background:var(--cream);color:var(--text);mi
   </div>
 </div>
 
+<!-- MODAL IMPORTAR ALTERAÇÕES DO MIX (FO0410 / FO0409) -->
+<div class="overlay" id="modal-mix">
+  <div class="modal xl">
+    <div class="modal-h"><span class="modal-title"><i class="ti ti-arrows-exchange" style="color:#7b5ea7;margin-right:6px"></i>Importar alterações do MIX</span><button class="btn-icon" onclick="closeModal('modal-mix')"><i class="ti ti-x"></i></button></div>
+    <div class="modal-b">
+      <div style="background:var(--s2);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.7">
+        <i class="ti ti-file-info" style="margin-right:4px"></i>
+        Selecione um ou os dois relatórios exportados do MIX em <strong>Excel (.xlsx)</strong>:
+        <strong>Conferência de Alteração de Cargo [FO0410]</strong> e <strong>Conferência de Alteração de Estrutura [FO0409]</strong>.<br>
+        <span style="display:block;margin-top:6px">• Cada pessoa é localizada pela <strong>Chapa</strong> (ou matrícula) e, na falta dela, pelo <strong>nome completo</strong>.<br>
+        • O cargo/setor do cadastro é atualizado e um evento <strong>Promoção / Movimentação</strong> é registrado no histórico.<br>
+        • Linhas com motivo <strong>Admissão</strong> são ignoradas. Alterações já importadas ou já lançadas no NOVA também.</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 220px;gap:12px;align-items:end">
+        <div class="fg" style="margin-bottom:0"><label class="fl">Relatórios do MIX (.xlsx) <span style="color:#c0392b">*</span></label>
+          <input class="fi" type="file" id="mix-file" accept=".xlsx,.xls" multiple onchange="_mixLimpar()"></div>
+        <div class="fg" style="margin-bottom:0"><label class="fl">Responsável</label>
+          <input class="fi" type="text" id="mix-resp" placeholder="Seu nome"></div>
+      </div>
+      <button class="btn btn-sm" style="margin-top:12px" onclick="processarImportMix()"><i class="ti ti-eye"></i> Analisar arquivos</button>
+      <div id="mix-preview" style="margin-top:16px"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" onclick="closeModal('modal-mix')">Cancelar</button>
+      <button class="btn btn-primary" id="mix-btn-confirmar" style="display:none" onclick="confirmarImportMix()"><i class="ti ti-database-import"></i> Aplicar alterações</button>
+    </div>
+  </div>
+</div>
+
 <script>
 if (!firebase.apps.length) {
   firebase.initializeApp({
@@ -900,7 +934,7 @@ function _scoreFunc(f){
   if (d) s += (Number(d)||0)/1e9;
   return s;
 }
-var _CAMPOS_MERGE = ['cpf','matricula','cargo','empresa','departamento','admissao','tel','email','nome'];
+var _CAMPOS_MERGE = ['cpf','matricula','chapa','codEstrutura','cargo','empresa','departamento','admissao','tel','email','nome'];
 // Mescla a lista combinada (admissão + manuais) em um registro por pessoa
 function dedupFuncs(arr){
   var grupos = {};
@@ -944,7 +978,8 @@ function iniciarListeners() {
         id: 'adm_'+d.id, _admId: d.id, fonte:'admissao',
         nome: d2.nome||'', cargo: d2.cargo||'', empresa: d2.empresa||'',
         departamento: d2.estrutura||'', admissao: adm,
-        cpf: d2.cpf||'', matricula: d2.matricula||'',
+        cpf: d2.cpf||'', matricula: d2.matricula||'', chapa: d2.chapa||'',
+        codEstrutura: d2.codEstrutura||'',
         tel: d2.telefone||'', email: d2.email||'',
         status: p.status==='concluido' ? 'ativo' : 'em_admissao',
         desligado: !!p.desligado,
@@ -953,6 +988,12 @@ function iniciarListeners() {
         brigadista: p.brigadista||null,
         cipa: p.cipa||null,
       };
+    });
+    // Aprende código → nome de estrutura a partir dos FO1029 já importados (usado na importação do MIX)
+    _estrAuto = {};
+    admFuncs.forEach(function(f){
+      var k = _codEstrKey(f.codEstrutura);
+      if (k && f.departamento && !_estrAuto[k]) _estrAuto[k] = String(f.departamento).trim().toUpperCase();
     });
     // Funcionários manuais
     db.collection('dossie_funcs').get().then(function(s2) {
@@ -978,6 +1019,10 @@ function iniciarListeners() {
     if (document.getElementById('view-pilulas').style.display !== 'none') renderPilulas();
     if (_funcAtivo) renderDossie(_funcAtivo);
   });
+  db.collection('dossie_estruturas').onSnapshot(function(snap) {
+    _estrSalvas = {};
+    snap.docs.forEach(function(d){ var x=d.data(); if (x && x.nome) _estrSalvas[d.id] = x.nome; });
+  }, function(){ /* coleção sem permissão: segue só com o mapa automático */ });
   db.collection('dossie_tipos').onSnapshot(function(snap) {
     _tipos = snap.docs.map(function(d){ return d.data(); });
     if (!_tipos.length) {
@@ -1026,6 +1071,7 @@ function showTab(t) {
     ta.innerHTML = '<button class="btn btn-sm" onclick="showTab(\'cfg\')"><i class="ti ti-settings"></i> Configurações</button>'
       +'<button class="btn btn-sm" onclick="showTab(\'pilulas\')"><i class="ti ti-pill"></i> Pílulas</button>'
       +'<button class="btn btn-sm" onclick="openImportGinastica()"><i class="ti ti-download"></i> Importar Ginástica</button>'
+      +'<button class="btn btn-sm" onclick="openImportMix()"><i class="ti ti-arrows-exchange"></i> Importar MIX</button>'
       +'<button class="btn btn-sm" onclick="openEventoGrupo()"><i class="ti ti-users"></i> Evento em Grupo</button>'
       +'<button class="btn btn-primary btn-sm" onclick="openCadastrarFunc()"><i class="ti ti-user-plus"></i> Novo Funcionário</button>';
   }
@@ -2125,6 +2171,326 @@ function confirmarImportGinastica(){
     batch.commit().then(function(){ commitLote(fim); }).catch(function(e){ btn.disabled=false; toast('Erro: '+e.message,'err'); });
   }
   commitLote(0);
+}
+
+// ════ IMPORTAÇÃO DE ALTERAÇÕES DO MIX (FO0410 Cargo / FO0409 Estrutura) ════
+var _estrAuto   = {};   // código da estrutura (só dígitos) → nome do setor, aprendido dos FO1029 da Admissão
+var _estrSalvas = {};   // código → nome, salvo pelo RH na coleção dossie_estruturas
+var _mixEstrEdit = {};  // código → nome digitado nesta importação
+var _mixCodFmt  = {};   // código (dígitos) → código como veio no relatório (ex: 002.01.03.001)
+var _mixGrupos  = null; // alterações agrupadas por pessoa + data
+var _mixResumo  = null;
+
+function _codEstrKey(c){ return String(c||'').replace(/\D/g,''); }
+function _chapaKey(c){ return String(c||'').replace(/\D/g,'').replace(/^0+/,''); }
+function _mixEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function _nomeEstr(cod){
+  var k = _codEstrKey(cod); if (!k) return '';
+  if (_mixEstrEdit[k] !== undefined) return _mixEstrEdit[k];
+  return _estrSalvas[k] || _estrAuto[k] || '';
+}
+function _mixData(v){
+  if (v instanceof Date) return v.getFullYear()+'-'+String(v.getMonth()+1).padStart(2,'0')+'-'+String(v.getDate()).padStart(2,'0');
+  if (typeof v === 'number' && v > 20000) { var d = new Date(Math.round((v-25569)*86400000)); return d.toISOString().slice(0,10); }
+  return _normDataImp(v);
+}
+function _mixLimpar(){
+  document.getElementById('mix-preview').innerHTML = '';
+  var b = document.getElementById('mix-btn-confirmar'); b.style.display='none'; b.disabled=false;
+  _mixGrupos = null; _mixResumo = null;
+}
+function openImportMix(){
+  var fi = document.getElementById('mix-file'); if (fi) fi.value = '';
+  _mixEstrEdit = {}; _mixCodFmt = {};
+  _mixLimpar();
+  openModal('modal-mix');
+}
+
+// Lê um relatório do MIX e devolve {tipo:'cargo'|'estrutura', linhas:[...]}
+function _mixParseWorkbook(wb){
+  var ws = wb.Sheets[wb.SheetNames[0]];
+  var raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:true});
+  var tipo = null, cols = null, linhas = [];
+  raw.forEach(function(r){
+    var norm = r.map(function(c){ return (c instanceof Date) ? '' : _normNome(c); });
+    // Cabeçalho (repete a cada filial)
+    if (norm.indexOf('CHAPA') > -1 && norm.indexOf('NOME') > -1) {
+      cols = {};
+      norm.forEach(function(h, i){
+        if (h==='REFERENCIA' || h==='REF.' || h==='REF') cols.ref = i;
+        else if (h==='CHAPA') cols.chapa = i;
+        else if (h==='NOME') cols.nome = i;
+        else if (h==='CARGO ANTERIOR' || h==='ESTRUTURA ANTERIOR') cols.ant = i;
+        else if (h==='CARGO ATUAL' || h==='ESTRUTURA ATUAL') cols.atu = i;
+        else if (h==='DATA ALTERACAO') cols.data = i;
+        else if (h==='MOTIVO ALTERACAO') cols.motivo = i;
+      });
+      if (norm.indexOf('CARGO ATUAL') > -1) tipo = 'cargo';
+      else if (norm.indexOf('ESTRUTURA ATUAL') > -1) tipo = 'estrutura';
+      return;
+    }
+    if (!cols || !tipo || cols.atu === undefined) return;
+    var g = function(k){ return cols[k]===undefined ? '' : String(r[cols[k]]==null?'':r[cols[k]]).trim(); };
+    var chapa = g('chapa'), nome = g('nome');
+    if (!nome || !/\d/.test(chapa)) return; // linha de filial, rodapé ou vazia
+    linhas.push({
+      tipo: tipo, ref: g('ref'), chapa: chapa, nome: nome,
+      ant: g('ant').toUpperCase(), atu: g('atu').toUpperCase(),
+      data: _mixData(cols.data===undefined ? '' : r[cols.data]),
+      motivo: g('motivo')
+    });
+  });
+  return {tipo: tipo, linhas: linhas};
+}
+
+function processarImportMix(){
+  var fi = document.getElementById('mix-file');
+  var files = fi && fi.files ? Array.prototype.slice.call(fi.files) : [];
+  if (!files.length) { toast('Selecione o(s) relatório(s) do MIX.','err'); return; }
+  if (typeof XLSX === 'undefined') { toast('Biblioteca de planilhas ainda carregando, tente novamente.','err'); return; }
+  Promise.all(files.map(function(file){
+    return new Promise(function(res, rej){
+      var rd = new FileReader();
+      rd.onload = function(e){
+        try { res({nome:file.name, rep:_mixParseWorkbook(XLSX.read(new Uint8Array(e.target.result), {type:'array', cellDates:true}))}); }
+        catch(err){ rej(new Error(file.name+': '+err.message)); }
+      };
+      rd.onerror = function(){ rej(new Error('Falha ao ler '+file.name)); };
+      rd.readAsArrayBuffer(file);
+    });
+  })).then(function(lidos){
+    var linhas = [], tipos = {}, invalidos = [];
+    lidos.forEach(function(x){
+      if (!x.rep.tipo) { invalidos.push(x.nome); return; }
+      tipos[x.rep.tipo] = true;
+      linhas = linhas.concat(x.rep.linhas);
+    });
+    if (invalidos.length) toast('Não reconhecido como FO0410/FO0409: '+invalidos.join(', '),'err');
+    if (!linhas.length) { _mixLimpar(); if (!invalidos.length) toast('Nenhuma alteração encontrada nos arquivos.','warn'); return; }
+
+    // Localizadores: chapa/matrícula e nome
+    var porChapa = {}, porNome = {};
+    _funcs.forEach(function(f){
+      [f.chapa, f.matricula].forEach(function(c){ var k=_chapaKey(c); if (k && !porChapa[k]) porChapa[k] = f; });
+      var nn = _normNome(f.nome); if (nn && !porNome[nn]) porNome[nn] = f;
+    });
+
+    var grupos = {}, semMatch = {}, admissoes = 0, semData = 0;
+    linhas.forEach(function(l){
+      if (_normNome(l.motivo).indexOf('ADMISS') > -1) { admissoes++; return; }
+      if (!l.data) { semData++; return; }
+      var f = porChapa[_chapaKey(l.chapa)] || porChapa[_chapaKey(l.ref)] || porNome[_normNome(l.nome)];
+      if (!f) { semMatch[_normNome(l.nome)] = l.nome+' (chapa '+l.chapa+')'; return; }
+      var gk = f.id+'|'+l.data;
+      var g = grupos[gk] || (grupos[gk] = {f:f, data:l.data, chapa:l.chapa, nome:f.nome||l.nome, motivos:[], sel:true});
+      if (l.motivo && g.motivos.indexOf(l.motivo) === -1) g.motivos.push(l.motivo);
+      if (l.tipo === 'cargo') { g.cargoAnt = l.ant; g.cargoNovo = l.atu; }
+      else {
+        g.estrAnt = l.ant; g.estrNovo = l.atu;
+        [l.ant, l.atu].forEach(function(c){ var k=_codEstrKey(c); if (k) _mixCodFmt[k] = c; });
+      }
+    });
+    _mixGrupos = Object.keys(grupos).map(function(k){ return grupos[k]; })
+      .sort(function(a,b){ return a.data.localeCompare(b.data) || _normNome(a.nome).localeCompare(_normNome(b.nome)); });
+    _mixResumo = {
+      tipos: tipos, admissoes: admissoes, semData: semData,
+      semMatch: Object.keys(semMatch).map(function(k){ return semMatch[k]; }).sort()
+    };
+    _mixRender();
+  }).catch(function(e){ toast('Erro ao ler arquivo: '+e.message,'err'); });
+}
+
+// Calcula o que cada grupo vai fazer, com base no cadastro atual e no mapa de setores
+function _mixAvaliar(g){
+  var f = g.f;
+  var cargoAtual = String(f.cargo||'').trim().toUpperCase();
+  var setorAtual = String(f.departamento||'').trim().toUpperCase();
+  var r = {cargo:null, setor:null, faltaSetor:false, status:'ok', soCadastro:false};
+  r.mixKey = _chapaKey(g.chapa)+'|'+g.data;
+
+  if (g.cargoNovo && _normNome(g.cargoNovo) !== _normNome(cargoAtual))
+    r.cargo = {de: g.cargoAnt || cargoAtual || '—', para: g.cargoNovo};
+  if (g.estrNovo) {
+    var nomeNovo = _nomeEstr(g.estrNovo);
+    if (!nomeNovo) r.faltaSetor = true;
+    else if (_normNome(nomeNovo) !== _normNome(setorAtual))
+      r.setor = {de: _nomeEstr(g.estrAnt) || setorAtual || g.estrAnt || '—', para: nomeNovo, cod: g.estrNovo};
+  }
+
+  var evs = eventosDoFunc(f);
+  if (evs.some(function(ev){ return ev.mixKey === r.mixKey; })) { r.status = 'importado'; return r; }
+  if (!r.cargo && !r.setor) { r.status = r.faltaSetor ? 'semsetor' : 'atualizado'; return r; }
+
+  // Já lançaram a movimentação no NOVA (só no histórico)? Então só atualiza o cadastro, sem repetir o evento.
+  var promos = evs.filter(function(ev){ return ev.tipoId === 'promocao'; })
+    .map(function(ev){ return _normNome(ev.titulo); });
+  var jaNoHist = function(v){ var n = _normNome('→ '+v); return promos.some(function(t){ return t.indexOf(n) > -1; }); };
+  if ((!r.cargo || jaNoHist(r.cargo.para)) && (!r.setor || jaNoHist(r.setor.para))) r.soCadastro = true;
+  return r;
+}
+
+function _mixRender(){
+  if (!_mixGrupos || !_mixResumo) return;
+  var R = _mixResumo;
+  // Códigos de estrutura usados nas alterações (novo e anterior)
+  var cods = {};
+  _mixGrupos.forEach(function(g){ [g.estrNovo, g.estrAnt].forEach(function(c){ var k=_codEstrKey(c); if (k) cods[k] = true; }); });
+  var codList = Object.keys(cods).sort();
+
+  var html = '<div id="mix-stats"></div>';
+  if (!R.tipos.cargo || !R.tipos.estrutura)
+    html += '<div style="font-size:12px;color:#7d4e00;margin-bottom:10px"><i class="ti ti-info-circle" style="margin-right:3px"></i>Só o relatório de <strong>'+(R.tipos.cargo?'Cargo (FO0410)':'Estrutura (FO0409)')+'</strong> foi enviado. '
+      +(R.tipos.cargo?'Os setores':'Os cargos')+' não serão alterados.</div>';
+  if (R.semData) html += '<div style="font-size:12px;color:#8b1c1c;margin-bottom:8px"><i class="ti ti-alert-triangle" style="margin-right:3px"></i>'+R.semData+' linha(s) sem data válida foram ignoradas.</div>';
+
+  if (codList.length) {
+    var setoresExist = {};
+    _funcs.forEach(function(f){ var d=String(f.departamento||'').trim().toUpperCase(); if (d) setoresExist[d]=1; });
+    html += '<div class="extra-block"><div class="extra-block-title"><i class="ti ti-sitemap" style="color:#7b5ea7"></i> Setores (código do MIX → nome no NOVA)</div>'
+      +'<div style="font-size:12px;color:var(--text2);margin-bottom:8px">O MIX informa só o código da estrutura. Confira o nome do setor; códigos novos ficam salvos para as próximas importações.</div>'
+      +'<datalist id="mix-setores-dl">'+Object.keys(setoresExist).sort().map(function(s){ return '<option value="'+_mixEsc(s)+'">'; }).join('')+'</datalist>'
+      +'<table class="cfg-table mix-tbl"><thead><tr><th style="width:160px">Código</th><th>Setor no NOVA</th></tr></thead><tbody>'
+      + codList.map(function(k){
+          var nome = _nomeEstr(k);
+          return '<tr><td style="font-family:monospace">'+_mixEsc(_mixCodFmt[k]||k)+'</td>'
+            +'<td><input class="fi upper" list="mix-setores-dl" data-cod="'+k+'" value="'+_mixEsc(nome)+'" placeholder="Informe o setor"'
+            +' style="'+(nome?'':'border-color:#e05252;background:#fff8f8')+'" oninput="_mixSetorInput(this)"></td></tr>';
+        }).join('')
+      +'</tbody></table></div>';
+  }
+
+  html += '<div id="mix-tabela"></div>';
+
+  if (R.semMatch.length) {
+    html += '<div class="extra-block" style="margin-top:14px"><div class="extra-block-title" style="color:#8b1c1c"><i class="ti ti-user-question"></i> Não encontrados no dossiê ('+R.semMatch.length+')</div>'
+      +'<div style="font-size:12px;color:var(--text2);margin-bottom:6px">Cadastre estas pessoas (ou acerte a chapa/matrícula ou o nome) para que entrem na próxima importação:</div>'
+      +'<ul style="font-size:12px;color:var(--text2);padding-left:18px;max-height:150px;overflow:auto;margin:0">'
+      + R.semMatch.map(function(n){ return '<li>'+_mixEsc(n)+'</li>'; }).join('')+'</ul></div>';
+  }
+  document.getElementById('mix-preview').innerHTML = html;
+  _mixRenderTabela();
+}
+
+function _mixSetorInput(el){
+  var v = String(el.value||'').trim().toUpperCase();
+  _mixEstrEdit[el.dataset.cod] = v;
+  el.style.borderColor = v ? '' : '#e05252';
+  el.style.background  = v ? '' : '#fff8f8';
+  _mixRenderTabela();
+}
+function _mixToggle(i){ if (_mixGrupos[i]) { _mixGrupos[i].sel = !_mixGrupos[i].sel; _mixRenderTabela(); } }
+
+function _mixRenderTabela(){
+  var aplicar = 0, jaFeitos = 0, pend = 0;
+  var linhasHtml = _mixGrupos.map(function(g, i){
+    var a = _mixAvaliar(g);
+    g._av = a;
+    var ativo = a.status === 'ok';
+    if (ativo && g.sel) aplicar++;
+    if (a.status === 'importado' || a.status === 'atualizado') jaFeitos++;
+    if (a.faltaSetor) pend++;
+    var mud = function(m){ return m ? '<span class="mix-de">'+_mixEsc(m.de)+'</span> → <span class="mix-para">'+_mixEsc(m.para)+'</span>' : '<span style="color:var(--text3)">—</span>'; };
+    var setorCel = a.setor ? mud(a.setor)
+      : (a.faltaSetor ? '<span style="color:#8b1c1c;font-weight:600"><i class="ti ti-alert-triangle"></i> Informe o setor do código '+_mixEsc(g.estrNovo)+'</span>' : mud(null));
+    var st = {
+      ok:         a.soCadastro ? '<span class="badge b-gray">Só cadastro</span>' : '<span class="badge" style="background:#f3eefa;color:#5b3f8a">Novo evento</span>',
+      importado:  '<span class="badge b-gray">Já importado</span>',
+      atualizado: '<span class="badge b-gray">Já atualizado</span>',
+      semsetor:   '<span class="badge" style="background:#fdeaea;color:#8b1c1c">Falta setor</span>'
+    }[a.status];
+    return '<tr style="'+(ativo?'':'opacity:.55')+'">'
+      +'<td><input type="checkbox" '+(ativo&&g.sel?'checked':'')+(ativo?'':' disabled')+' onchange="_mixToggle('+i+')" style="width:15px;height:15px;accent-color:var(--black)"></td>'
+      +'<td><div style="font-weight:700">'+_mixEsc(g.nome)+'</div><div style="font-size:11px;color:var(--text3)">Chapa '+_mixEsc(g.chapa)+'</div></td>'
+      +'<td style="white-space:nowrap">'+fmtDate(g.data)+'</td>'
+      +'<td>'+_mixEsc(g.motivos.join(' / '))+'</td>'
+      +'<td>'+mud(a.cargo)+'</td>'
+      +'<td>'+setorCel+'</td>'
+      +'<td>'+st+'</td></tr>';
+  }).join('');
+
+  document.getElementById('mix-stats').innerHTML = '<div class="stats-row" style="margin-bottom:14px;flex-wrap:wrap">'
+    +'<div class="stat"><div class="stat-v" style="color:#1a5c35">'+aplicar+'</div><div class="stat-l">A aplicar</div></div>'
+    +'<div class="stat"><div class="stat-v" style="color:#7d4e00">'+jaFeitos+'</div><div class="stat-l">Já no NOVA</div></div>'
+    +'<div class="stat"><div class="stat-v" style="color:#8b1c1c">'+_mixResumo.semMatch.length+'</div><div class="stat-l">Não encontrados</div></div>'
+    +'<div class="stat"><div class="stat-v" style="color:var(--text3)">'+_mixResumo.admissoes+'</div><div class="stat-l">Admissões ignoradas</div></div>'
+    +'</div>'
+    +(pend ? '<div style="font-size:12px;color:#8b1c1c;margin-bottom:10px"><i class="ti ti-alert-triangle" style="margin-right:3px"></i>'+pend+' alteração(ões) com setor sem nome: preencha na tabela de setores, senão só o cargo será atualizado.</div>' : '');
+
+  document.getElementById('mix-tabela').innerHTML = _mixGrupos.length
+    ? '<table class="cfg-table mix-tbl"><thead><tr><th></th><th>Funcionário</th><th>Data</th><th>Motivo</th><th>Cargo</th><th>Setor</th><th>Ação</th></tr></thead><tbody>'+linhasHtml+'</tbody></table>'
+    : '<div class="empty" style="padding:20px"><p>Nenhuma alteração (além de admissões) nos arquivos.</p></div>';
+
+  var btn = document.getElementById('mix-btn-confirmar');
+  btn.style.display = aplicar ? 'inline-flex' : 'none';
+  btn.innerHTML = '<i class="ti ti-database-import"></i> Aplicar '+aplicar+(aplicar===1?' alteração':' alterações');
+}
+
+function confirmarImportMix(){
+  if (!_mixGrupos) return;
+  var rows = _mixGrupos.filter(function(g){ return g.sel && g._av && g._av.status === 'ok'; });
+  if (!rows.length) { toast('Nada para aplicar.','err'); return; }
+  var resp = (document.getElementById('mix-resp').value||'').trim();
+  var now = new Date().toISOString();
+  var btn = document.getElementById('mix-btn-confirmar');
+  btn.disabled = true;
+
+  var ops = [];
+  // Setores digitados nesta importação ficam salvos para as próximas
+  Object.keys(_mixEstrEdit).forEach(function(k){
+    var nome = _mixEstrEdit[k];
+    if (nome && nome !== (_estrSalvas[k]||'')) ops.push(function(b){
+      b.set(db.collection('dossie_estruturas').doc(k), {codigo:_mixCodFmt[k]||k, nome:nome, atualizadoEm:now}, {merge:true});
+    });
+  });
+  rows.forEach(function(g){
+    var a = g._av, f = g.f;
+    var partes = [];
+    if (a.cargo) partes.push('Cargo: '+a.cargo.de+' → '+a.cargo.para);
+    if (a.setor) partes.push('Setor: '+a.setor.de+' → '+a.setor.para);
+    var motivo = g.motivos.join(' / ') || 'Movimentação interna';
+    (f._ids || [f.id]).forEach(function(id){
+      ops.push(function(b){
+        if (id.indexOf('adm_') === 0) {
+          var u = {atualizadoEm: now,
+            historico: firebase.firestore.FieldValue.arrayUnion({dt:now, acao:'MOVIMENTACAO_MIX', por:resp||'RH', obs:motivo+' em '+fmtDate(g.data)+' · '+partes.join(' · ')})};
+          if (a.cargo) u['dados.cargo'] = a.cargo.para;
+          if (a.setor) { u['dados.estrutura'] = a.setor.para; u['dados.codEstrutura'] = a.setor.cod; }
+          b.update(db.collection('adm_processos').doc(id.slice(4)), u);
+        } else {
+          var m = {atualizadoEm: now};
+          if (a.cargo) m.cargo = a.cargo.para;
+          if (a.setor) { m.departamento = a.setor.para; m.codEstrutura = a.setor.cod; }
+          b.set(db.collection('dossie_funcs').doc(id), m, {merge:true});
+        }
+      });
+    });
+    if (!a.soCadastro) ops.push(function(b){
+      var ref = db.collection('dossie_eventos').doc();
+      b.set(ref, {id:ref.id, funcId:f.id, tipoId:'promocao', titulo:motivo+' · '+partes.join(' · '), data:g.data,
+        obs:'Importado do MIX (Conferência de Alteração de '+[a.cargo?'Cargo':'', a.setor?'Estrutura':''].filter(Boolean).join(' e ')+').',
+        resp:resp, criadoEm:now, especial:true, mixImport:true, mixKey:a.mixKey});
+    });
+  });
+
+  function commit(start){
+    if (start >= ops.length) {
+      rows.forEach(function(g){
+        if (g._av.cargo) g.f.cargo = g._av.cargo.para;
+        if (g._av.setor) g.f.departamento = g._av.setor.para;
+      });
+      toast(rows.length+' alteração(ões) aplicada(s)!','ok');
+      btn.disabled = false;
+      closeModal('modal-mix');
+      _mixGrupos = null;
+      renderLista();
+      if (_funcAtivo) renderDossie(_funcAtivo);
+      return;
+    }
+    var b = db.batch(), fim = Math.min(start+400, ops.length); // limite do batch do Firestore é 500
+    for (var k=start; k<fim; k++) ops[k](b);
+    b.commit().then(function(){ commit(fim); }).catch(function(e){ btn.disabled=false; toast('Erro: '+e.message,'err'); });
+  }
+  commit(0);
 }
 
 // ════ PÍLULAS ════

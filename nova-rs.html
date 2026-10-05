@@ -619,8 +619,8 @@ function fmtDate(d) {
   var p = d.split('T')[0].split('-');
   return p[2]+'/'+p[1]+'/'+p[0];
 }
-function fmtDT(d) {
-  if (!d) return '—';
+function fmtDT(d, vazio) {
+  if (!d) return vazio===undefined ? '—' : vazio;
   var p = d.split('T'), dt = p[0].split('-');
   return dt[2]+'/'+dt[1]+'/'+dt[0]+' '+(p[1]||'').slice(0,5);
 }
@@ -630,9 +630,34 @@ function addDaysFrom(base, n) {
   d.setDate(d.getDate() + n);
   return d.toISOString().split('T')[0];
 }
+// Data do aceite da vaga: campo da vaga ou, se faltar, o primeiro aceite registrado num candidato
+function vagaAceite(v) {
+  if (!v) return '';
+  if (v.aceiteData) return v.aceiteData;
+  var ds = (v.candidatos||[]).filter(function(c){ return c.interesse==='sim' && c.dtAceite; })
+    .map(function(c){ return c.dtAceite.split('T')[0]; }).sort();
+  return ds[0] || '';
+}
+function diasEntre(a, b) {
+  return Math.round((new Date(b+'T12:00:00') - new Date(a+'T12:00:00')) / 86400000);
+}
+// Período da vaga: da abertura até o aceite (ou até hoje, se ainda sem aceite)
+function periodoVaga(v) {
+  if (!v || !v.abertura) return null;
+  var ac = vagaAceite(v);
+  return {aceite: ac, dias: Math.max(0, diasEntre(v.abertura, ac || today()))};
+}
+function periodoLabel(v) {
+  var p = periodoVaga(v);
+  if (!p) return '';
+  return p.aceite
+    ? 'Período: '+fmtDate(v.abertura)+' → '+fmtDate(p.aceite)+' ('+p.dias+' dias)'
+    : 'Aberta em '+fmtDate(v.abertura)+' · sem aceite há '+p.dias+' dias';
+}
 function prazoInfo(vaga) {
   if (!vaga.prazo) return {label:'', cls:''};
-  if (vaga.aceiteData) return {label:'Aceite: '+fmtDate(vaga.aceiteData), cls:'prazo-aceite'};
+  var ac = vagaAceite(vaga);
+  if (ac) return {label:'Aceite: '+fmtDate(ac), cls:'prazo-aceite'};
   var diff = Math.ceil((new Date(vaga.prazo+'T12:00:00') - new Date()) / 86400000);
   if (diff < 0)  return {label:'Vencido ('+Math.abs(diff)+'d)', cls:'prazo-venc'};
   if (diff <= 5) return {label:diff+'d restantes', cls:'prazo-warn'};
@@ -671,10 +696,10 @@ function updateStats() {
     return s + (v.candidatos||[]).filter(function(c) { return c.etapa < 7; }).length;
   }, 0);
   var integ = abertas.reduce(function(s, v) {
-    return s + (v.candidatos||[]).filter(function(c) { return c.etapa === 6; }).length;
+    return s + (v.candidatos||[]).filter(function(c) { return c.etapa === 7; }).length;
   }, 0);
   var venc = abertas.filter(function(v) {
-    return v.prazo && !v.aceiteData && new Date(v.prazo+'T12:00:00') < new Date();
+    return v.prazo && !vagaAceite(v) && new Date(v.prazo+'T12:00:00') < new Date();
   }).length;
   document.getElementById('stat-abertas').textContent = abertas.length;
   document.getElementById('stat-cands').textContent   = cands;
@@ -733,7 +758,7 @@ function renderVagas() {
 function vagaRow(v) {
   var pi = prazoInfo(v);
   var nAtivos = (v.candidatos||[]).filter(function(c) { return c.etapa < 7; }).length;
-  var nInteg  = (v.candidatos||[]).filter(function(c) { return c.etapa === 6; }).length;
+  var nInteg  = (v.candidatos||[]).filter(function(c) { return c.etapa === 7; }).length;
   var statusBadge = {
     aberta:    '<span class="badge badge-lime"><i class="ti ti-point-filled" style="font-size:8px"></i> Aberta</span>',
     encerrada: '<span class="badge badge-gray">Encerrada</span>',
@@ -767,7 +792,7 @@ function abrirVagaDetalhe(id) {
   vagaDetId = id;
   var pi = prazoInfo(v);
   var nAtivos = (v.candidatos||[]).filter(function(c) { return c.etapa < 7; }).length;
-  var nInteg  = (v.candidatos||[]).filter(function(c) { return c.etapa === 6; }).length;
+  var nInteg  = (v.candidatos||[]).filter(function(c) { return c.etapa === 7; }).length;
   var statusTxt = {aberta:'Aberta', encerrada:'Encerrada', pausada:'Pausada', cancelada:'Cancelada'}[v.status] || v.status || '—';
 
   document.getElementById('vd-title').textContent = v.cargo || '—';
@@ -786,6 +811,8 @@ function abrirVagaDetalhe(id) {
     + row('Nº de vagas', v.qtd || 1)
     + '<div class="vd-sec">Prazos</div>'
     + row('Abertura', fmtDate(v.abertura))
+    + row('Aceite', vagaAceite(v) ? fmtDate(vagaAceite(v)) : '<span class="rs-muted">Sem aceite</span>')
+    + row('Período (abertura → aceite)', periodoVaga(v) ? periodoVaga(v).dias+' dias'+(vagaAceite(v)?'':' (em aberto)') : '—')
     + row('Prazo', v.prazo ? (pi.label ? '<span class="'+pi.cls+'">'+pi.label+'</span>' : fmtDate(v.prazo)) : '—')
     + '<div class="vd-sec">Candidatos</div>'
     + row('Em processo', nAtivos)
@@ -878,7 +905,7 @@ function abrirDetalhe(id) {
   if (!v) return;
   var pi = prazoInfo(v);
   document.getElementById('det-title').textContent = v.cargo;
-  document.getElementById('det-sub').textContent   = (v.empresa||'')+(v.departamento?' · '+v.departamento:'')+(v.perfil?' · '+v.perfil:'')+(v.abertura?' · Abertura: '+fmtDate(v.abertura):'')+(pi.label?' · '+pi.label:'');
+  document.getElementById('det-sub').textContent   = (v.empresa||'')+(v.departamento?' · '+v.departamento:'')+(v.perfil?' · '+v.perfil:'')+(v.abertura?' · '+periodoLabel(v):'')+(!vagaAceite(v)&&pi.label?' · '+pi.label:'');
   var enc = v.status==='encerrada', pau = v.status==='pausada', isBT = !!v.isBancoTalentos;
   document.getElementById('btn-encerrar').style.display = (enc||isBT) ? 'none' : '';
   document.getElementById('btn-pausar').style.display   = (enc||isBT) ? 'none' : '';
@@ -896,8 +923,8 @@ function encerrarVaga() {
   if (!v) return;
   if (!confirm('Encerrar esta vaga?')) return;
   var banco = vagas.find(function(x) { return x.isBancoTalentos; });
-  var ficam  = (v.candidatos||[]).filter(function(c) { return c.etapa === 6; });
-  var voltam = (v.candidatos||[]).filter(function(c) { return c.etapa !== 6; });
+  var ficam  = (v.candidatos||[]).filter(function(c) { return c.etapa === 7; });
+  var voltam = (v.candidatos||[]).filter(function(c) { return c.etapa !== 7; });
   if (voltam.length && banco) {
     banco.candidatos = banco.candidatos||[];
     voltam.forEach(function(c) {
@@ -1515,12 +1542,22 @@ function removerEvento(id) {
 function exportarVagaExcel(id) {
   var v = DB.vagas.getAll().find(function(x) { return x.id===id; });
   if (!v) return;
-  var rows = [['Nome','Telefone','Origem','Etapa','Dt Entrevista','Resultado Entrev','Dt Teste','Avaliação','Dt Integração','Dt Exame','Interesse','Motivo Rep','Obs']];
+  var pv = periodoVaga(v);
   var etapaLabels = ['Triagem','Ent.Agendada','Ent.Realizada','Teste Ag.','Teste Real.','Docs/Exame','Exame Rec.','Integração','Reprovado'];
+  var rows = [
+    ['Vaga', (v.codigo||'')+' — '+(v.cargo||'')],
+    ['Abertura', fmtDate(v.abertura)],
+    ['Aceite', vagaAceite(v) ? fmtDate(vagaAceite(v)) : 'SEM ACEITE'],
+    ['Dias (abertura → aceite)', pv ? pv.dias + (vagaAceite(v) ? '' : ' (em aberto)') : ''],
+    ['SLA (dias)', v.sla || ''],
+    [],
+    ['Nome','Telefone','Origem','Etapa','Dt Entrevista','Resultado Entrev','Dt Teste','Avaliação','Interesse','Dt Aceite','Dt Exame','Dt Integração','Motivo Rep','Obs']
+  ];
   (v.candidatos||[]).forEach(function(c) {
     rows.push([c.nome,c.tel||'',c.origem||'',etapaLabels[c.etapa]||c.etapa,
-      c.dtEntrevista||'',c.resultadoEntrevista||'',c.dtTeste||'',c.avaliacao||'',
-      c.dtIntegracao||'',c.dtExame||'',c.interesse||'',c.motivoRep||'',c.obs||'']);
+      fmtDT(c.dtEntrevista,''),c.resultadoEntrevista||'',fmtDT(c.dtTeste,''),c.avaliacao||'',
+      c.interesse||'',c.dtAceite?fmtDate(c.dtAceite):'',c.dtExame?fmtDate(c.dtExame):'',fmtDT(c.dtIntegracao,''),
+      c.motivoRep||'',c.obs||'']);
   });
   var wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rows), 'Candidatos');
@@ -1528,10 +1565,14 @@ function exportarVagaExcel(id) {
 }
 
 function exportarTodasVagas() {
-  var rows = [['Código','Cargo','Empresa','Departamento','Perfil','Abertura','Prazo','Status','Candidatos','Integrações']];
+  var rows = [['Código','Cargo','Empresa','Departamento','Perfil','SLA (dias)','Abertura','Prazo','Aceite','Dias (abertura → aceite)','Dentro do SLA','Status','Candidatos','Integrações']];
   DB.vagas.getAll().filter(function(v){return !v.isBancoTalentos;}).forEach(function(v) {
-    rows.push([v.codigo||'',v.cargo,v.empresa||'',v.departamento||'',v.perfil||'',
-      fmtDate(v.abertura),fmtDate(v.prazo),v.status,
+    var pv = periodoVaga(v), ac = vagaAceite(v);
+    var noSla = (ac && pv && v.sla) ? (pv.dias <= v.sla ? 'SIM' : 'NAO') : '';
+    rows.push([v.codigo||'',v.cargo,v.empresa||'',v.departamento||'',v.perfil||'',v.sla||'',
+      fmtDate(v.abertura),fmtDate(v.prazo),ac?fmtDate(ac):'',
+      pv ? (ac ? pv.dias : pv.dias+' (em aberto)') : '',
+      noSla, v.status,
       (v.candidatos||[]).length,
       (v.candidatos||[]).filter(function(c){return c.etapa===7;}).length]);
   });
